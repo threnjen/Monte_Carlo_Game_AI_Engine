@@ -24,27 +24,27 @@ class TileContainer(object):
             tile_dictionary (dict, optional): Starting tile dictionary. Defaults to master_tile_dictionary
             The master_tile_dictionary gives the default keys in the dictionary.
         """
-        self.tile_count = tile_count
-        self.tile_dictionary = tile_dictionary.copy()
+        self.tile_count = tile_count # sets initial empty tile count on init
+        self.tile_dictionary = tile_dictionary.copy() # sets initial empty tile dictionary on init
 
     def get_available_tiles(self):
         return {color: self.tile_dictionary[color] for color in self.tile_dictionary.keys(
-        ) if self.tile_dictionary[color] > 0}
+        ) if self.tile_dictionary[color] > 0} # returns dictionary of tiles in the container
 
     def add_tiles(self, new_tiles):
         """Adds tiles to the container, checking to make sure the keys are present.
 
         Args:
-            new_tiles (dictionary): tile dictionary to add
+            new_tiles (dictionary): new_tile dictionary to add to onject tile_dictionary
 
         Raises:
             f: Error when passed dictionary contains unknown key.
         """
-        for color in new_tiles.keys():
-            if color in self.tile_dictionary:
-                self.tile_dictionary[color] += new_tiles[color]
-                self.tile_count += new_tiles[color]
-            else:
+        for color in new_tiles.keys(): # loop through color in new dictionary
+            try:
+                self.tile_dictionary[color] += new_tiles[color] # update self tile dictionary
+                self.tile_count += new_tiles[color]               
+            except:
                 # TODO:  this can be made into a generic error
                 raise f"Error:  invalid tilename passed to {self.container_type} ({color})"
 
@@ -65,12 +65,12 @@ class Tower(TileContainer):
             dictionary: Tiles dumped or an empty dictionary.
         """
 
-        if bool(self.get_available_tiles()):
-            dump_tiles = self.tile_dictionary.copy()
-            self.tile_dictionary = master_tile_dictionary.copy()
-            self.tile_count = 0
-            return dump_tiles
-        else:
+        if bool(self.get_available_tiles()): # check if available tiles exist
+            dump_tiles = self.tile_dictionary.copy() # converts contents of Tower dictionary into a dump dictionary
+            self.tile_dictionary = master_tile_dictionary.copy() # resets tower dictionary to empty
+            self.tile_count = 0 # resets tower tile count to empty
+            return dump_tiles # returns dump tiles dict to game state to pass to Bag.add_tiles
+        else: # if no available tiles exist, returns empty dict
             return {}
 
 
@@ -103,18 +103,18 @@ class Bag(TileContainer):
         """
 
         remaining_tiles = 0
-        chosen_tiles = master_tile_dictionary.copy()
-        for i in range(take_count):
-            available_tiles = self.get_available_tiles()
-            if bool(available_tiles):
-                color = choice(list(available_tiles.keys()))
-                if color in chosen_tiles.keys():
-                    chosen_tiles[color] += 1
-                    self.tile_dictionary[color] -= 1
-                else:
+        chosen_tiles = master_tile_dictionary.copy() # set empty dictionary of taken tiles as copt of master dict
+        for i in range(take_count): # for each tile supposed to be taken:
+            available_tiles = self.get_available_tiles() # check available tiles 
+            if bool(available_tiles): # check if there are any tiles available to take
+                color = choice([k for k, v in available_tiles.items() if v > 0]) # takes choice only from keys where > 0 tiles available
+                try:
+                    chosen_tiles[color] += 1 # increments chosen tile in dict
+                    self.tile_dictionary[color] -= 1 # decrements self tile dict by color
+                except:
                     raise f"Error:  invalid tilename passed ({color})"
-            else:
-                remaining_tiles = take_count - i
+            else: # if there are no tiles available to take
+                remaining_tiles = take_count - i  # set the remaining tiles needed to draw 
                 break
         return chosen_tiles, remaining_tiles
 
@@ -148,8 +148,9 @@ class FactoryDisplay(TileContainer):
             dict: leftover tiles, to be placed in the center
         """
         chosen_tiles = {}
-        if wild_color in master_tile_dictionary.keys():
-            available_tiles = self.get_available_tiles()
+        #if wild_color in master_tile_dictionary.keys(): # I don't love this particular error check but not sure how to revise atm. 
+        # I think because it would require the parent master tile dictionary to become corrupted; if that happens the code is broken, so this check is redundant
+            available_tiles = self.get_available_tiles() # check the tiles avail on the factory mat
             if chosen_color in available_tiles.keys():
                 if chosen_color != wild_color:
                     chosen_tiles[chosen_color] = self.tile_dictionary[chosen_color]
@@ -165,8 +166,8 @@ class FactoryDisplay(TileContainer):
                 return chosen_tiles, center_tiles
             else:
                 return {}, {}
-        else:
-            raise f"Wild color {wild_color} is invalid"
+        #else:
+        #    raise f"Wild color {wild_color} is invalid"
 
 
 class CenterOfTable(FactoryDisplay):
