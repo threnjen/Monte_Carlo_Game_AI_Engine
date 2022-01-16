@@ -29,7 +29,7 @@ class TileContainer(object):
 
     def get_available_tiles(self):
         return {color: self.tile_dictionary[color] for color in self.tile_dictionary.keys(
-        ) if self.tile_dictionary[color] > 0} # returns dictionary of tiles in the container
+        ) if self.tile_dictionary[color] > 0} # returns dictionary of tiles in the container that are over 0
 
     def add_tiles(self, new_tiles):
         """Adds tiles to the container, checking to make sure the keys are present.
@@ -107,7 +107,7 @@ class Bag(TileContainer):
         for i in range(take_count): # for each tile supposed to be taken:
             available_tiles = self.get_available_tiles() # check available tiles 
             if bool(available_tiles): # check if there are any tiles available to take
-                color = choice([k for k, v in available_tiles.items() if v > 0]) # takes choice only from keys where > 0 tiles available
+                color = choice(list(available_tiles.keys()) # takes choice only from keys where > 0 tiles available
                 try:
                     chosen_tiles[color] += 1 # increments chosen tile in dict
                     self.tile_dictionary[color] -= 1 # decrements self tile dict by color
