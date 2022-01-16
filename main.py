@@ -43,11 +43,11 @@ class TileContainer(object):
         """
         for color in new_tiles.keys():  # loop through color in new dictionary
             # TODO:  change to if/then (or find a way to reject new dictionary items)
-            try:
+            if color in self.tile_dictionary.keys():
                 # update self tile dictionary
                 self.tile_dictionary[color] += new_tiles[color]
                 self.tile_count += new_tiles[color]
-            except:
+            else:
                 # TODO:  this can be made into a generic error
                 raise f"Error:  invalid tilename passed ({color})"
 
@@ -357,7 +357,7 @@ class Star(object):
 
         Args:
             position (int): Position of tile placed.
-            points (int): Points 
+            points (int): Points
 
         Returns:
             int: Points
@@ -373,3 +373,39 @@ class Star(object):
         if points < 6:
             points = self.check_right_contiguous(position)
         return points
+
+
+class PlayerBoard(object):
+
+    bonuses_lookup = {"blue1": ["BYS"], "blue2": ["BYS", "BAP"],
+                      }
+
+    bonus_criteria = {
+        "BAP": {"criteria": [("blue", 2), ("blue", 3), ("all", 2), ("all", 3)],
+                "reward": 2}
+    }
+
+    def __init__(self, player_color, first_plyaer=False):
+        self.player_color = player_color
+        self.first_player = first_plyaer
+        self.reserved_tiles = {}
+        self.stars = master_tile_dictionary.copy() + {"all": 0}
+
+    def setup_stars(self):
+        for color in self.stars.keys():
+            self.stars[color] = Star(color).setup_colors_allowed()
+
+    def bonus_lookup(self, tile_placed):
+
+        bonus_reward = 0
+
+        tile_bonus_lookup = PlayerBoard.bonuses_lookup[tile_placed]
+        for potential_bonus in tile_bonus_lookup:
+
+            bonus_achieved = all([self.stars[tile[0]].tile_position[tile[1]]
+                                  for tile in PlayerBoard.bonus_criteria[potential_bonus]["criteria"]])
+
+            if bonus_achieved:
+                bonus_reward += PlayerBoard.bonus_criteria[potential_bonus]["reward"]
+
+        return bonus_reward
