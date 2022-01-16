@@ -150,21 +150,21 @@ class FactoryDisplay(TileContainer):
         chosen_tiles = {}
         #if wild_color in master_tile_dictionary.keys(): # I don't love this particular error check but not sure how to revise atm. 
         # I think because it would require the parent master tile dictionary to become corrupted; if that happens the code is broken, so this check is redundant
-            available_tiles = self.get_available_tiles() # check the tiles avail on the factory mat
-            if chosen_color in available_tiles.keys():
-                if chosen_color != wild_color:
-                    chosen_tiles[chosen_color] = self.tile_dictionary[chosen_color]
-                    self.tile_dictionary[chosen_color] = 0
-                    if wild_color in available_tiles.keys():
-                        chosen_tiles[wild_color] = 1
-                        self.tile_dictionary[wild_color] -= 1
-                else:
-                    chosen_tiles[chosen_color] = 1
-                    self.tile_dictionary[chosen_color] -= 1
-                center_tiles = self.tile_dictionary.copy()
-                self.tile_dictionary = None
-                return chosen_tiles, center_tiles
-            else:
+            available_tiles = self.get_available_tiles() # get the tiles avail on the display object
+            if chosen_color in available_tiles.keys(): # check if the chosen color is avail
+                if chosen_color != wild_color: # if the chosen color isn't the wild color,
+                    chosen_tiles[chosen_color] = self.tile_dictionary[chosen_color] # set the chosen tiles = the chosen color
+                    self.tile_dictionary[chosen_color] = 0 # set the display object for chosen color to 0
+                    if wild_color in available_tiles.keys(): # if the wild color is also available
+                        chosen_tiles[wild_color] = 1 # add one wild to the chosen tiles
+                        self.tile_dictionary[wild_color] -= 1 # decrement display object by wild color by 1
+                else: # if the chosen color is the wild color
+                    chosen_tiles[chosen_color] = 1 # set chosen tiles to exactly 1 for that color
+                    self.tile_dictionary[chosen_color] -= 1 # decrement display object by wild color by 1
+                send_to_center = self.tile_dictionary.copy() # make a copy of tiles in display object to send to senter
+                self.tile_dictionary = master_tile_dictionary.copy() # reset this display object to empty
+                return chosen_tiles, send_to_center 
+            else: # return empty dict if chosen color is not avail
                 return {}, {}
         #else:
         #    raise f"Wild color {wild_color} is invalid"
