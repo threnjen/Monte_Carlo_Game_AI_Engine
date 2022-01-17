@@ -377,12 +377,54 @@ class Star(object):
 
 class PlayerBoard(object):
 
-    bonuses_lookup = {"blue1": ["BYS"], "blue2": ["BYS", "BAP"],
+    bonuses_lookup = {
+        "blue1": ["YBS"], "blue2": ["YBS", "BAP"], "blue3": ['BAP', 'BRS'], "blue4": ['BRS'], "blue5": ['BW'], "blue6": ['BW'],
+        "red1":['BRS'], "red2": ['BRS', 'RAP'], "red3": ['RAP', 'ROS'], 'red4':['ROS'], 'red5':['RW']. 'red6':['RW'],
+        'orange1':['ROS'], 'orange2':['ROS', 'OAP']:, 'orange3':['OAP', 'OPS'], 'orange4':['OPS'], 'orange5':['OW']. 'orange6':['OW'],
+        'purple1':['OPS'], 'purple2':['OPS', 'PAP'], 'purple3', ['PAP', 'PGS'], 'purple4':['PGS'], 'purple5':['PW'], 'purple6':['PW'],
+        'green1':['PGS'], 'green2':['PGS', 'GAP'], 'green3':['GAP', 'GYS'], 'green4':['GYS'], 'green5':['GW'], 'green6':['GW'],
+        'yellow1': ['GYS'], 'yellow2':['GYS', 'YAP'], 'yellow3':['YAP', 'YBS'], 'yellow4':['YBS'], 'yellow5':['YW'], 'yellow6':['YW'],
+        'all1': ['OAP', 'RAP'], 'all2': ['RAP', 'BAP'], 'all3':['BAP', 'YAP'], 'all4':['YAP', 'GAP'], 'all5':['GAP', 'PAP'], 'all6':['PAP', 'OAP'],
                       }
 
     bonus_criteria = {
+
         "BAP": {"criteria": [("blue", 2), ("blue", 3), ("all", 2), ("all", 3)],
-                "reward": 2}
+                "reward": 1},
+        'YAP': {"criteria": [("yellow", 2), ("yellow", 3), ("all", 2), ("all", 3)],
+                "reward": 1},
+        'GAP': {"criteria": [("green", 2), ("green", 3), ("all", 2), ("all", 3)],
+                "reward": 1},
+        'PAP': {"criteria": [("purple", 2), ("purple", 3), ("all", 2), ("all", 3)],
+                "reward": 1},
+        'OAP': {"criteria": [("orange", 2), ("orange", 3), ("all", 2), ("all", 3)],
+                "reward": 1},
+        'RAP': {"criteria": [("red", 2), ("red", 3), ("all", 2), ("all", 3)],
+                "reward": 1},
+        'OPS': {"criteria": [("orange", 3), ("orange", 4), ("purple", 1), ("purple", 2)],
+                "reward":2},
+        'PGS': {"criteria": [("purple", 3), ("purple", 4), ("green", 1), ("green", 2)],
+                "reward":2},
+        'GYS': {"criteria": [("green", 3), ("green", 4), ("yellow", 1), ("yellow", 2)],
+                "reward":2},
+        'YBS': {"criteria": [("yellow", 3), ("yellow", 4), ("blue", 1), ("blue", 2)],
+                "reward":2},
+        'BRS': {"criteria": [("blue", 3), ("blue", 4), ("red", 1), ("red", 2)],
+                "reward":2},
+        'ROS': {"criteria": [("red", 3), ("red", 4), ("orange", 1), ("orange", 2)],
+                "reward":2},
+        'OW': {"criteria": [("orange", 5), ("orange", 6)],
+                "reward":3},
+        'PW': {"criteria": [("purple", 5), ("purple", 6)],
+                "reward":3},
+        'GW': {"criteria": [("green", 5), ("green", 6)],
+                "reward":3},
+        'YW': {"criteria": [("yellow", 5), ("yellow", 6)],
+                "reward":3},
+        'BW': {"criteria": [("blue", 5), ("blue", 6)],
+                "reward":3},
+        'RW': {"criteria": [("red", 5), ("red", 6)],
+                "reward":3},
     }
 
     def __init__(self, player_color, first_plyaer=False):
