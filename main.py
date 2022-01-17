@@ -213,7 +213,7 @@ class CenterOfTable(FactoryDisplay):
         FactoryDisplay.__init__(tile_count, tile_dictionary)
         self.first_player_avail = first_player_avail
 
-    def choose_center_tiles(self, chosen_color, wild_color):
+    def take_center_tiles(self, chosen_color, wild_color):
         """Same as choose_tiles from the FactoryDisplay class, except it returns
         the first player marker if available.
         Args:
@@ -222,16 +222,17 @@ class CenterOfTable(FactoryDisplay):
 
         Returns:
             dict: chosen_tiles, includes number of chosen color and 0 or 1 wild
-            dict: leftover tiles, to be placed in the center
+            dict: leftover tiles, to be placed back in the center
             bool:  whether the first player marker is returned.
         """
         chosen_tiles, center_tiles = self.choose_tiles(
             chosen_color, wild_color)
+        self.tile_dictionary = center_tiles
         if self.first_player_avail:
             self.first_player_avail = False
-            return chosen_tiles, center_tiles, True
+            return chosen_tiles, True
         else:
-            return chosen_tiles, center_tiles, False
+            return chosen_tiles, False
 
 
 class Supply(TileContainer):
@@ -262,6 +263,23 @@ class Supply(TileContainer):
                     pos += 1
 
 
+class Factory(object):
+    def __init__(self, display_count):
+        self.display_count = display_count
+        self.factory_displays = {i: FactoryDisplay()
+                                 for i in range(display_count)}
+        self.center = CenterOfTable()
+
+    def take_from_display(self, display_number, chosen_color, wild_color):
+        received_tiles, center_tiles = self.factory_display[display_number].choose_tiles(
+            chosen_color, wild_color)
+        self.center.add_tiles(center_tiles)
+        return received_tiles
+
+    def take_from_center(self, chosen_color, wild_color):
+        return self.center.take_center_tiles(chosen_color, wild_color)
+
+
 class Star(object):
     """Player board star.  There are seven possible:  six colors and one colorless,
     denoted here as 'all'.  The primary action here is to add a tile, and the primary
@@ -287,6 +305,8 @@ class Star(object):
         self.star_full = False
         self.colors_allowed = {
             color: False for color in master_tile_dictionary.keys()}
+
+        self.setup_colors_allowed
 
     def setup_colors_allowed(self):
         """If the start type is all, we need to allow all colors initially.
@@ -332,7 +352,9 @@ class Star(object):
                     self.colors_allowed[color] = False
                 if all([item for item in self.tile_positions.items()]):
                     self.star_full = True
-                return self.check_contiguous[position] + self.star_full * Star.star_points[self.color]
+                points_earned = self.check_contiguous[position] + \
+                    self.star_full * Star.star_points[self.color]
+                return points_earned
             else:
                 raise f"Error:  invalid color {color} for star {self.color}"
 
@@ -376,16 +398,17 @@ class Star(object):
 
 
 class PlayerBoard(object):
+    """The player board stores the player stars, which in turn store the tiles placed.
+    It may be best to have a function to add tiles to the star from here."""
 
-    bonuses_lookup = {
-        "blue1": ["YBS"], "blue2": ["YBS", "BAP"], "blue3": ['BAP', 'BRS'], "blue4": ['BRS'], "blue5": ['BW'], "blue6": ['BW'],
-        "red1":['BRS'], "red2": ['BRS', 'RAP'], "red3": ['RAP', 'ROS'], 'red4':['ROS'], 'red5':['RW']. 'red6':['RW'],
-        'orange1':['ROS'], 'orange2':['ROS', 'OAP']:, 'orange3':['OAP', 'OPS'], 'orange4':['OPS'], 'orange5':['OW']. 'orange6':['OW'],
-        'purple1':['OPS'], 'purple2':['OPS', 'PAP'], 'purple3', ['PAP', 'PGS'], 'purple4':['PGS'], 'purple5':['PW'], 'purple6':['PW'],
+    bonuses_lookup = {"blue1": ["YBS"], "blue2": ["YBS", "BAP"], "blue3": ['BAP', 'BRS'], "blue4": ['BRS'], "blue5": ['BW'], "blue6": ['BW'],
+        "red1":['BRS'], "red2": ['BRS', 'RAP'], "red3": ['RAP', 'ROS'], 'red4':['ROS'], 'red5':['RW'], 'red6':['RW'],
+        'orange1':['ROS'], 'orange2':['ROS', 'OAP'], 'orange3':['OAP', 'OPS'], 'orange4':['OPS'], 'orange5':['OW'], 'orange6':['OW'],
+        'purple1':['OPS'], 'purple2':['OPS', 'PAP'], 'purple3': ['PAP', 'PGS'], 'purple4':['PGS'], 'purple5':['PW'], 'purple6':['PW'],
         'green1':['PGS'], 'green2':['PGS', 'GAP'], 'green3':['GAP', 'GYS'], 'green4':['GYS'], 'green5':['GW'], 'green6':['GW'],
         'yellow1': ['GYS'], 'yellow2':['GYS', 'YAP'], 'yellow3':['YAP', 'YBS'], 'yellow4':['YBS'], 'yellow5':['YW'], 'yellow6':['YW'],
         'all1': ['OAP', 'RAP'], 'all2': ['RAP', 'BAP'], 'all3':['BAP', 'YAP'], 'all4':['YAP', 'GAP'], 'all5':['GAP', 'PAP'], 'all6':['PAP', 'OAP'],
-                      }
+        }
 
     bonus_criteria = {
 
@@ -427,27 +450,167 @@ class PlayerBoard(object):
                 "reward":3},
     }
 
-    def __init__(self, player_color, first_plyaer=False):
+    def __init__(self, player_color):
+        """Note that we don't copy the reseverd tiles dictionary from
+        the master_tile_dictionary.  We can only ever reserve four tiles;
+        there's no need to have all six spots reserved.
+
+        Args:
+            player_color (str): Player color
+            first_plyaer (bool, optional): Whether this is the first player. Defaults to False.
+        """
         self.player_color = player_color
-        self.first_player = first_plyaer
         self.reserved_tiles = {}
         self.stars = master_tile_dictionary.copy() + {"all": 0}
+        self.setup_stars()
 
     def setup_stars(self):
+        """Called initially to build the dictionary of stars.
+        """
         for color in self.stars.keys():
-            self.stars[color] = Star(color).setup_colors_allowed()
+            self.stars[color] = Star(color)
 
-    def bonus_lookup(self, tile_placed):
+    def begin_round(self):
+        """This moves the tiles in the reserve to the temporary player supply.
+
+        Returns:
+            dictionary: Dictionary of tiles to place in the player supply.
+        """
+
+        to_player_supply = self.reserved_tiles.copy()
+        self.reserved_tiles = {}
+        return to_player_supply
+
+    def add_tile_to_star(self, star_color, tile_color, position):
+        """Adds a tile to star, checks for bonuses and points, and returns both.
+
+        Args:
+            star_color ([type]): [description]
+            tile_color ([type]): [description]
+            position ([type]): [description]
+
+        Returns:
+            [type]: [description]
+        """
+        self.stars[star_color].add_tile(position, tile_color)
+        return self.bonus_tile_lookup(star_color, position), self.check_multistar_bonus(position)
+
+    def bonus_tile_lookup(self, star_color, position):
+        """This uses the two lookup dictionaries in the PlayerBoard class to determine
+        if a tile bonus is earned upon placing a tile.  Note here we're running into an index
+        problem:  on the stars, the positions are labeled 0-5.  On the board, they're labeled
+        1-6.  Should everything be 1-6?
+
+        Args:
+            tile_placed (key/value pair): The two-item object that stores the star and position of
+            a tile just placed.
+
+        Returns:
+            int: Number of bonus tiles earned.
+        """
 
         bonus_reward = 0
 
-        tile_bonus_lookup = PlayerBoard.bonuses_lookup[tile_placed]
+        tile_bonus_lookup = PlayerBoard.bonuses_lookup[f"{star_color}{position}"]
         for potential_bonus in tile_bonus_lookup:
 
-            bonus_achieved = all([self.stars[tile[0]].tile_position[tile[1]]
+            bonus_achieved = all([self.stars[tile[0]].tile_position[tile[1] - 1]
                                   for tile in PlayerBoard.bonus_criteria[potential_bonus]["criteria"]])
 
             if bonus_achieved:
                 bonus_reward += PlayerBoard.bonus_criteria[potential_bonus]["reward"]
 
         return bonus_reward
+
+    def reserve_tiles(self, tile_dictionary):
+        """Adds tiles to the player reserve to hold between rounds.
+
+        Args:
+            tile_dictionary (dict): Dictionary of color/quantity pairs.
+
+        Raises:
+            f: Errors out if more than four tiles are passed.  Shouldn't happen, as this will
+            be restricted elsewhere.
+        """
+        tiles_reserved = sum(
+            [tile_count for tile_count in tile_dictionary.items()])
+        if tiles_reserved > 4:
+            raise f"Error:  too many tiles attempted to reserver ({tiles_reserved})"
+        else:
+            self.reserved_tiles = tile_dictionary.copy()
+
+    def check_multistar_bonus(self, tile_placed_position):
+        """This checks if a point bonus is received for placing all tiles of a particular
+        number.  Note that again tile position range (0-5 or 1-6) is causing a problem:
+        since bonuses are 4 * the tile position value, we need to add one to the tile position.
+        This is really making me think we should have the range be 1-6.
+
+        Args:
+            tile_placed_position (int): Position of tile placed, and bonus to check
+
+        Returns:
+            int: Points earned (either bonus or 0)
+        """
+        points_earned = 0
+        if tile_placed_position < 4:
+            points_earned = all([self.stars[color].tile_positions[tile_placed_position]
+                                for color in self.stars.keys()]) * (tile_placed_position + 1)
+        return points_earned
+
+
+class ScoreBoard(object):
+    """Master scoreboard.  Only tracks player points and the round number.
+    """
+
+    def __init__(self, player_colors):
+        """
+        Not an interesting object
+
+        Args:
+            player_colors (dict): color/score pairs.  Scores are 5 to start.
+        """
+        self.player_colors = player_colors
+        self.round_number = 0
+
+    def increment_round(self):
+        """Adds one to the round number
+        """
+        self.round_number += 1
+
+    def increase_player_score(self, player, points):
+        """Adds the points to the player color
+
+        Args:
+            player (str): Player color
+            points (int): Points added (or removed)
+        """
+        self.player_colors[player] += points
+
+
+class Player(object):
+    starting_points = 5
+
+    def __init__(self, color, first_player=False):
+        """Player, which is a surprisingly simple object so far.  The idea is that most actions
+        will be controled outside of the player, since we can't pass objects in.
+
+        Args:
+            color (str): Player color
+            first_player (bool, optional): Whether this is the first player. Defaults to False.
+        """
+        self.color = color
+        self.first_player = first_player
+        self.player_tile_supply = master_tile_dictionary.copy()
+        self.player_board = PlayerBoard(self.color)
+        self.player_score = Player.starting_points
+
+    def add_to_player_supply(self, added_tiles):
+        """Adds tiles to the player supply, either from a turn or from their turn
+        at the beginning of the round.
+
+        Args:
+            added_tiles (dict): Tiles to add.
+        """
+        for color in added_tiles.keys():
+            self.player_tile_supply[color] += added_tiles[color]
+    # Question:  do we create player input from here?
