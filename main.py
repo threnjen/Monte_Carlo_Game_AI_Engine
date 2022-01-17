@@ -402,13 +402,13 @@ class PlayerBoard(object):
     It may be best to have a function to add tiles to the star from here."""
 
     bonuses_lookup = {"blue1": ["YBS"], "blue2": ["YBS", "BAP"], "blue3": ['BAP', 'BRS'], "blue4": ['BRS'], "blue5": ['BW'], "blue6": ['BW'],
-        "red1":['BRS'], "red2": ['BRS', 'RAP'], "red3": ['RAP', 'ROS'], 'red4':['ROS'], 'red5':['RW'], 'red6':['RW'],
-        'orange1':['ROS'], 'orange2':['ROS', 'OAP'], 'orange3':['OAP', 'OPS'], 'orange4':['OPS'], 'orange5':['OW'], 'orange6':['OW'],
-        'purple1':['OPS'], 'purple2':['OPS', 'PAP'], 'purple3': ['PAP', 'PGS'], 'purple4':['PGS'], 'purple5':['PW'], 'purple6':['PW'],
-        'green1':['PGS'], 'green2':['PGS', 'GAP'], 'green3':['GAP', 'GYS'], 'green4':['GYS'], 'green5':['GW'], 'green6':['GW'],
-        'yellow1': ['GYS'], 'yellow2':['GYS', 'YAP'], 'yellow3':['YAP', 'YBS'], 'yellow4':['YBS'], 'yellow5':['YW'], 'yellow6':['YW'],
-        'all1': ['OAP', 'RAP'], 'all2': ['RAP', 'BAP'], 'all3':['BAP', 'YAP'], 'all4':['YAP', 'GAP'], 'all5':['GAP', 'PAP'], 'all6':['PAP', 'OAP'],
-        }
+                      "red1": ['BRS'], "red2": ['BRS', 'RAP'], "red3": ['RAP', 'ROS'], 'red4': ['ROS'], 'red5': ['RW'], 'red6': ['RW'],
+                      'orange1': ['ROS'], 'orange2': ['ROS', 'OAP'], 'orange3': ['OAP', 'OPS'], 'orange4': ['OPS'], 'orange5': ['OW'], 'orange6': ['OW'],
+                      'purple1': ['OPS'], 'purple2': ['OPS', 'PAP'], 'purple3': ['PAP', 'PGS'], 'purple4': ['PGS'], 'purple5': ['PW'], 'purple6': ['PW'],
+                      'green1': ['PGS'], 'green2': ['PGS', 'GAP'], 'green3': ['GAP', 'GYS'], 'green4': ['GYS'], 'green5': ['GW'], 'green6': ['GW'],
+                      'yellow1': ['GYS'], 'yellow2': ['GYS', 'YAP'], 'yellow3': ['YAP', 'YBS'], 'yellow4': ['YBS'], 'yellow5': ['YW'], 'yellow6': ['YW'],
+                      'all1': ['OAP', 'RAP'], 'all2': ['RAP', 'BAP'], 'all3': ['BAP', 'YAP'], 'all4': ['YAP', 'GAP'], 'all5': ['GAP', 'PAP'], 'all6': ['PAP', 'OAP'],
+                      }
 
     bonus_criteria = {
 
@@ -425,29 +425,29 @@ class PlayerBoard(object):
         'RAP': {"criteria": [("red", 2), ("red", 3), ("all", 2), ("all", 3)],
                 "reward": 1},
         'OPS': {"criteria": [("orange", 3), ("orange", 4), ("purple", 1), ("purple", 2)],
-                "reward":2},
+                "reward": 2},
         'PGS': {"criteria": [("purple", 3), ("purple", 4), ("green", 1), ("green", 2)],
-                "reward":2},
+                "reward": 2},
         'GYS': {"criteria": [("green", 3), ("green", 4), ("yellow", 1), ("yellow", 2)],
-                "reward":2},
+                "reward": 2},
         'YBS': {"criteria": [("yellow", 3), ("yellow", 4), ("blue", 1), ("blue", 2)],
-                "reward":2},
+                "reward": 2},
         'BRS': {"criteria": [("blue", 3), ("blue", 4), ("red", 1), ("red", 2)],
-                "reward":2},
+                "reward": 2},
         'ROS': {"criteria": [("red", 3), ("red", 4), ("orange", 1), ("orange", 2)],
-                "reward":2},
+                "reward": 2},
         'OW': {"criteria": [("orange", 5), ("orange", 6)],
-                "reward":3},
+               "reward": 3},
         'PW': {"criteria": [("purple", 5), ("purple", 6)],
-                "reward":3},
+               "reward": 3},
         'GW': {"criteria": [("green", 5), ("green", 6)],
-                "reward":3},
+               "reward": 3},
         'YW': {"criteria": [("yellow", 5), ("yellow", 6)],
-                "reward":3},
+               "reward": 3},
         'BW': {"criteria": [("blue", 5), ("blue", 6)],
-                "reward":3},
+               "reward": 3},
         'RW': {"criteria": [("red", 5), ("red", 6)],
-                "reward":3},
+               "reward": 3},
     }
 
     def __init__(self, player_color):
@@ -614,3 +614,29 @@ class Player(object):
         for color in added_tiles.keys():
             self.player_tile_supply[color] += added_tiles[color]
     # Question:  do we create player input from here?
+
+
+class Game():
+    tiles_per_color = 22
+    total_rounds = 6
+    supply_max = 10
+    wild_list = {1: "purple", 2: "green",
+                 3: "orange", 4: "yellow", 5: "blue", 6: "red"}
+    factory_req = {2: 5, 3: 7, 4: 9}
+    player_colors = ["brown", "white", "black", "gray"]
+
+    def __init__(self, player_count):
+        self.player_count = player_count
+        self.factory = Factory(Game.factory_req[player_count])
+        self.supply = Supply()
+        self.players = {Game.player_colors[i]: Player(
+            Game.player_colors[i]) for i in range(self.player_count)}
+        self.bag = Bag(
+            132, {color: Game.tiles_per_color for color in master_tile_dictionary.keys()})
+        self.tower = Tower()
+        self.supply = Supply()
+
+    def fill_supply(self):
+        supply_count = self.supply.tile_count
+        self.supply.add_tiles(self.bag.randomly_choose_tiles(
+            Game.supply_max - supply_count))
