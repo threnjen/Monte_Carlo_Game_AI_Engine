@@ -16,57 +16,64 @@ class GameEngine():
 
     def update_game(self, action):
         '''
-        Modify according to your game or 
-        needs. 
+        Hook #1
+        Send action to game and get updated game state
+        returns game._state
         '''
         return self.game.update_game(action)
-        #self._state[action] = 1
-        #return self._state
 
     def get_legal_actions(self):
         '''
+        Hook #2
         report on currently available actions after checking board space
+        returns list of actions
         '''
         return self.game.get_legal_actions()
-        #return [i for i in range(len(self._state)) if self._state[i] == 0]
 
     def is_game_over(self):
         '''
-        Modify according to your game or 
-        needs. It is the game over condition
-        and depends on your game. Returns
-        true or false
+        Hook #3
+        Returns true or false
         '''
         return self.game.is_game_over()
-        #return np.where(self._state == 1)[0].size > 0
 
     def game_result(self):
         '''
-        Returns 1 or 0 or -1 depending
-        on your state corresponding to win,
-            tie or a loss.
+        Hook #4
+        Returns endgame score
         '''
         return self.game.game_result()  
 
     def play_game(self):
+
+        '''
+        Intializes gameplay
+        Will play game until game over condition is met
+        Each turn will run a MC for that turn choice
+        '''
         
         while not self.game.is_game_over():
             
-            print("New Turn")
+            print("New Turn. Current board state:")
             print(self.state)
 
             legal_actions=self.game.get_legal_actions()
 
             self.current_turn = TurnEngine(legal_actions)
-            self.action = self.current_turn.play_turn(1, self.game)
+            self.action = self.current_turn.play_turn(1, self.game) # sends number of simulations and current game to turn engine
+                                                                    # gets back the optimal action
+
             print(self.action)
 
-            self.state = self.game.update_game(self.action)
+            self.state = self.game.update_game(self.action) # updates the true game state with the action
 
-            # opponent takes turn
+            # opponent takes turn. commented out because we don't need that right now.
             #possible_moves = self.game.get_legal_actions()
             #action = possible_moves[np.random.randint(len(possible_moves))]
             #self.state = self.game.update_game(action)
+        
+        self.end_score = self.game.game_result()
+        print(self.end_score)
 
 
 class TurnEngine():
@@ -88,7 +95,7 @@ class TurnEngine():
 
         Returns the optimal turn choice for the game state it was provided
         '''
-        print("Starting simulation with "+str(num_sims)+" sims")
+        print("Starting turn calculation with "+str(num_sims)+" sims")
 
         for i in range(num_sims): # how many simulations with this initial state?
 
@@ -113,24 +120,25 @@ class TurnEngine():
     def _tree_policy(self, node):
         '''
         Selects node to run rollout. Is looking for the furthest terminal node to roll out.
+        This function needs some work on the logic to make it work properly
         '''
         current_node = node
 
-        #while not current_node.is_terminal_node(): # calls a check on if this is a terminal node. Will keep looping until this is true.
-            # it's checking for whether this node is already a leaf end, or if it needs to be expanded
         print("Entering Tree Policy function")
         while len(current_node.children)==0:
 
-            #print("Game has not ended")
-            if not len(current_node._untried_actions)==0: # check if the current node isn't fully expanded
+            print("Expansion is still possible")
+
+            while len(current_node._untried_actions)!=0: # check if the current node isn't fully expanded
                 print("Current node is not fully expanded, expanding node")
-                return self.expand(current_node) # if not expanded, expand current node
-            else: # if current node is expanded, find best child
-                print("Current node is fully expanded, getting best child")
-                current_node = current_node.best_child() # calls BEST_CHILD to get best scoring leaf
+                self.expand(current_node) # if not expanded, expand current node
         
-        #print("Game was over, returning same node to game engine")
-        return current_node # if current node got true from is_terminal, returns itself. otherwise returns best child.
+        # logic here is only expanding one node no matter what, i think
+        # if current node is expanded, find best child
+        print("Current node is fully expanded, getting best child")
+        current_node = current_node.best_child() # calls BEST_CHILD to get best scoring leaf
+                
+        return current_node
     
     def expand(self, current_node):
         '''
@@ -138,32 +146,31 @@ class TurnEngine():
         '''
         print("Expanding nodes")
         action = current_node._untried_actions.pop() # pops off an untried action
-        next_state = self.game_copy.update_game(action) # calls move function on the action to get next_state. Calls MOVE in GameLogic object
-        child_node = MonteCarlo(
-                parent=current_node, action_label=action) # parent_action=action, state=next_state,  # instantiates a new node from next state and the action selected
+        #next_state = self.game_copy.update_game(action) # calls move function on the action to get next_state. Calls MOVE in GameLogic object
+        child_node = MonteCarlo(parent=current_node, action_label=action) # parent_action=action, state=next_state,  # instantiates a new node from next state and the action selected
         current_node.children.append(child_node) # appends this new child node to the current node's list of children
-        return child_node
+        #return child_node
 
     def rollout(self):
         '''
         On rollout call, the entire game is simulated to terminus and the outcome of the game is returned
         '''
-        print("Now entering rollout function")
+        #print("Now entering rollout function")
         while not self.game_copy.is_game_over(): # checks the state for game over boolean and loops if it's false
-            print("Game is not over")
+            #print("Game is not over")
 
-            print("Getting possible moves")
+            #print("Getting possible moves")
             possible_moves = self.game_copy.get_legal_actions() # call to get legal moves. Calls GET_LEGAL_ACTIONS in GameLogic object
             print(possible_moves)
 
             #action = self.rollout_policy(possible_moves) # Calls ROLLOUT_POLICY in case needs more complicated
             action = possible_moves[np.random.randint(len(possible_moves))] # call random move from possible moves
-            print("Picked random action: "+str(action))
+            #print("Picked random action: "+str(action))
 
             self.game_copy.update_game(action) # takes action just pulled at random. Calls MOVE in GameLogic object
-            print("Updating game with move")
+            #print("Updating game with move")
 
-        print("Game has ended; returning result")
+        print("This simulation has ended; returning result")
         return self.game_copy.game_result() # returns game_result when game is flagged over. Calls GAME_RESULT in GameLogic object
 
     def backpropogate(self, reward, node):
@@ -221,9 +228,18 @@ class MonteCarlo():
         '''
         #print("Now in best_child function")
         # makes an array of the leaf calculations
-        choices_weights = [(c.node_score() / c.node_visits()) + c_param * np.sqrt((np.log(self.node_visits())) / c.node_visits()) for c in self.children] 
+        choices_weights = []
+        for c in self.children:
+            try:
+                score = (c.node_score() / c.node_visits()) + c_param * np.sqrt((np.log(self.node_visits())) / c.node_visits())
+                choices_weights.append(score)
+            except:
+                choices_weights.append(1000)
+
+        #choices_weights = [(c.node_score() / c.node_visits()) + c_param * np.sqrt((np.log(self.node_visits())) / c.node_visits()) for c in self.children] 
                         #calculates scores for child nodes
         return self.children[np.argmax(choices_weights)] # gets index of max score and sends back identity of child
+
 class SimpleArrayGame():
     
     def __init__(self):
@@ -270,65 +286,3 @@ class SimpleArrayGame():
 
 game = GameEngine()
 game.play_game()
-
-
-
-
-
-
-
-    #def rollout_policy(self, possible_moves):
-    #    '''
-    #    randomly selects a move out of possible moves and returns the random move
-    #    unused in current game logic
-    #    '''
-    #    return possible_moves[np.random.randint(len(possible_moves))]
-
-    #selected_node = self.root.best_action(num_sims) # call BEST_ACTION, get the best node for the root node to move to
-
-    #def best_action(self, num_sims):
-    #    '''
-    #    Returns the node corresponding to the best possible move
-    #    Carries out expansion, simulation and backpropogation
-    #    '''
-    #    simulation_no = num_sims 
-
-    #    for i in range(num_sims): # how many simulations with this initial state?
-
-    #        v = self._tree_policy() # call TREE_POLICY to select the node to rollout. v is a NODE
-    #        reward = v.rollout() # call ROLLOUT on the node v. Starts from node v and takes legal actions until the game ends. Gets the rewards
-    #        v.backpropogate(reward) # backpropogates with the reward. Calls BACKPROPOGATE
-    
-    #    return self.best_child(c_param=0) # returns the best child node to the main function. Calls BEST_CHILD
-
-    #def is_terminal_node(self):
-    #    return self.game.is_game_over() # checks is_game_over for boolean. Calls IS_GAME_OVER (defined by user)
-    #    #return False    
-
-    #def expand(self):
-    #    '''
-    #    From the present state we expand the nodes to the next possible states
-    #    '''
-    #    action = self._untried_actions.pop() # pops off an untried action
-    #    next_state = self.game.move(action) # calls move function on the action to get next_state. Calls MOVE in GameLogic object
-    #    child_node = MonteCarlo(
-    #            state=next_state, parent=self, parent_action=action) # instantiates a new node from next state and the action selected
-    #    self.children.append(child_node) # appends this new child node to the current node's list of children
-    #    return child_node
-
-    #def rollout(self):
-    #    '''
-    #    On rollout call, the entire game is simulated to terminus and the outcome of the game is returned
-    #    '''
-        #current_rollout_state = self.state # gets the current board state
-
-        #while not current_rollout_state.is_game_over(): # checks the state for game over boolean and loops if it's false
-
-            #possible_moves = self.game.get_legal_actions() # call to get legal moves. Calls GET_LEGAL_ACTIONS in GameLogic object
-
-            #action = self.rollout_policy(possible_moves) # Calls ROLLOUT_POLICY in case needs more complicated
-            #action = possible_moves[np.random.randint(len(possible_moves))] # call random move from possible moves
-
-            #self.game.move(action) # takes action just pulled at random. Calls MOVE in GameLogic object
-    
-        #return self.game.game_result() # returns game_result when game is flagged over. Calls GAME_RESULT in GameLogic object
