@@ -2,7 +2,9 @@
 
 import numpy as np
 import copy
-from simple_array_game import SimpleArrayGame as Game
+#from simple_array_game import SimpleArrayGame as Game
+from tic_tac_toe import Game
+from random import randint
 
 
 class GameEngine():
@@ -14,11 +16,13 @@ class GameEngine():
         self.game = Game()
         self.state = self.game._state
         self.players = {}
+        self.start_player = randint(0,players)
         
         for i in range(players):
             self.players[i] = Player()
         
         print("Initializing game for "+str(players)+" players")
+        print(self.start_player)
 
     def update_game(self, action):
         '''
@@ -56,7 +60,7 @@ class GameEngine():
         '''
         return self.game.game_result()
 
-    def play_game(self):
+    def play_game(self, players):
         '''
         Intializes gameplay
         Will play game until game over condition is met
@@ -65,44 +69,47 @@ class GameEngine():
 
         self.simulations = 1000
         self.turn = 0
-
+        
         while not self.game.is_game_over():
             
-            print("New Turn. Current board state:")
-            print(self.state)
+            for player in range(players):
 
-            self.turn += 1
-            self.sims_this_turn = int(self.simulations/(self.turn * 2))
+                print("New Turn. Current board state:")
+                print(self.state)
 
-            legal_actions=self.game.get_legal_actions()
+                self.turn += 1
+                self.sims_this_turn = int(self.simulations/(self.turn * 2))
 
-            self.current_turn = TurnEngine(legal_actions)
-            # sends number of simulations and current game to turn engine
-            self.action = self.current_turn.play_turn(
-                self.sims_this_turn, self.game)
-            # gets back the optimal action
+                legal_actions=self.game.get_legal_actions()
 
-            #print("filling: "+str(self.action))
+                self.current_turn = TurnEngine(legal_actions, player)
+                # sends number of simulations and current game to turn engine
+                self.action = self.current_turn.play_turn(
+                    self.sims_this_turn, self.game)
+                #   gets back the optimal action
 
-            self.state = self.game.update_game(self.action, 0) # updates the true game state with the action
+                #print("filling: "+str(self.action))
+
+                self.state = self.game.update_game(self.action, player) # updates the true game state with the action
 
             # opponent takes turn. commented out because we don't need that right now.
             #possible_moves = self.game.get_legal_actions()
             #action = possible_moves[np.random.randint(len(possible_moves))]
             #self.state = self.game.update_game(action)
 
-        self.end_score = self.game.game_result()
+        self.scores = self.game.game_result()
         print(self.game._state)
-        print(self.end_score)
+        print(self.scores)
 
 
 class TurnEngine():
 
-    def __init__(self, legal_actions=None):
+    def __init__(self, legal_actions=None, player=None):
         '''
         Instantiates root monte carlo node
         '''    
         self.root = MonteCarloNode(legal_actions=legal_actions) # parent_action=None, state=self.game._state,
+        self.player = player
 
     def play_turn(self, num_sims, game):
         '''
@@ -169,7 +176,7 @@ class TurnEngine():
         '''
         #print("Expanding nodes")
         action = current_node._untried_actions.pop() # pops off an untried action
-        self.state = self.game_copy.update_game(action) # calls move function on the action to get next_state. Calls MOVE in GameLogic object
+        self.state = self.game_copy.update_game(action, self.player) # calls move function on the action to get next_state. Calls MOVE in GameLogic object
         child_node = MonteCarloNode(parent=current_node, action_label=action) # parent_action=action, state=next_state,  # instantiates a new node from next state and the action selected
         current_node.children.append(child_node) # appends this new child node to the current node's list of children
         #return child_node
@@ -187,7 +194,7 @@ class TurnEngine():
             #action = self.rollout_policy(possible_moves) # Calls ROLLOUT_POLICY in case needs more complicated
             action = possible_moves[np.random.randint(len(possible_moves))] # call random move from possible moves
             #print(action)
-            self.game_copy.update_game(action, 0) # takes action just pulled at random. Calls MOVE in GameLogic object
+            self.game_copy.update_game(action, self.player) # takes action just pulled at random. Calls MOVE in GameLogic object
 
         #print("This simulation has ended; returning result")
         # returns game_result when game is flagged over. Calls GAME_RESULT in GameLogic object
@@ -258,6 +265,6 @@ class Player():
     def __init__(self):
         self.score = 0
 
-
-game = GameEngine(2)
-#game.play_game()
+players = 2
+game = GameEngine(players)
+game.play_game(players)
