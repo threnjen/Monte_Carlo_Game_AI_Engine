@@ -60,10 +60,10 @@ class GameEngine():
             legal_actions=self.game.get_legal_actions()
 
             self.current_turn = TurnEngine(legal_actions)
-            self.action = self.current_turn.play_turn(1, self.game) # sends number of simulations and current game to turn engine
+            self.action = self.current_turn.play_turn(10000, self.game) # sends number of simulations and current game to turn engine
                                                                     # gets back the optimal action
 
-            print(self.action)
+            print("filling: "+str(self.action))
 
             self.state = self.game.update_game(self.action) # updates the true game state with the action
 
@@ -73,6 +73,7 @@ class GameEngine():
             #self.state = self.game.update_game(action)
         
         self.end_score = self.game.game_result()
+        print(self.game._state)
         print(self.end_score)
 
 
@@ -106,7 +107,7 @@ class TurnEngine():
             #print("Rollout node: "+str(v))
 
             reward = self.rollout() # call ROLLOUT on the node v. Starts from node v and takes legal actions until the game ends. Gets the rewards
-            print("Reward: "+str(reward))
+            #print("Reward: "+str(reward))
 
             #print(v)
             self.backpropogate(reward, v) # backpropogates with the reward. Calls BACKPROPOGATE
@@ -124,18 +125,18 @@ class TurnEngine():
         '''
         current_node = node
 
-        print("Entering Tree Policy function")
+        #print("Entering Tree Policy function")
         while len(current_node.children)==0:
 
-            print("Expansion is still possible")
+            #print("Expansion is still possible")
 
             while len(current_node._untried_actions)!=0: # check if the current node isn't fully expanded
-                print("Current node is not fully expanded, expanding node")
+                #print("Current node is not fully expanded, expanding node")
                 self.expand(current_node) # if not expanded, expand current node
         
         # logic here is only expanding one node no matter what, i think
         # if current node is expanded, find best child
-        print("Current node is fully expanded, getting best child")
+        #print("Current node is fully expanded, getting best child")
         current_node = current_node.best_child() # calls BEST_CHILD to get best scoring leaf
                 
         return current_node
@@ -144,7 +145,7 @@ class TurnEngine():
         '''
         From the present state we expand the nodes to the next possible states
         '''
-        print("Expanding nodes")
+        #print("Expanding nodes")
         action = current_node._untried_actions.pop() # pops off an untried action
         #next_state = self.game_copy.update_game(action) # calls move function on the action to get next_state. Calls MOVE in GameLogic object
         child_node = MonteCarlo(parent=current_node, action_label=action) # parent_action=action, state=next_state,  # instantiates a new node from next state and the action selected
@@ -161,7 +162,7 @@ class TurnEngine():
 
             #print("Getting possible moves")
             possible_moves = self.game_copy.get_legal_actions() # call to get legal moves. Calls GET_LEGAL_ACTIONS in GameLogic object
-            print(possible_moves)
+            #print(possible_moves)
 
             #action = self.rollout_policy(possible_moves) # Calls ROLLOUT_POLICY in case needs more complicated
             action = possible_moves[np.random.randint(len(possible_moves))] # call random move from possible moves
@@ -170,7 +171,7 @@ class TurnEngine():
             self.game_copy.update_game(action) # takes action just pulled at random. Calls MOVE in GameLogic object
             #print("Updating game with move")
 
-        print("This simulation has ended; returning result")
+        #print("This simulation has ended; returning result")
         return self.game_copy.game_result() # returns game_result when game is flagged over. Calls GAME_RESULT in GameLogic object
 
     def backpropogate(self, reward, node):
@@ -180,7 +181,7 @@ class TurnEngine():
         win stats/scores/etc are incrememnted as needed
         '''
 
-        print("Now entering backpropogation function")
+        #print("Now entering backpropogation function")
         #print(node.number_of_visits)
         #print(node.results[0])
 
@@ -241,15 +242,24 @@ class MonteCarlo():
         return self.children[np.argmax(choices_weights)] # gets index of max score and sends back identity of child
 
 class SimpleArrayGame():
+    '''
+    Game rules:
+    There is an array of 5x5 zeros
+    Each round, the player puts a 1 in a specific slot of the array
+    When any column sums to 5, the game is over
+    The score is the index of the column that was filled
     
+    '''
+
     def __init__(self):
-        self._state = np.array([0,0,0])
+        self._state = np.zeros((5, 5))
 
     def update_game(self, action):
         '''
         Modify according to your game or 
         needs. 
         '''
+        action = tuple(action)
         self._state[action] = 1
         return self._state
 
@@ -257,7 +267,8 @@ class SimpleArrayGame():
         '''
         report on currently available actions after checking board space
         '''
-        return [i for i in range(len(self._state)) if self._state[i] == 0]
+        #return [i for i in range(len(self._state)) if self._state[i] == 0]
+        return list(np.argwhere(self._state == 0))
 
     def is_game_over(self):
         '''
@@ -266,7 +277,7 @@ class SimpleArrayGame():
         and depends on your game. Returns
         true or false
         '''
-        return np.count_nonzero(self._state) > 1
+        return np.any(self._state.sum(axis=0)==5)
     
     def game_result(self):
         '''
@@ -274,15 +285,9 @@ class SimpleArrayGame():
         on your state corresponding to win,
             tie or a loss.
         '''
-        if self._state[0]==1:         
-            print("Score is 1")
-            return 1
-        if self._state[1]==1:
-            print("Score is -1")
-            return -1
-        if self._state[2]==1:
-            print("Score is 0")
-            return 0    
+        finished_array = self._state.sum(axis=0)
+        return np.argmax(finished_array)
+
 
 game = GameEngine()
 game.play_game()
