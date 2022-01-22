@@ -8,28 +8,40 @@ from simple_array_game import SimpleArrayGame as Game
 
 class GameEngine():
     
-    def __init__(self):
+    def __init__(self, players):
         '''
         Instantiates the game logic and the root monte carlo node
         '''    
         self.game = Game()
         self.state = self.game._state
+        self.players = {}
+        
+        for i in range(players):
+            self.players[i] = Player()
+        
+        print("Initializing game for "+str(players)+" players")
 
     def get_legal_actions(self):
         '''
         Hook #1
         report on currently available actions after checking board space
         returns list of actions
+
         '''
         return self.game.get_legal_actions()
 
-    def update_game(self, action):
+    def update_game(self, action, player):
         '''
         Hook #2
         Send action to game and get updated game state
         returns game._state
+
+        Also needs to pass player id !
+
+        Need a way to designate when the player's turn is over
+
         '''
-        return self.game.update_game(action)
+        return self.game.update_game(action, player)
 
     def is_game_over(self):
         '''
@@ -58,11 +70,11 @@ class GameEngine():
 
         while not self.game.is_game_over():
             
-            self.turn += 1
-            self.sims_this_turn = int(self.simulations/(self.turn * 2))
-
             print("New Turn. Current board state:")
             print(self.state)
+
+            self.turn += 1
+            self.sims_this_turn = int(self.simulations/(self.turn * 2))
 
             legal_actions=self.game.get_legal_actions()
 
@@ -72,7 +84,7 @@ class GameEngine():
 
             #print("filling: "+str(self.action))
 
-            self.state = self.game.update_game(self.action) # updates the true game state with the action
+            self.state = self.game.update_game(self.action, 0) # updates the true game state with the action
 
             # opponent takes turn. commented out because we don't need that right now.
             #possible_moves = self.game.get_legal_actions()
@@ -90,7 +102,7 @@ class MonteCarloEngine():
         '''
         Instantiates root monte carlo node
         '''    
-        self.root = MonteCarlo(legal_actions=legal_actions) # parent_action=None, state=self.game._state,
+        self.root = MonteCarloNode(legal_actions=legal_actions) # parent_action=None, state=self.game._state,
 
     def play_turn(self, num_sims, game):
         '''
@@ -101,7 +113,7 @@ class MonteCarloEngine():
         2. Rollout game (Simulation)
         3. Backpropogate
 
-        Returns the optimal turn choice for the game state it was provided
+        Returns the optimal turn action for the game state it was provided
         '''
         print("Starting turn calculation with "+str(num_sims)+" sims")
 
@@ -110,14 +122,13 @@ class MonteCarloEngine():
             # COPY THE GAME STATE HERE AND ROLL OUT ON IT NOT THE REAL GAME
             self.game_copy = copy.deepcopy(game)
 
-            v = self._tree_policy(self.root) # call TREE_POLICY to select the node to rollout. v is a NODE
-            #print("Rollout node: "+str(v))
+            rollout_node = self._tree_policy(self.root) # call TREE_POLICY to select the node to rollout. v is a NODE
 
             reward = self.rollout() # call ROLLOUT on the node v. Starts from node v and takes legal actions until the game ends. Gets the rewards
             #print("Reward: "+str(reward))
 
             #print(v)
-            self.backpropogate(reward, v) # backpropogates with the reward. Calls BACKPROPOGATE
+            self.backpropogate(reward, rollout_node) # backpropogates with the reward. Calls BACKPROPOGATE
     
         selected_node = self.root.best_child() # returns the best child node to the main function. Calls BEST_CHILD
         best_action = selected_node.action_label
@@ -154,8 +165,8 @@ class MonteCarloEngine():
         '''
         #print("Expanding nodes")
         action = current_node._untried_actions.pop() # pops off an untried action
-        #next_state = self.game_copy.update_game(action) # calls move function on the action to get next_state. Calls MOVE in GameLogic object
-        child_node = MonteCarlo(parent=current_node, action_label=action) # parent_action=action, state=next_state,  # instantiates a new node from next state and the action selected
+        self.state = self.game_copy.update_game(action) # calls move function on the action to get next_state. Calls MOVE in GameLogic object
+        child_node = MonteCarloNode(parent=current_node, action_label=action) # parent_action=action, state=next_state,  # instantiates a new node from next state and the action selected
         current_node.children.append(child_node) # appends this new child node to the current node's list of children
         #return child_node
 
@@ -172,7 +183,7 @@ class MonteCarloEngine():
             #action = self.rollout_policy(possible_moves) # Calls ROLLOUT_POLICY in case needs more complicated
             action = possible_moves[np.random.randint(len(possible_moves))] # call random move from possible moves
             #print(action)
-            self.game_copy.update_game(action) # takes action just pulled at random. Calls MOVE in GameLogic object
+            self.game_copy.update_game(action, 0) # takes action just pulled at random. Calls MOVE in GameLogic object
 
         #print("This simulation has ended; returning result")
         return self.game_copy.game_result() # returns game_result when game is flagged over. Calls GAME_RESULT in GameLogic object
@@ -197,7 +208,7 @@ class MonteCarloEngine():
             self.backpropogate(reward, node.parent) # call backpropogate on the parent, so this will continue until root note which has no parent
 
 
-class MonteCarlo():
+class MonteCarloNode():
 
     def __init__(self, parent=None, action_label = None, legal_actions=None): #parent_action=None, state=None, 
         #self.state = state # board state, in tic tac toe is 3x3 array. (defined by user)
@@ -232,8 +243,10 @@ class MonteCarlo():
 
         return self.children[np.argmax(choices_weights)] # gets index of max score and sends back identity of child
 
+class Player():
+    def __init__(self):
+        self.score = 0
 
 
-
-game = GameEngine()
-game.play_game()
+game = GameEngine(2)
+#game.play_game()
