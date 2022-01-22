@@ -2,34 +2,33 @@
 
 import numpy as np
 import copy
-
-# change the following import file and class to bring in different game logic
 from simple_array_game import SimpleArrayGame as Game
 
+
 class GameEngine():
-    
+
     def __init__(self):
         '''
         Instantiates the game logic and the root monte carlo node
-        '''    
+        '''
         self.game = Game()
         self.state = self.game._state
 
-    def get_legal_actions(self):
-        '''
-        Hook #1
-        report on currently available actions after checking board space
-        returns list of actions
-        '''
-        return self.game.get_legal_actions()
-
     def update_game(self, action):
         '''
-        Hook #2
+        Hook #1
         Send action to game and get updated game state
         returns game._state
         '''
         return self.game.update_game(action)
+
+    def get_legal_actions(self):
+        '''
+        Hook #2
+        report on currently available actions after checking board space
+        returns list of actions
+        '''
+        return self.game.get_legal_actions()
 
     def is_game_over(self):
         '''
@@ -43,54 +42,57 @@ class GameEngine():
         Hook #4
         Returns endgame score
         '''
-        return self.game.game_result()  
+        return self.game.game_result()
 
     def play_game(self):
-
         '''
         Intializes gameplay
         Will play game until game over condition is met
         Each turn will run a MC for that turn choice
         '''
-        
-        self.simulations = 2000
+
+        self.simulations = 1000
         self.turn = 0
 
         while not self.game.is_game_over():
-            
+
             self.turn += 1
-            self.sims_this_turn = int(self.simulations/(self.turn * 2))
+            self.sims_this_turn = int(self.simulations/self.turn)
 
             print("New Turn. Current board state:")
             print(self.state)
 
-            legal_actions=self.game.get_legal_actions()
+            legal_actions = self.game.get_legal_actions()
 
-            self.current_turn = MonteCarloEngine(legal_actions)
-            self.action = self.current_turn.play_turn(self.sims_this_turn, self.game) # sends number of simulations and current game to turn engine
-                                                                    # gets back the optimal action
+            self.current_turn = TurnEngine(legal_actions)
+            # sends number of simulations and current game to turn engine
+            self.action = self.current_turn.play_turn(
+                self.sims_this_turn, self.game)
+            # gets back the optimal action
 
             #print("filling: "+str(self.action))
 
-            self.state = self.game.update_game(self.action) # updates the true game state with the action
+            # updates the true game state with the action
+            self.state = self.game.update_game(self.action)
 
             # opponent takes turn. commented out because we don't need that right now.
             #possible_moves = self.game.get_legal_actions()
             #action = possible_moves[np.random.randint(len(possible_moves))]
             #self.state = self.game.update_game(action)
-        
+
         self.end_score = self.game.game_result()
         print(self.game._state)
         print(self.end_score)
 
 
-class MonteCarloEngine():
-    
+class TurnEngine():
+
     def __init__(self, legal_actions=None):
         '''
         Instantiates root monte carlo node
-        '''    
-        self.root = MonteCarlo(legal_actions=legal_actions) # parent_action=None, state=self.game._state,
+        '''
+        self.root = MonteCarlo(
+            legal_actions=legal_actions)  # parent_action=None, state=self.game._state,
 
     def play_turn(self, num_sims, game):
         '''
@@ -105,21 +107,25 @@ class MonteCarloEngine():
         '''
         print("Starting turn calculation with "+str(num_sims)+" sims")
 
-        for i in range(num_sims): # how many simulations with this initial state?
+        for i in range(num_sims):  # how many simulations with this initial state?
 
             # COPY THE GAME STATE HERE AND ROLL OUT ON IT NOT THE REAL GAME
             self.game_copy = copy.deepcopy(game)
 
-            v = self._tree_policy(self.root) # call TREE_POLICY to select the node to rollout. v is a NODE
+            # call TREE_POLICY to select the node to rollout. v is a NODE
+            v = self._tree_policy(self.root)
             #print("Rollout node: "+str(v))
 
-            reward = self.rollout() # call ROLLOUT on the node v. Starts from node v and takes legal actions until the game ends. Gets the rewards
+            # call ROLLOUT on the node v. Starts from node v and takes legal actions until the game ends. Gets the rewards
+            reward = self.rollout()
             #print("Reward: "+str(reward))
 
-            #print(v)
-            self.backpropogate(reward, v) # backpropogates with the reward. Calls BACKPROPOGATE
-    
-        selected_node = self.root.best_child() # returns the best child node to the main function. Calls BEST_CHILD
+            # print(v)
+            # backpropogates with the reward. Calls BACKPROPOGATE
+            self.backpropogate(reward, v)
+
+        # returns the best child node to the main function. Calls BEST_CHILD
+        selected_node = self.root.best_child()
         best_action = selected_node.action_label
         print("Best move is: "+str(best_action))
 
@@ -133,49 +139,62 @@ class MonteCarloEngine():
         current_node = node
 
         #print("Entering Tree Policy function")
-        while len(current_node.children)==0:
+        while len(current_node.children) == 0:
 
             #print("Expansion is still possible")
 
-            while len(current_node._untried_actions)!=0: # check if the current node isn't fully expanded
+            # check if the current node isn't fully expanded
+            while len(current_node._untried_actions) != 0:
                 #print("Current node is not fully expanded, expanding node")
-                self.expand(current_node) # if not expanded, expand current node
-        
+                # if not expanded, expand current node
+                self.expand(current_node)
+
         # logic here is only expanding one node no matter what, i think
         # if current node is expanded, find best child
         #print("Current node is fully expanded, getting best child")
-        current_node = current_node.best_child() # calls BEST_CHILD to get best scoring leaf
-                
+        # calls BEST_CHILD to get best scoring leaf
+        current_node = current_node.best_child()
+
         return current_node
-    
+
     def expand(self, current_node):
         '''
         From the present state we expand the nodes to the next possible states
         '''
         #print("Expanding nodes")
-        action = current_node._untried_actions.pop() # pops off an untried action
-        #next_state = self.game_copy.update_game(action) # calls move function on the action to get next_state. Calls MOVE in GameLogic object
-        child_node = MonteCarlo(parent=current_node, action_label=action) # parent_action=action, state=next_state,  # instantiates a new node from next state and the action selected
-        current_node.children.append(child_node) # appends this new child node to the current node's list of children
-        #return child_node
+        action = current_node._untried_actions.pop()  # pops off an untried action
+        # next_state = self.game_copy.update_game(action) # calls move function on the action to get next_state. Calls MOVE in GameLogic object
+        # parent_action=action, state=next_state,  # instantiates a new node from next state and the action selected
+        child_node = MonteCarlo(parent=current_node, action_label=action)
+        # appends this new child node to the current node's list of children
+        current_node.children.append(child_node)
+        # return child_node
 
     def rollout(self):
         '''
         On rollout call, the entire game is simulated to terminus and the outcome of the game is returned
         '''
         #print("Now entering rollout function")
-        while not self.game_copy.is_game_over(): # checks the state for game over boolean and loops if it's false
+        while not self.game_copy.is_game_over():  # checks the state for game over boolean and loops if it's false
             #print("Game is not over")
 
             #print("Getting possible moves")
-            possible_moves = self.game_copy.get_legal_actions() # call to get legal moves. Calls GET_LEGAL_ACTIONS in GameLogic object
-            #action = self.rollout_policy(possible_moves) # Calls ROLLOUT_POLICY in case needs more complicated
-            action = possible_moves[np.random.randint(len(possible_moves))] # call random move from possible moves
-            #print(action)
-            self.game_copy.update_game(action) # takes action just pulled at random. Calls MOVE in GameLogic object
+            # call to get legal moves. Calls GET_LEGAL_ACTIONS in GameLogic object
+            possible_moves = self.game_copy.get_legal_actions()
+            # print(possible_moves)
+
+            # action = self.rollout_policy(possible_moves) # Calls ROLLOUT_POLICY in case needs more complicated
+            # call random move from possible moves
+            action = possible_moves[np.random.randint(len(possible_moves))]
+            #print("Picked random action: "+str(action))
+
+            # takes action just pulled at random. Calls MOVE in GameLogic object
+            self.game_copy.update_game(action)
+            #print("Updating game with move")
 
         #print("This simulation has ended; returning result")
-        return self.game_copy.game_result() # returns game_result when game is flagged over. Calls GAME_RESULT in GameLogic object
+        # returns game_result when game is flagged over. Calls GAME_RESULT in GameLogic object
+        return self.game_copy.game_result()
 
     def backpropogate(self, reward, node):
         '''
@@ -185,37 +204,42 @@ class MonteCarloEngine():
         '''
 
         #print("Now entering backpropogation function")
-        #print(node.number_of_visits)
-        #print(node.total_score[0])
+        # print(node.number_of_visits)
+        # print(node.total_score[0])
 
-        node.number_of_visits += 1 # updates self with number of visits
-        node.total_score += reward # updates self with reward (sent in from backpropogate)
-        #print("Updated "+str(node)+" total_score to "+str(node.total_score))
+        node.number_of_visits += 1  # updates self with number of visits
+        # updates self with reward (sent in from backpropogate)
+        node.total_score += reward
+        #print("Updated self total_score")
 
-        if node.parent: # if this node has a parent,
+        if node.parent:  # if this node has a parent,
             #print("Backpropogating parent node")
-            self.backpropogate(reward, node.parent) # call backpropogate on the parent, so this will continue until root note which has no parent
+            # call backpropogate on the parent, so this will continue until root note which has no parent
+            self.backpropogate(reward, node.parent)
 
 
 class MonteCarlo():
 
-    def __init__(self, parent=None, action_label = None, legal_actions=None): #parent_action=None, state=None, 
-        #self.state = state # board state, in tic tac toe is 3x3 array. (defined by user)
-        self.parent = parent # none for the root node and for other nodes is = node derived from. First turn will be none
-        #self.parent_action = parent_action # none for root but is = parent action for other nodes
+    # parent_action=None, state=None,
+    def __init__(self, parent=None, action_label=None, legal_actions=None):
+        # self.state = state # board state, in tic tac toe is 3x3 array. (defined by user)
+        # none for the root node and for other nodes is = node derived from. First turn will be none
+        self.parent = parent
+        # self.parent_action = parent_action # none for root but is = parent action for other nodes
         self.action_label = action_label
-        self.children = [] # all possible actions from current node
-        self.number_of_visits = 0 # number of times current node is visited
+        self.children = []  # all possible actions from current node
+        self.number_of_visits = 0  # number of times current node is visited
         self.total_score = 0
         self._untried_actions = None
-        self._untried_actions = legal_actions # call to get legal moves. Calls GET_LEGAL_ACTIONS in GameLogic object
+        # call to get legal moves. Calls GET_LEGAL_ACTIONS in GameLogic object
+        self._untried_actions = legal_actions
         return
 
     def node_visits(self):
         # returns number of times that node has been visited
         return self.number_of_visits
 
-    def best_child(self, c_param=2):
+    def best_child(self, c_param=3):
         '''
         selects best child node from available array
         first param is exploitation and second is exploration
@@ -225,14 +249,14 @@ class MonteCarlo():
         choices_weights = []
         for c in self.children:
             try:
-                score = (c.total_score / c.node_visits()) + c_param * np.sqrt((np.log(self.node_visits())) / c.node_visits())
+                score = (c.total_score / c.node_visits()) + c_param * \
+                    np.sqrt((np.log(self.node_visits())) / c.node_visits())
                 choices_weights.append(score)
             except:
                 choices_weights.append(100)
 
-        return self.children[np.argmax(choices_weights)] # gets index of max score and sends back identity of child
-
-
+        # gets index of max score and sends back identity of child
+        return self.children[np.argmax(choices_weights)]
 
 
 game = GameEngine()
