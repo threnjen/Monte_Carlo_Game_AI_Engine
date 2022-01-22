@@ -39,7 +39,7 @@ class Game():
         _____
         {self.positions[6]}|{self.positions[7]}|{self.positions[8]}"""
 
-        print(self._state)
+        #print(self._state)
 
     def __init__(self):
         """Calling the game doesn't create any unique starting conditions,
@@ -78,7 +78,7 @@ class Game():
         for pos in range(len(self.positions)):
             if self.positions[pos] == " ":
                 self.legal_actions[i] = pos
-        return self.legal_actions
+        return list(self.legal_actions.keys())
 
     def update_game(self, action, player):
         pos = self.legal_actions[action]
@@ -104,7 +104,7 @@ class Game():
 
         return not avail_actions
 
-    def game_results(self):
+    def game_result(self):
         return self.scores
 
     def play_game(self):

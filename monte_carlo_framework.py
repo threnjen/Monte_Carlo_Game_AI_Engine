@@ -22,16 +22,16 @@ class GameEngine():
             self.players[i] = Player()
         
         print("Initializing game for "+str(players)+" players")
-        print(self.start_player)
+        #print(self.start_player)
 
-    def update_game(self, action):
+    def get_legal_moves(self):
         '''
         Hook #1
         report on currently available actions after checking board space
         returns list of actions
 
         '''
-        return self.game.update_game(action)
+        return self.game.get_legal_moves()
 
     def update_game(self, action, player):
         '''
@@ -69,13 +69,13 @@ class GameEngine():
 
         self.simulations = 1000
         self.turn = 0
-        
+
         while not self.game.is_game_over():
             
             for player in range(players):
 
                 print("New Turn. Current board state:")
-                print(self.state)
+                print(self.game._state)
 
                 self.turn += 1
                 self.sims_this_turn = int(self.simulations/(self.turn * 2))
@@ -92,11 +92,15 @@ class GameEngine():
 
                 self.state = self.game.update_game(self.action, player) # updates the true game state with the action
 
+                if self.game.is_game_over():
+                    break
+
             # opponent takes turn. commented out because we don't need that right now.
             #possible_moves = self.game.get_legal_actions()
             #action = possible_moves[np.random.randint(len(possible_moves))]
             #self.state = self.game.update_game(action)
 
+        print("Game over")
         self.scores = self.game.game_result()
         print(self.game._state)
         print(self.scores)
@@ -132,7 +136,7 @@ class TurnEngine():
             rollout_node = self._tree_policy(self.root) # call TREE_POLICY to select the node to rollout. v is a NODE
 
             # call ROLLOUT on the node v. Starts from node v and takes legal actions until the game ends. Gets the rewards
-            reward = self.rollout()
+            reward = self.rollout(self.player)
             #print("Reward: "+str(reward))
 
             #print(v)
@@ -181,7 +185,7 @@ class TurnEngine():
         current_node.children.append(child_node) # appends this new child node to the current node's list of children
         #return child_node
 
-    def rollout(self):
+    def rollout(self, player):
         '''
         On rollout call, the entire game is simulated to terminus and the outcome of the game is returned
         '''
@@ -194,11 +198,13 @@ class TurnEngine():
             #action = self.rollout_policy(possible_moves) # Calls ROLLOUT_POLICY in case needs more complicated
             action = possible_moves[np.random.randint(len(possible_moves))] # call random move from possible moves
             #print(action)
-            self.game_copy.update_game(action, self.player) # takes action just pulled at random. Calls MOVE in GameLogic object
+            self.game_copy.update_game(action, player) # takes action just pulled at random. Calls MOVE in GameLogic object
 
         #print("This simulation has ended; returning result")
         # returns game_result when game is flagged over. Calls GAME_RESULT in GameLogic object
-        return self.game_copy.game_result()
+        self.scores = self.game_copy.game_result()
+        return self.scores[player]
+
 
     def backpropogate(self, reward, node):
         '''

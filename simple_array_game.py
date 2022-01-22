@@ -42,5 +42,7 @@ class SimpleArrayGame():
         '''
         Returns a score which correlated to the column, so rightmost column scores highest
         '''
+        scores = {}
         finished_array = self._state.sum(axis=0)
-        return np.argmax(finished_array)
+        scores[0] = np.argmax(finished_array)
+        return scores
