@@ -40,9 +40,7 @@ class SimpleArrayGame():
     
     def game_result(self):
         '''
-        Returns 1 or 0 or -1 depending
-        on your state corresponding to win,
-            tie or a loss.
+        Returns a score which correlated to the column, so rightmost column scores highest
         '''
         finished_array = self._state.sum(axis=0)
         return np.argmax(finished_array)
