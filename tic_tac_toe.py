@@ -32,11 +32,14 @@ class Game():
     def draw_board(self):
         """Just draw an ASCII board.
         """
-        print(f"{self.positions[0]}|{self.positions[1]}|{self.positions[2]}")
-        print("_____")
-        print(f"{self.positions[3]}|{self.positions[4]}|{self.positions[5]}")
-        print("_____")
-        print(f"{self.positions[6]}|{self.positions[7]}|{self.positions[8]}")
+        self._state = f"""\n
+        {self.positions[0]}|{self.positions[1]}|{self.positions[2]}       
+        _____
+        {self.positions[3]}|{self.positions[4]}|{self.positions[5]}
+        _____
+        {self.positions[6]}|{self.positions[7]}|{self.positions[8]}"""
+
+        print(self._state)
 
     def __init__(self):
         """Calling the game doesn't create any unique starting conditions,
@@ -48,6 +51,8 @@ class Game():
         self.scores = {0: 0, 1: 0}
         self.game_over = False
         self.current_player_num = 0
+        self._state = ""
+        self.draw_board()
 
     def make_move(self, pos, current_player_num):
         """Makes a move on the board and draws it
@@ -58,6 +63,8 @@ class Game():
         """
         self.positions[pos] = self.players[current_player_num].mark
         self.draw_board()
+        self.current_player_num = (
+            self.current_player_num + 1) % Game.player_count
 
     def get_legal_actions(self):
         """Gets available moves in a dictionary.
@@ -88,12 +95,11 @@ class Game():
         for arr in Game.win_arr.values():
             win_arr = [self.positions[num] for num in arr]
             if win_arr.count(win_arr[0]) == len(win_arr) and win_arr[0] != " ":
-                if self.players[self.current_player_num].mark == win_arr[0]:
-                    self.scores[self.current_player_num] = 10
-                    self.scores[self.current_player_num] = -10
-                else:
-                    self.scores[self.current_player_num] = -10
-                    self.scores[self.current_player_num] = 10
+                for player in self.players:
+                    if self.players[player].mark == win_arr[0]:
+                        self.scores[player] = 10
+                    else:
+                        self.scores[player] = -10
                 return True
 
         return not avail_actions
@@ -105,8 +111,7 @@ class Game():
         while not self.is_game_over():
             pos = int(input("Select a move.  "))
             self.make_move(pos, self.current_player_num)
-            self.current_player_num = (
-                self.current_player_num + 1) % Game.player_count
+
         for player_num in self.scores.keys():
             print(
                 f"{self.players[player_num].mark}:  {self.scores[player_num]}")
