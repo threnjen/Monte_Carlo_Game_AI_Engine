@@ -2,6 +2,8 @@
 
 import numpy as np
 import copy
+
+# change the following import file and class to bring in different game logic
 from simple_array_game import SimpleArrayGame as Game
 
 class GameEngine():
@@ -13,21 +15,21 @@ class GameEngine():
         self.game = Game()
         self.state = self.game._state
 
-    def update_game(self, action):
-        '''
-        Hook #1
-        Send action to game and get updated game state
-        returns game._state
-        '''
-        return self.game.update_game(action)
-
     def get_legal_actions(self):
         '''
-        Hook #2
+        Hook #1
         report on currently available actions after checking board space
         returns list of actions
         '''
         return self.game.get_legal_actions()
+
+    def update_game(self, action):
+        '''
+        Hook #2
+        Send action to game and get updated game state
+        returns game._state
+        '''
+        return self.game.update_game(action)
 
     def is_game_over(self):
         '''
@@ -51,20 +53,20 @@ class GameEngine():
         Each turn will run a MC for that turn choice
         '''
         
-        self.simulations = 1000
+        self.simulations = 2000
         self.turn = 0
 
         while not self.game.is_game_over():
             
             self.turn += 1
-            self.sims_this_turn = int(self.simulations/self.turn)
+            self.sims_this_turn = int(self.simulations/(self.turn * 2))
 
             print("New Turn. Current board state:")
             print(self.state)
 
             legal_actions=self.game.get_legal_actions()
 
-            self.current_turn = TurnEngine(legal_actions)
+            self.current_turn = MonteCarloEngine(legal_actions)
             self.action = self.current_turn.play_turn(self.sims_this_turn, self.game) # sends number of simulations and current game to turn engine
                                                                     # gets back the optimal action
 
@@ -82,7 +84,7 @@ class GameEngine():
         print(self.end_score)
 
 
-class TurnEngine():
+class MonteCarloEngine():
     
     def __init__(self, legal_actions=None):
         '''
@@ -167,14 +169,10 @@ class TurnEngine():
 
             #print("Getting possible moves")
             possible_moves = self.game_copy.get_legal_actions() # call to get legal moves. Calls GET_LEGAL_ACTIONS in GameLogic object
-            #print(possible_moves)
-
             #action = self.rollout_policy(possible_moves) # Calls ROLLOUT_POLICY in case needs more complicated
             action = possible_moves[np.random.randint(len(possible_moves))] # call random move from possible moves
-            #print("Picked random action: "+str(action))
-
+            #print(action)
             self.game_copy.update_game(action) # takes action just pulled at random. Calls MOVE in GameLogic object
-            #print("Updating game with move")
 
         #print("This simulation has ended; returning result")
         return self.game_copy.game_result() # returns game_result when game is flagged over. Calls GAME_RESULT in GameLogic object
@@ -192,7 +190,7 @@ class TurnEngine():
 
         node.number_of_visits += 1 # updates self with number of visits
         node.total_score += reward # updates self with reward (sent in from backpropogate)
-        #print("Updated self total_score")
+        #print("Updated "+str(node)+" total_score to "+str(node.total_score))
 
         if node.parent: # if this node has a parent,
             #print("Backpropogating parent node")
@@ -217,7 +215,7 @@ class MonteCarlo():
         # returns number of times that node has been visited
         return self.number_of_visits
 
-    def best_child(self, c_param=3):
+    def best_child(self, c_param=2):
         '''
         selects best child node from available array
         first param is exploitation and second is exploration
