@@ -2,8 +2,8 @@
 
 import numpy as np
 import copy
-#from simple_array_game import SimpleArrayGame as Game
-from tic_tac_toe import Game
+from simple_array_game import SimpleArrayGame as Game
+#from tic_tac_toe import Game
 from random import randint
 
 
@@ -69,7 +69,7 @@ class GameEngine():
         Each turn will run a MC for that turn choice
         '''
 
-        self.simulations = 10
+        self.simulations = 1
         self.turn = 0
 
         while not self.game.is_game_over():
@@ -126,14 +126,13 @@ class TurnEngine():
 
             while not self.game_copy.is_game_over():
 
-                self._rollout_node = self._selection(self.root) # call TREE_POLICY to select the node to _rollout. v is a NODE
+                self.rollout_node = self._selection(self.root) # call _selection to mode to node to roll out, taking the moves along the way
 
-                # call _rollout on the node v. Starts from node v and takes legal actions until the game ends. Gets the rewards
+                # call _rollout on the node
                 self.reward = self._rollout(self.bot)
                 #print("Reward: "+str(reward))
 
-                #print(v)
-                self._backpropogate(self.reward, self._rollout_node) # _backpropogates with the reward. Calls _backpropogate
+                self._backpropogate(self.reward, self.rollout_node) # _backpropogates with the reward starting from the rollout_node
     
         self.selected_node = self.root.best_child() # returns the best child node to the main function. Calls BEST_CHILD
         self.best_action = self.selected_node.node_action
@@ -169,11 +168,12 @@ class TurnEngine():
             # this loop repeats until the current node has no child nodes aka we have reached a leaf node
         
         # we have reached a leaf node
-        if self.current_node.number_of_visits == 0: # if this leaf has never been visited, this will be our current node
+        if self.current_node.number_of_visits == .001: # if this leaf has never been visited, this will be our current node
             return self.current_node
         else:
             try:
                 self._expansion(self.current_node) # _expansion the current leaf
+                print("Getting best child of newly expanded node")
                 self.current_node = self.current_node.best_child() # get the best child of the current leaf
                 move_node(self.current_node)
             except: 
@@ -181,10 +181,6 @@ class TurnEngine():
             # take action on the node before returning
             return self.current_node # return the child
 
-        # logic here is only _expansioning one node no matter what, i think
-        # if current node is _expansioned, find best child
-        #print("Current node is fully _expansioned, getting best child")
-        # calls BEST_CHILD to get best scoring leaf
 
     def _expansion(self, current_node):
         '''
@@ -270,18 +266,14 @@ class MonteCarloNode():
         self.node_action = node_action # none for root but is = parent action for other nodes
         #self.action_label = action_label
         self.children = []  # all possible actions from current node
-        self.number_of_visits = 0  # number of times current node is visited
+        self.number_of_visits = .001  # number of times current node is visited
         self.total_score = 0
         #self._untried_actions = None
         # call to get legal moves. Calls GET_LEGAL_ACTIONS in GameLogic object
         #self._untried_actions = legal_actions
         return
 
-    def node_visits(self):
-        # returns number of times that node has been visited
-        return self.number_of_visits
-
-    def best_child(self, c_param=3):
+    def best_child(self, c_param=5):
         '''
         selects best child node from available array
         first param is exploitation and second is exploration
@@ -290,12 +282,11 @@ class MonteCarloNode():
         # makes an array of the leaf calculations
         choices_weights = []
         for c in self.children:
-            try:
-                score = (c.total_score / c.node_visits()) + c_param * \
-                    np.sqrt((np.log(self.node_visits())) / c.node_visits())
-                choices_weights.append(score)
-            except:
-                choices_weights.append(100)
+            
+            score = (c.total_score / c.number_of_visits) + c_param * (np.sqrt(abs(np.log(self.number_of_visits)) / c.number_of_visits))
+            choices_weights.append(score)
+            print(c, score)
+        #print(choices_weights)
 
         return self.children[np.argmax(choices_weights)] # gets index of max score and sends back identity of child
 
