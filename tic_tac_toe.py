@@ -188,6 +188,6 @@ class Game():
     #     self.play_game(bot_sim)
 
 
-test = Game()
+#test = Game()
 
-test.play_game()
+#test.play_game()
