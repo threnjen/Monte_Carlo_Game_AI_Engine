@@ -1,9 +1,8 @@
 # this file is the custom monte carlo framework for our AI to plug into
 
-
 import numpy as np
 import copy
-from collections import defaultdict
+from simple_array_game import SimpleArrayGame as Game
 
 class GameEngine():
     
@@ -11,7 +10,7 @@ class GameEngine():
         '''
         Instantiates the game logic and the root monte carlo node
         '''    
-        self.game = SimpleArrayGame()
+        self.game = Game()
         self.state = self.game._state
 
     def update_game(self, action):
@@ -52,18 +51,24 @@ class GameEngine():
         Each turn will run a MC for that turn choice
         '''
         
+        self.simulations = 1000
+        self.turn = 0
+
         while not self.game.is_game_over():
             
+            self.turn += 1
+            self.sims_this_turn = int(self.simulations/self.turn)
+
             print("New Turn. Current board state:")
             print(self.state)
 
             legal_actions=self.game.get_legal_actions()
 
             self.current_turn = TurnEngine(legal_actions)
-            self.action = self.current_turn.play_turn(100, self.game) # sends number of simulations and current game to turn engine
+            self.action = self.current_turn.play_turn(self.sims_this_turn, self.game) # sends number of simulations and current game to turn engine
                                                                     # gets back the optimal action
 
-            print("filling: "+str(self.action))
+            #print("filling: "+str(self.action))
 
             self.state = self.game.update_game(self.action) # updates the true game state with the action
 
@@ -112,7 +117,7 @@ class TurnEngine():
             #print(v)
             self.backpropogate(reward, v) # backpropogates with the reward. Calls BACKPROPOGATE
     
-        selected_node = self.root.best_child(c_param=2) # returns the best child node to the main function. Calls BEST_CHILD
+        selected_node = self.root.best_child() # returns the best child node to the main function. Calls BEST_CHILD
         best_action = selected_node.action_label
         print("Best move is: "+str(best_action))
 
@@ -183,11 +188,11 @@ class TurnEngine():
 
         #print("Now entering backpropogation function")
         #print(node.number_of_visits)
-        #print(node.results[0])
+        #print(node.total_score[0])
 
         node.number_of_visits += 1 # updates self with number of visits
-        node.results += reward # updates self with reward (sent in from backpropogate)
-        #print("Updated self results")
+        node.total_score += reward # updates self with reward (sent in from backpropogate)
+        #print("Updated self total_score")
 
         if node.parent: # if this node has a parent,
             #print("Backpropogating parent node")
@@ -203,9 +208,7 @@ class MonteCarlo():
         self.action_label = action_label
         self.children = [] # all possible actions from current node
         self.number_of_visits = 0 # number of times current node is visited
-        self.results = 0
-        #self.results[1] = 0 # in this tic tac toe example, this is the win counter
-        #self.results[-1] = 0 # in this tic tac toe example, this is the loss counter
+        self.total_score = 0
         self._untried_actions = None
         self._untried_actions = legal_actions # call to get legal moves. Calls GET_LEGAL_ACTIONS in GameLogic object
         return
@@ -214,7 +217,7 @@ class MonteCarlo():
         # returns number of times that node has been visited
         return self.number_of_visits
 
-    def best_child(self, c_param=2):
+    def best_child(self, c_param=3):
         '''
         selects best child node from available array
         first param is exploitation and second is exploration
@@ -224,59 +227,14 @@ class MonteCarlo():
         choices_weights = []
         for c in self.children:
             try:
-                score = (c.results / c.node_visits()) + c_param * np.sqrt((np.log(self.node_visits())) / c.node_visits())
+                score = (c.total_score / c.node_visits()) + c_param * np.sqrt((np.log(self.node_visits())) / c.node_visits())
                 choices_weights.append(score)
             except:
-                choices_weights.append(1000)
+                choices_weights.append(100)
 
         return self.children[np.argmax(choices_weights)] # gets index of max score and sends back identity of child
 
-class SimpleArrayGame():
-    '''
-    Game rules:
-    There is an array of 5x5 zeros
-    Each round, the player puts a 1 in a specific slot of the array
-    When any column sums to 5, the game is over
-    The score is the index of the column that was filled
-    
-    '''
 
-    def __init__(self):
-        self._state = np.zeros((5, 5))
-
-    def update_game(self, action):
-        '''
-        Modify according to your game or 
-        needs. 
-        '''
-        action = tuple(action)
-        self._state[action] = 1
-        return self._state
-
-    def get_legal_actions(self):
-        '''
-        report on currently available actions after checking board space
-        '''
-        #return [i for i in range(len(self._state)) if self._state[i] == 0]
-        return list(np.argwhere(self._state == 0))
-
-    def is_game_over(self):
-        '''
-        Modify according to your game or 
-        needs. It is the game over condition
-        and depends on your game. Returns
-        true or false
-        '''
-        return np.any(self._state.sum(axis=0)==5)
-    
-    def game_result(self):
-        '''
-        Returns 1 or 0 or -1 depending
-        on your state corresponding to win,
-            tie or a loss.
-        '''
-        finished_array = self._state.sum(axis=0)
-        return np.argmax(finished_array)
 
 
 game = GameEngine()
