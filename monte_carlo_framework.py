@@ -60,7 +60,7 @@ class GameEngine():
             legal_actions=self.game.get_legal_actions()
 
             self.current_turn = TurnEngine(legal_actions)
-            self.action = self.current_turn.play_turn(10000, self.game) # sends number of simulations and current game to turn engine
+            self.action = self.current_turn.play_turn(100, self.game) # sends number of simulations and current game to turn engine
                                                                     # gets back the optimal action
 
             print("filling: "+str(self.action))
@@ -186,7 +186,7 @@ class TurnEngine():
         #print(node.results[0])
 
         node.number_of_visits += 1 # updates self with number of visits
-        node.results[reward] +=1 # updates self with reward (sent in from backpropogate)
+        node.results += reward # updates self with reward (sent in from backpropogate)
         #print("Updated self results")
 
         if node.parent: # if this node has a parent,
@@ -203,20 +203,12 @@ class MonteCarlo():
         self.action_label = action_label
         self.children = [] # all possible actions from current node
         self.number_of_visits = 0 # number of times current node is visited
-        self.results = defaultdict(int) 
-        self.results[1] = 0 # in this tic tac toe example, this is the win counter
-        self.results[-1] = 0 # in this tic tac toe example, this is the loss counter
+        self.results = 0
+        #self.results[1] = 0 # in this tic tac toe example, this is the win counter
+        #self.results[-1] = 0 # in this tic tac toe example, this is the loss counter
         self._untried_actions = None
         self._untried_actions = legal_actions # call to get legal moves. Calls GET_LEGAL_ACTIONS in GameLogic object
         return
-
-    def node_score(self):
-        '''
-        returns diff of wins and losses
-        '''
-        wins = self.results[1]
-        losses = self.results[-1]
-        return wins - losses
 
     def node_visits(self):
         # returns number of times that node has been visited
@@ -232,13 +224,11 @@ class MonteCarlo():
         choices_weights = []
         for c in self.children:
             try:
-                score = (c.node_score() / c.node_visits()) + c_param * np.sqrt((np.log(self.node_visits())) / c.node_visits())
+                score = (c.results / c.node_visits()) + c_param * np.sqrt((np.log(self.node_visits())) / c.node_visits())
                 choices_weights.append(score)
             except:
                 choices_weights.append(1000)
 
-        #choices_weights = [(c.node_score() / c.node_visits()) + c_param * np.sqrt((np.log(self.node_visits())) / c.node_visits()) for c in self.children] 
-                        #calculates scores for child nodes
         return self.children[np.argmax(choices_weights)] # gets index of max score and sends back identity of child
 
 class SimpleArrayGame():
