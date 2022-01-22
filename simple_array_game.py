@@ -27,7 +27,7 @@ class SimpleArrayGame():
         report on currently available actions after checking board space
         '''
         #return [i for i in range(len(self._state)) if self._state[i] == 0]
-        return list(np.argwhere(self._state == 0))
+        return [list(np.argwhere(self._state == 0)), 0]
 
     def is_game_over(self):
         '''

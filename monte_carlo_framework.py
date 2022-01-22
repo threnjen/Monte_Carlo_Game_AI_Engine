@@ -2,8 +2,8 @@
 
 import numpy as np
 import copy
-#from simple_array_game import SimpleArrayGame as Game
-from tic_tac_toe import Game
+from simple_array_game import SimpleArrayGame as Game
+#from tic_tac_toe import Game
 from random import randint
 
 
@@ -16,22 +16,24 @@ class GameEngine():
         self.game = Game()
         self.state = self.game._state
         self.players = {}
-        self.start_player = randint(0,players)
         
         for i in range(players):
             self.players[i] = Player()
+
+        # change this to dynamically be the bot player when possible
+        self.bot = 0
         
         print("Initializing game for "+str(players)+" players")
         #print(self.start_player)
 
-    def get_legal_moves(self):
+    def get_legal_actions(self):
         '''
         Hook #1
         report on currently available actions after checking board space
         returns list of actions
 
         '''
-        return self.game.get_legal_moves()
+        return self.game.get_legal_actions()
 
     def update_game(self, action, player):
         '''
@@ -67,33 +69,29 @@ class GameEngine():
         Each turn will run a MC for that turn choice
         '''
 
-        self.simulations = 1000
+        self.simulations = 10
         self.turn = 0
 
         while not self.game.is_game_over():
             
-            for player in range(players):
+            print("New Turn. Current board state:")
+            print(self.game._state)
 
-                print("New Turn. Current board state:")
-                print(self.game._state)
+            self.turn += 1
+            self.sims_this_turn = int(np.ceil(self.simulations/(self.turn * 2)))
 
-                self.turn += 1
-                self.sims_this_turn = int(self.simulations/(self.turn * 2))
+            self.actions=self.game.get_legal_actions()
+            self.legal_actions = self.actions[0]
+            self.player = self.actions[1]
 
-                legal_actions=self.game.get_legal_actions()
+            self.current_turn = TurnEngine(self.legal_actions, self.player)
+            # sends number of simulations and current game to turn engine
+            self.action = self.current_turn.play_turn(self.sims_this_turn, self.game, self.bot)
+            #   gets back the optimal action
 
-                self.current_turn = TurnEngine(legal_actions, player)
-                # sends number of simulations and current game to turn engine
-                self.action = self.current_turn.play_turn(
-                    self.sims_this_turn, self.game)
-                #   gets back the optimal action
+            #print("filling: "+str(self.action))
 
-                #print("filling: "+str(self.action))
-
-                self.state = self.game.update_game(self.action, player) # updates the true game state with the action
-
-                if self.game.is_game_over():
-                    break
+            self.state = self.game.update_game(self.action, self.player) # updates the true game state with the action
 
             # opponent takes turn. commented out because we don't need that right now.
             #possible_moves = self.game.get_legal_actions()
@@ -115,7 +113,7 @@ class TurnEngine():
         self.root = MonteCarloNode(legal_actions=legal_actions) # parent_action=None, state=self.game._state,
         self.player = player
 
-    def play_turn(self, num_sims, game):
+    def play_turn(self, num_sims, game, bot):
         '''
         Received a specific game state from which to make a move
 
@@ -128,25 +126,27 @@ class TurnEngine():
         '''
         print("Starting turn calculation with "+str(num_sims)+" sims")
 
+        self.bot = bot
+
         for i in range(num_sims):  # how many simulations with this initial state?
 
             # COPY THE GAME STATE HERE AND ROLL OUT ON IT NOT THE REAL GAME
             self.game_copy = copy.deepcopy(game)
 
-            rollout_node = self._tree_policy(self.root) # call TREE_POLICY to select the node to rollout. v is a NODE
+            self.rollout_node = self._tree_policy(self.root) # call TREE_POLICY to select the node to rollout. v is a NODE
 
             # call ROLLOUT on the node v. Starts from node v and takes legal actions until the game ends. Gets the rewards
-            reward = self.rollout(self.player)
+            self.reward = self.rollout(self.bot)
             #print("Reward: "+str(reward))
 
             #print(v)
-            self.backpropogate(reward, rollout_node) # backpropogates with the reward. Calls BACKPROPOGATE
+            self.backpropogate(self.reward, self.rollout_node) # backpropogates with the reward. Calls BACKPROPOGATE
     
-        selected_node = self.root.best_child() # returns the best child node to the main function. Calls BEST_CHILD
-        best_action = selected_node.action_label
-        print("Best move is: "+str(best_action))
+        self.selected_node = self.root.best_child() # returns the best child node to the main function. Calls BEST_CHILD
+        self.best_action = self.selected_node.action_label
+        print("Best move is: "+str(self.best_action))
 
-        return best_action
+        return self.best_action
 
     def _tree_policy(self, node):
         '''
@@ -181,29 +181,37 @@ class TurnEngine():
         #print("Expanding nodes")
         action = current_node._untried_actions.pop() # pops off an untried action
         self.state = self.game_copy.update_game(action, self.player) # calls move function on the action to get next_state. Calls MOVE in GameLogic object
+
+        #### This node isn't taking in any legal actions 
         child_node = MonteCarloNode(parent=current_node, action_label=action) # parent_action=action, state=next_state,  # instantiates a new node from next state and the action selected
         current_node.children.append(child_node) # appends this new child node to the current node's list of children
         #return child_node
 
-    def rollout(self, player):
+    def rollout(self, bot):
         '''
         On rollout call, the entire game is simulated to terminus and the outcome of the game is returned
         '''
+        self.bot = bot
+
         #print("Now entering rollout function")
         while not self.game_copy.is_game_over():  # checks the state for game over boolean and loops if it's false
             #print("Game is not over")
 
             #print("Getting possible moves")
-            possible_moves = self.game_copy.get_legal_actions() # call to get legal moves. Calls GET_LEGAL_ACTIONS in GameLogic object
+
+            self.actions=self.game_copy.get_legal_actions()# call to get legal moves. Calls GET_LEGAL_ACTIONS in GameLogic object
+            self.legal_actions = self.actions[0]
+            self.player = self.actions[1]
+
             #action = self.rollout_policy(possible_moves) # Calls ROLLOUT_POLICY in case needs more complicated
-            action = possible_moves[np.random.randint(len(possible_moves))] # call random move from possible moves
+            self.action = self.legal_actions[np.random.randint(len(self.legal_actions))] # call random move from possible moves
             #print(action)
-            self.game_copy.update_game(action, player) # takes action just pulled at random. Calls MOVE in GameLogic object
+            self.game_copy.update_game(self.action, self.player) # takes action just pulled at random. Calls MOVE in GameLogic object
 
         #print("This simulation has ended; returning result")
         # returns game_result when game is flagged over. Calls GAME_RESULT in GameLogic object
         self.scores = self.game_copy.game_result()
-        return self.scores[player]
+        return self.scores[self.bot]
 
 
     def backpropogate(self, reward, node):
