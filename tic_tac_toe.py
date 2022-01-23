@@ -75,16 +75,16 @@ class Game():
         Returns:
             dict: integer/move pairs.
         """
-        i = 0
-
-        self.legal_actions = {}
+        self.legal_actions = []
         for pos in range(len(self.positions)):
+            #print(self.positions)
             if self.positions[pos] == " ":
-                self.legal_actions[i] = pos
-        return [list(self.legal_actions.keys()), self.current_player_num]
+                self.legal_actions.append(pos)
+        return [self.legal_actions, self.current_player_num]        
 
     def update_game(self, action, player):
-        pos = self.legal_actions[action]
+        #pos = self.legal_actions[action]
+        pos = action
         self.make_move(pos, player)
 
     def is_game_over(self):
@@ -93,19 +93,23 @@ class Game():
         Returns:
             bool: Over or not
         """
-        avail_actions = self.get_legal_actions()
+        avail_actions = self.get_legal_actions()[0]
 
-        for arr in Game.win_arr.values():
-            win_arr = [self.positions[num] for num in arr]
-            if win_arr.count(win_arr[0]) == len(win_arr) and win_arr[0] != " ":
-                for player in self.players:
-                    if self.players[player].mark == win_arr[0]:
-                        self.scores[player] = 10
-                    else:
-                        self.scores[player] = -10
-                return True
+        if len(avail_actions) == 0:
+            return True
 
-        return not avail_actions
+        else:
+            for arr in Game.win_arr.values():
+                win_arr = [self.positions[num] for num in arr]
+                if win_arr.count(win_arr[0]) == len(win_arr) and win_arr[0] != " ":
+                    for player in self.players:
+                        if self.players[player].mark == win_arr[0]:
+                            self.scores[player] = 10
+                        else:
+                            self.scores[player] = -10
+                    return True
+        
+        return False
 
     def game_result(self):
         return self.scores

@@ -3,8 +3,8 @@
 import numpy as np
 import copy
 import pandas as pd
-from simple_array_game import SimpleArrayGame as Game
-#from tic_tac_toe import Game
+#from simple_array_game import SimpleArrayGame as Game
+from tic_tac_toe import Game
 from random import randint
 
 
@@ -78,27 +78,28 @@ class GameEngine():
         self.current_node = self.current_turn.root
         print(self.current_node.label)
 
+
         while not self.game.is_game_over():
-            
-            self.turn += 1
 
             print("Turn "+str(self.turn)+". Current board state:")
             print(self.game._state)
             print("Starting turn from node: "+str(self.current_node.label))
 
-            print("Game gets "+str(self.simulations)+' simulations for this turn.')
+            self.turn += 1
+
+            self.sims_this_turn = int(np.ceil(self.simulations/(self.turn)))
+            print("Game gets "+str(self.sims_this_turn)+' simulations for this turn.')
 
             self.actions=self.game.get_legal_actions()
             self.legal_actions = self.actions[0]
             print("Legal actions this round are: "+str(self.legal_actions))
             self.player = self.actions[1]
             
-            self.action, self.current_node = self.current_turn.play_turn(self.simulations, self.game, self.bot, self.current_node)
+            self.action, self.current_node = self.current_turn.play_turn(self.sims_this_turn, self.game, self.bot, self.current_node)
             print("Action choice is: "+str(self.action)+'\n')
             #print(self.current_node.label)
 
             self.state = self.game.update_game(self.action, self.player) # updates the true game state with the action
-            self.simulations = int(np.ceil(self.simulations/(self.turn*1.5)))
 
         print("Game over. Game took "+str(self.turn)+" turns.")
         self.scores = self.game.game_result()
@@ -328,5 +329,5 @@ class Player():
 
 players = 1
 game = GameEngine(players)
-game.play_game_byturns(simulations = 10000)
+game.play_game_byturns(simulations = 1000)
 #game.play_entire_game(simulations = 1000, game_label='array_1000')
