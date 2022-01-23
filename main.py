@@ -1,3 +1,7 @@
+# %%
+
+
+# %%
 from random import choice
 from random import randrange
 from itertools import combinations
@@ -7,7 +11,7 @@ master_tile_dictionary = {'red': 0,
 
 
 def print_dict(print_dictionary):
-    return '\n'.join([f"{key}: {value}" for key, value in print_dictionary.items])
+    return '\n'.join([f"{key}: {value}" for key, value in print_dictionary.items()])
 
 
 class TileContainer(object):
@@ -94,7 +98,7 @@ class Bag(TileContainer):
         Tile_Container (Tile_Container): Parent class
     """
 
-    def randomly_choose_tiles(self, take_count: int):
+    def randomly_choose_tiles(self, take_count: int, tower: Tower):
         """This allows us to take tiles from the bag. If there are insufficient tiles
         in the bag to take, it will return the dictionary of tiles chosen so far and the remaining
         take count.  The intent is for the player (or game) to then refill the bag from
@@ -114,22 +118,20 @@ class Bag(TileContainer):
             int: number of tiles yet taken
         """
 
-        remaining_tiles = 0
         chosen_tiles = master_tile_dictionary.copy()
         for i in range(take_count):
             available_tiles = self.get_available_tiles()
-            if bool(available_tiles):
-                color = choice(list(available_tiles.keys()))
-                if color in chosen_tiles.keys():
-                    chosen_tiles[color] += 1
-                    self.tile_dictionary[color] -= 1
-                    self.tile_count -= 1
-                else:
-                    raise f"Error:  invalid tilename passed ({color})"
-            else:  # if there are no tiles available to take
-                remaining_tiles = take_count - i  # set the remaining tiles needed to draw
-                break
-        return chosen_tiles, remaining_tiles
+            if not bool(available_tiles):
+                self.tile_dictionary = tower.dump_all_tiles()
+                available_tiles = self.get_available_tiles()
+            color = choice(list(available_tiles.keys()))
+            if color in chosen_tiles.keys():
+                chosen_tiles[color] += 1
+                self.tile_dictionary[color] -= 1
+                self.tile_count -= 1
+            else:
+                raise f"Error:  invalid tilename passed ({color})"
+        return chosen_tiles
 
 
 class FactoryDisplay(TileContainer):
@@ -139,6 +141,12 @@ class FactoryDisplay(TileContainer):
     Args:
         Tile_Container (Tile_Container): Parent class
     """
+# TODO  rewrite since we cannot take wild tiles from the displays
+
+    def get_available_tiles(self, wild_color):
+        return {color: self.tile_dictionary[color] for color in self.tile_dictionary.keys(
+        ) if all([self.tile_dictionary[color] > 0, color != wild_color])}  # returns dictionary of tiles in the container
+        # that are over 0
 
     def choose_tiles(self, chosen_color: str, wild_color: str):
         """We choose a color and take all tiles of that color.  Since players cannot skip,
@@ -217,7 +225,7 @@ class CenterOfTable(FactoryDisplay):
             first_player_avail (bool, optional): Denotes whether the first player marker is
             available.Defaults to True.
         """
-        FactoryDisplay.__init__(tile_count, tile_dictionary)
+        super(CenterOfTable, self).__init__(tile_count, tile_dictionary)
         self.first_player_avail = first_player_avail
 
     def take_center_tiles(self, chosen_color: str, wild_color: str):
@@ -255,7 +263,7 @@ class Supply(TileContainer):
     """
 
     def __init__(self, tile_count=0, tile_dictionary=master_tile_dictionary):
-        TileContainer.__init__(tile_count, tile_dictionary)
+        super(Supply, self).__init__(tile_count, tile_dictionary)
         self.tile_positions = {i: None for i in range(10)}
 
     def refresh_positions(self):
@@ -263,7 +271,7 @@ class Supply(TileContainer):
         pos = 0
 
         for color in self.tile_dictionary.keys():
-            while self.tile_dictionary[color] > 0:
+            while self.tile_dictionary[color]:
                 if pos > 10:
                     raise "Error:  more tiles than spaces available."
                 else:
@@ -308,15 +316,15 @@ class Factory(object):
     def take_from_center(self, chosen_color: str, wild_color: str):
         return self.center.take_center_tiles(chosen_color, wild_color)
 
-    def get_available_tile_choices(self):
+    def get_available_tile_choices(self, wild_color):
         tile_choices = {}
         i = 0
         for index, fact in self.factory_displays.items():
-            for tile in fact.get_available_tiles().keys():
+            for tile in fact.get_available_tiles(wild_color).keys():
                 tile_choices[i] = [index, tile]
                 i += 1
 
-        avail_tiles = self.center.get_available_tiles()
+        avail_tiles = self.center.get_available_tiles(wild_color)
         for tile in avail_tiles.keys():
             tile_choices[i] = [-1, tile]
             i += 1
@@ -352,13 +360,13 @@ class Star(object):
             color (string): Star color
         """
         self.color = color
-        self.tile_positions = {i: False for i in range(
+        self.tile_positions = {i: True for i in range(
             len(master_tile_dictionary))}
         self.star_full = False
         self.colors_allowed = {
             color: False for color in list(master_tile_dictionary.keys()) + ["all"]}
 
-        self.setup_colors_allowed
+        self.setup_colors_allowed()
 
     def setup_colors_allowed(self):
         """If the start type is all, we need to allow all colors initially.
@@ -542,7 +550,6 @@ class PlayerBoard(object):
         self.reserved_tiles = {}
         self.stars = {color: Star(color) for color in
                       list(master_tile_dictionary.keys()) + ["all"]}
-        self.setup_stars()
 
     def check_valid_position(self, star_color, tile_color, position):
         try:
@@ -561,7 +568,7 @@ class PlayerBoard(object):
         i = 0
         tot_tiles = sum([cnt for cnt in avail_tiles.values()])
         for star_index, star in self.stars.items():
-            if star.color == "all" or avail_tiles[star.color] >= 1:
+            if star.color == "all" or avail_tiles[star.color]:
                 open_pos = star.get_open_positions()
                 for pos in open_pos.keys():
                     if tot_tiles >= pos:
@@ -719,32 +726,37 @@ class Player(object):
         self.player_score = Player.starting_points
         self.tile_count = 0
         self.legal_moves = {}
+        self.bonus_earned = 0
+        self.done_placing = False
 
     # I'm not sure it's valuable to have the player turn occur here rather than the game, but
     # I could see it being useful for passing control around.
-    def add_to_player_supply(self, added_tiles: dict):
-        """Adds tiles to the player supply, either from a turn or from their turn
-        at the beginning of the round.
+    def change_player_supply(self, added_tiles: dict, method="add"):
+        """Alters the amount of tiles in the player supply.
 
         Args:
-            added_tiles (dict): Tiles to add.
+            added_tiles (dict): Tiles to alter.
+            method (optional, str): Whether we should add or remove tiles.  Default 'add'.
         """
         for color in added_tiles.keys():
-            self.player_tile_supply[color] += added_tiles[color]
+            if method == "add":
+                self.player_tile_supply[color] += added_tiles[color]
+            elif method == "remove":
+                self.player_tile_supply[color] -= added_tiles[color]
 
-    def take_tiles(self, wild_color):
-        take_tiles_input = input(f"""Enter a location and a tile to take, separated by a space.  If you want
-        to take from the center, enter -1 as the location.  If you enter the wild color {wild_color},
-        you will only receive one tile of that color.  Otherwise, you will receive all tiles of that
-        color present on the node, plus exactly one wild (if available).  If you fail to select a
-        valid move, you will receive this prompt again.""").split()
+    # def take_tiles(self, wild_color):
+    #     take_tiles_input = input(f"""Enter a location and a tile to take, separated by a space.  If you want
+    #     to take from the center, enter -1 as the location.  If you enter the wild color {wild_color},
+    #     you will only receive one tile of that color.  Otherwise, you will receive all tiles of that
+    #     color present on the node, plus exactly one wild (if available).  If you fail to select a
+    #     valid move, you will receive this prompt again.""").split()
 
-        return take_tiles_input
+    #     return take_tiles_input
 
     def choose_tiles_to_reserve(self, tiles_to_choose=4, act_count=0):
         tiles = []
         for color, cnt in self.player_tile_supply.items():
-            if cnt > 0:
+            if cnt:
                 tiles.append([color])
         choice_list = list(combinations(tiles))
         legal_moves = {}
@@ -757,11 +769,11 @@ class Player(object):
             legal_moves[act_count] = reserve_dict
         return legal_moves
 
-    def take_supply_tiles(self, wild_color, tiles_to_take):
-        take_tiles_input = input(f"""Enter the positions of {tiles_to_take} tiles you'd like from the
-        supply, separaate by a space.  As a reminder, {wild_color} is wild.""").split()
+    # def take_supply_tiles(self, wild_color, tiles_to_take):
+    #     take_tiles_input = input(f"""Enter the positions of {tiles_to_take} tiles you'd like from the
+    #     supply, separaate by a space.  As a reminder, {wild_color} is wild.""").split()
 
-        return take_tiles_input
+    #     return take_tiles_input
 
     # def place_tiles(self, wild_color):
     #     total_tiles = self.get_tile_count()
@@ -786,30 +798,30 @@ class Player(object):
     def check_tile_supply(self, color, wilds_used, tiles_needed):
         return self.player_tile_supply[color] + wilds_used >= tiles_needed
 
-    def reserve_tiles(self):
-        total_tiles = self.get_tile_count()
-        reserved_tiles = {}
+    # def reserve_tiles(self):
+    #     total_tiles = self.get_tile_count()
+    #     reserved_tiles = {}
 
-        print(f"""You currently have {total_tiles} remaining.  These are:""")
-        for color, value in self.player_tile_supply.items():
-            print(f"{color.capitalize()}: {value}")
-        while True:
-            reserved_input = input(f"""Please select  {Player.max_tile_reserve} tiles to reserve.
-            To do so, enter the number of each you would like to reserve in the order shown above
-            (Red, Orange, Yellow, Green, Blue, Purple), with each value separated by a space.
-            You must include all six colors in your response.""").split()
-            try:
-                if sum(reserved_input) <= 4:
-                    reserved_tiles["red"] = reserved_input[0]
-                    reserved_tiles["orange"] = reserved_input[1]
-                    reserved_tiles["yellow"] = reserved_input[2]
-                    reserved_tiles["green"] = reserved_input[3]
-                    reserved_tiles["blue"] = reserved_input[4]
-                    reserved_tiles["purple"] = reserved_input[5]
-                    self.player_tile_supply = master_tile_dictionary.copy()
-                    self.player_board.reserved_tiles = reserved_tiles
-            except KeyError:
-                pass
+    #     print(f"""You currently have {total_tiles} remaining.  These are:""")
+    #     for color, value in self.player_tile_supply.items():
+    #         print(f"{color.capitalize()}: {value}")
+    #     while True:
+    #         reserved_input = input(f"""Please select  {Player.max_tile_reserve} tiles to reserve.
+    #         To do so, enter the number of each you would like to reserve in the order shown above
+    #         (Red, Orange, Yellow, Green, Blue, Purple), with each value separated by a space.
+    #         You must include all six colors in your response.""").split()
+    #         try:
+    #             if sum(reserved_input) <= 4:
+    #                 reserved_tiles["red"] = reserved_input[0]
+    #                 reserved_tiles["orange"] = reserved_input[1]
+    #                 reserved_tiles["yellow"] = reserved_input[2]
+    #                 reserved_tiles["green"] = reserved_input[3]
+    #                 reserved_tiles["blue"] = reserved_input[4]
+    #                 reserved_tiles["purple"] = reserved_input[5]
+    #                 self.player_tile_supply = master_tile_dictionary.copy()
+    #                 self.player_board.reserved_tiles = reserved_tiles
+    #         except KeyError:
+    #             pass
 
 
 class Game():
@@ -838,7 +850,6 @@ class Game():
         self.bag = Bag(
             132, {color: Game.tiles_per_color for color in master_tile_dictionary.keys()})
         self.tower = Tower()
-        self.supply = Supply()
         self.current_round = 1
         self.current_player_num = None
         self.first_player = None
@@ -849,6 +860,8 @@ class Game():
         self._state = None
         self.phase = 1
         self.start_round()
+        self.game_over = False
+        self.save_state()
 
     def select_starting_player(self):
         """Called once at the beginning of the game.
@@ -863,39 +876,44 @@ class Game():
 
         supply_count = self.supply.tile_count
         self.supply.add_tiles(self.bag.randomly_choose_tiles(
-            Game.supply_max - supply_count))
+            Game.supply_max - supply_count, self.tower))
 
     def get_legal_actions(self):
-        "Called before every players turn.  Depends on the board state and current player."
-        if self.end_round and not self.place_tile_phase:
-            self.current_round += 1
-            self.start_round(self.current_round)
-            self.current_player_num = self.first_player
-            self.end_round = False
-        legal_moves = self.factory.get_available_tile_choices()
-        if legal_moves:
-            self.phase = 1
-            return legal_moves
+        """Called before every players turn.  Depends on the board state and current player.
+        This shouldn't alter the game state except at the beginning of a round"""
+        curr_player = self.players[self.current_player_num]
+        if self.phase == 1:
+            # Legal actions include taking tiles from the factory displays
+            curr_player.legal_moves = self.factory.get_available_tile_choices(
+                self.wild_color)
+            return curr_player.legal_moves, self.current_player_num
+        elif curr_player.bonus_earned:
+            # Legal actions incluide taking tiles from the supply
+            curr_player.legal_moves = self.supply.tile_positions
+            return curr_player.legal_moves.keys(), self.current_player_num
         else:
-            self.phase = 2
-            curr_player = self.players[self.current_player_num]
+            # Legal actions include placing tiles on the player board or ending the turn
             player_tiles = curr_player.player_tile_supply
             curr_board = curr_player.player_board
             act_count, legal_moves = curr_board.get_legal_actions(
                 player_tiles, self.wild_color)
             tile_count = sum([cnt for cnt in player_tiles.values()])
             if legal_moves and tile_count > 5:
+                # To simplify for the bot, we don't allow a player to reserve tiles (and
+                # end the turn) until they have five or fewer left or no other option
                 return legal_moves
             else:
+                # If there are four or fewer, there's no reserve choice to be made
                 if tile_count <= 4:
                     legal_moves[act_count] = player_tiles
                 else:
+                    # Otherwise, we have to make a choice
                     legal_moves = {
                         **legal_moves, **curr_player.choose_tiles_to_reserve(4, act_count)}
 
-        curr_player.legal_moves = legal_moves
+            curr_player.legal_moves = legal_moves
 
-        return legal_moves.keys(), self.current_player_num
+            return legal_moves.keys(), self.current_player_num
 
         # def update_game(self, action):
 
@@ -942,28 +960,95 @@ class Game():
         self.select_starting_player()
         self.fill_supply()
         self.wild_color = Game.wild_list[self.current_round]
-        for display in self.factory.keys():
-            tile_dict = self.bag.randomly_choose_tiles(Game.tiles_per_factory)
-            self.factory[display].add_tiles(tile_dict)
+        for display in self.factory.factory_displays.values():
+            tile_dict = self.bag.randomly_choose_tiles(
+                Game.tiles_per_factory, self.tower)
+            display.add_tiles(tile_dict)
 
         for player in self.players.values():
-            player.add_to_player_supply(player.player_board.reserved_tiles)
+            player.change_player_supply(player.player_board.reserved_tiles)
             player.player_board.reserved_tiles = {}
-        self.factory.center.reset_first_player()
         self.phase = 1
+        self.current_player_num = self.first_player
+        for player in self.players.values():
+            player.done_placing = False
+        self.factory.center.reset_first_player()
 
     def update_game(self, action):
         curr_player = self.players[self.current_player_num]
         if self.phase == 1:
-            curr_player.add_to_player_supply(
-                self.factory.take_tiles(curr_player.legal_moves[action]))
-            self.current_player_num = (
-                self.current_player_num + 1) % self.player_count
-            if not self.factory.get_available_tile_choices():
+            # If we're in phase one, the action is to take tiles from
+            # a factory.  If there are tiles left after that, the next player
+            # takes a turn.  Otherwise, the next player is whoever has the first
+            # player token and we move to phase 2
+            gained_tiles, curr_player.first_player = self.factory.take_tiles(
+                curr_player.legal_moves[action])
+            curr_player.change_player_supply(gained_tiles)
+            if self.factory.get_available_tile_choices():
+                self.current_player_num = (
+                    self.current_player_num + 1) % self.player_count
+            else:
                 self.phase = 2
+                self.current_player_num = self.first_player
+
+        elif curr_player.bonus_earned:
+            # If the player earned a bonus, the action is to take a tile from the
+            # supply. We decrement the earned bonus by 1, add the tile to the player
+            # supply, remove the tile from the global supply, and refresh the supply
+            # tile count
+            supply_tile = self.supply.tile_positions[curr_player[action]]
+            curr_player.change_player_supply({supply_tile: 1})
+            curr_player.bonus_earned -= 1
+            self.supply.add_tiles({supply_tile: -1})
+            self.supply.refresh_positions()
+        elif type(curr_player.legal_moves[action]) == "dict":
+            # This is trickier.  The player can choose to stop placing tiles at any time.
+            # If they do so, the action is a dictionary of tiles they would like to reserve
+            # We check for that filetype, reserve the tiles, decrease player points (if
+            # appropriate) reset the player tiles (reserves go to the player board), and
+            # mark the player is done placing tiles.  This last step ensures that next time they
+            # have a turn, it will be round 1 (see get_legal_moves)
+            curr_player.player_board.reserved_tiles = curr_player.legal_moves[action]
+            curr_player.player_score += min(4 -
+                                            curr_player.get_tile_count(), 0)
+            curr_player.player_tile_supply = master_tile_dictionary.copy()
+            curr_player.done_placing = True
         else:
+            # If they didn't stop placing tiles, they will place one here.
+            # Remove the tiles from the player supply (using negatives),
+            # add the tiles back to the tower, place the tiles, and collect
+            # the bonuses and points.
+            used_tiles = {}
+            used_tiles[curr_player.legal_moves[action][1]
+                       ] = used_tiles[curr_player.legal_moves[action][3]]
+            used_tiles[self.wild_color] = used_tiles[curr_player.legal_moves[action][4]]
+
+            curr_player.change_player_supply(used_tiles, method="remove")
+            # This is a little clunky (reusing the dictionary), but seems cleaner
+            # than creating a new one
+            used_tiles[curr_player.legal_moves[action][1]] -= 1
+            # We subtract one because one of the tiles stays on the player board.
+            self.tower.add_tiles(used_tiles)
+            # We pass the action array to the player board to add a tile and receive points
+            # and a possible bonus back
             bonus_tile_count, points = curr_player.player_board.add_tile_to_star(
                 curr_player.legal_moves[action])
+            curr_player.bonus_earned = bonus_tile_count
+            curr_player.player_score += points
+
+        self.save_state()
+        if all([player.done_placing for player in self.players.values()]):
+            self.current_round += 1
+            if self.current_round > self.total_rounds:
+                self.game_over = True
+            else:
+                self.start_round(self.current_round)
+
+    def is_game_over(self):
+        return self.game_over
+
+    def game_result(self):
+        return {player_num: player.score for player_num, player in self.players.items()}
 
     def save_state(self):
         "Called at the end of every players action"
@@ -973,9 +1058,9 @@ class Game():
         self._state += f"First player for next round: {self.first_player}\n"
         for key, disp in self.factory.factory_displays.items():
             self._state += f"Factory display {key} tiles:\n"
-            self._state += f"{print_dict(disp.get_available_tiles)}\n"
+            self._state += f"{print_dict(disp.get_available_tiles(self.wild_color))}\n"
         self._state += "Center tiles: \n"
-        self._state += f"{print_dict(self.factory.center.get_available_tiles)}\n"
+        self._state += f"{print_dict(self.factory.center.get_available_tiles(self.wild_color))}\n"
         self._state += "Supply tiles: \n"
         self._state += f"{print_dict(self.supply.get_available_tiles())}\n"
         for player_number, player in self.players.items():
@@ -988,79 +1073,96 @@ class Game():
                 self._state += f"Player {player_number} {color} star open positions: \n"
                 self._state += f"{print_dict(star.get_open_positions())}\n"
 
-    def player_turn(self, current_player_index, wild_color):
-        """Allows the player to collect tiles from a factory display or center.
+    def play_game(self):
+        while not self.is_game_over():
+            self.get_legal_actions()
+            print(self._state)
+            for key, value in self.players[self.current_player_num].legal_moves.items():
+                print(f"{value}:  enter {key}")
 
-        Args:
-            current_player_index (int): Index of current player.  This is NOT the player number.
-            wild_color (str): Wild colors
+            action = input("Choose an action")
+            self.update_game(action)
 
-        Returns:
-            bool: Whether the player took the turn successfully or they took a tile that wasn't
-            there.
-        """
+    # def player_turn(self, current_player_index, wild_color):
+    #     """Allows the player to collect tiles from a factory display or center.
 
-        current_player = self.players[current_player_index %
-                                      self.player_count]
-        try:
-            take_tiles_input = current_player.take_tiles(wild_color)
-            display_number = take_tiles_input[0]
-            selected_color = take_tiles_input[1]
-        except IndexError:
-            return False
-        if display_number == -1:
-            received_tiles, first_player = self.factory.take_from_center(
-                selected_color, wild_color)
-            if received_tiles:
-                current_player.add_to_player_supply(received_tiles)
-                if first_player:
-                    current_player.first_player = True
+    #     Args:
+    #         current_player_index (int): Index of current player.  This is NOT the player number.
+    #         wild_color (str): Wild colors
 
-        else:
-            try:
-                received_tiles = self.factory.take_from_display(
-                    display_number, selected_color, wild_color)
-                if received_tiles:
-                    current_player.add_to_player_supply(received_tiles)
-                    return True
-            except IndexError:
-                print("Invalid display.")
-        return received_tiles
+    #     Returns:
+    #         bool: Whether the player took the turn successfully or they took a tile that wasn't
+    #         there.
+    #     """
 
-    def place_tiles(self, current_player_index, wild_color):
-        current_player = self.players[current_player_index % self.player_count]
-        while True:
-            place_tile_input = current_player.place_tiles()
+    #     current_player = self.players[current_player_index %
+    #                                   self.player_count]
+    #     try:
+    #         take_tiles_input = current_player.take_tiles(wild_color)
+    #         display_number = take_tiles_input[0]
+    #         selected_color = take_tiles_input[1]
+    #     except IndexError:
+    #         return False
+    #     if display_number == -1:
+    #         received_tiles, first_player = self.factory.take_from_center(
+    #             selected_color, wild_color)
+    #         if received_tiles:
+    #             current_player.add_to_player_supply(received_tiles)
+    #             if first_player:
+    #                 current_player.first_player = True
 
-            if place_tile_input[0] == 0 and len(place_tile_input) == 1:
-                break
-            try:
-                star_color = place_tile_input[0]
-                placement_location = place_tile_input[1]
-                tile_color = place_tile_input[2]
-                wild_tiles = place_tile_input[3]
-                board = current_player.player_board
-                try:
-                    if board.check_valid_position(star_color, tile_color, placement_location):
-                        if current_player.check_tile_supply(tile_color, wild_tiles, placement_location):
-                            bonus_count, bonus_points = board.add_tile_to_star(
-                                star_color, tile_color, placement_location)
-                            current_player.player_score += bonus_points
-                            while bonus_count > 0:
-                                supply_positions = current_player.take_supply_tiles(
-                                    wild_color, bonus_count)
-                                for pos in range(bonus_count):
-                                    try:
-                                        supply_tiles = self.supply.tile_positions
-                                        if supply_tiles[supply_positions[pos]]:
-                                            current_player.add_to_player_supply(
-                                                {supply_tiles[supply_positions[pos]]: 1})
-                                            supply_tiles[supply_positions[pos]] = None
-                                            bonus_count -= 1
-                                    except IndexError:
-                                        pass
-                except KeyError:
-                    pass
-            except IndexError:
-                pass
-        current_player.reserve_tiles()
+    #     else:
+    #         try:
+    #             received_tiles = self.factory.take_from_display(
+    #                 display_number, selected_color, wild_color)
+    #             if received_tiles:
+    #                 current_player.add_to_player_supply(received_tiles)
+    #                 return True
+    #         except IndexError:
+    #             print("Invalid display.")
+    #     return received_tiles
+
+    # def place_tiles(self, current_player_index, wild_color):
+    #     current_player = self.players[current_player_index % self.player_count]
+    #     while True:
+    #         place_tile_input = current_player.place_tiles()
+
+    #         if place_tile_input[0] == 0 and len(place_tile_input) == 1:
+    #             break
+    #         try:
+    #             star_color = place_tile_input[0]
+    #             placement_location = place_tile_input[1]
+    #             tile_color = place_tile_input[2]
+    #             wild_tiles = place_tile_input[3]
+    #             board = current_player.player_board
+    #             try:
+    #                 if board.check_valid_position(star_color, tile_color, placement_location):
+    #                     if current_player.check_tile_supply(tile_color, wild_tiles, placement_location):
+    #                         bonus_count, bonus_points = board.add_tile_to_star(
+    #                             star_color, tile_color, placement_location)
+    #                         current_player.player_score += bonus_points
+    #                         while bonus_count:
+    #                             supply_positions = current_player.take_supply_tiles(
+    #                                 wild_color, bonus_count)
+    #                             for pos in range(bonus_count):
+    #                                 try:
+    #                                     supply_tiles = self.supply.tile_positions
+    #                                     if supply_tiles[supply_positions[pos]]:
+    #                                         current_player.add_to_player_supply(
+    #                                             {supply_tiles[supply_positions[pos]]: 1})
+    #                                         supply_tiles[supply_positions[pos]] = None
+    #                                         bonus_count -= 1
+    #                                 except IndexError:
+    #                                     pass
+    #             except KeyError:
+    #                 pass
+    #         except IndexError:
+    #             pass
+    #     current_player.reserve_tiles()
+
+
+# %%
+test = Game(2)
+test.play_game()
+
+# %%
