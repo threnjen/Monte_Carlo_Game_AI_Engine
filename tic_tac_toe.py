@@ -18,6 +18,20 @@ class Player():
 class Game():
     """Tic tac toe game
     """
+
+    def __init__(self):
+        """Calling the game doesn't create any unique starting conditions,
+        since there are always two players.
+        """
+        self.positions = [" "] * 9
+        self.legal_actions = {}
+        self.players = {0: Player("X"), 1: Player("O")}
+        self.scores = {0: 0, 1: 0}
+        self.game_over = False
+        self.current_player_num = 0
+        self._state = ""
+        self.draw_board()
+
     win_arr = {"top_row": [0, 1, 2],
                "left_diag": [0, 4, 8],
                "mid_row": [3, 4, 5],
@@ -39,20 +53,7 @@ class Game():
         _____
         {self.positions[6]}|{self.positions[7]}|{self.positions[8]}"""
 
-        print(self._state)
-
-    def __init__(self):
-        """Calling the game doesn't create any unique starting conditions,
-        since there are always two players.
-        """
-        self.positions = [" "] * 9
-        self.legal_actions = {}
-        self.players = {0: Player("X"), 1: Player("O")}
-        self.scores = {0: 0, 1: 0}
-        self.game_over = False
-        self.current_player_num = 0
-        self._state = ""
-        self.draw_board()
+        #print(self._state)
 
     def make_move(self, pos, current_player_num):
         """Makes a move on the board and draws it
@@ -66,6 +67,7 @@ class Game():
         self.current_player_num = (
             self.current_player_num + 1) % Game.player_count
 
+
     def get_legal_actions(self):
         """Gets available moves in a dictionary.
         The bot will only ever need the keys; values should be unknown
@@ -74,11 +76,12 @@ class Game():
             dict: integer/move pairs.
         """
         i = 0
+
         self.legal_actions = {}
         for pos in range(len(self.positions)):
             if self.positions[pos] == " ":
                 self.legal_actions[i] = pos
-        return self.legal_actions
+        return [list(self.legal_actions.keys()), self.current_player_num]
 
     def update_game(self, action, player):
         pos = self.legal_actions[action]
@@ -104,7 +107,7 @@ class Game():
 
         return not avail_actions
 
-    def game_results(self):
+    def game_result(self):
         return self.scores
 
     def play_game(self):
