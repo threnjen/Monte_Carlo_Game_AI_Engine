@@ -18,7 +18,7 @@ class SimpleArrayGame():
         Modify according to your game or 
         needs. 
         '''
-        action = tuple(action)
+        #action = tuple(action)
         self._state[action] = 1
         return self._state
 
@@ -27,7 +27,9 @@ class SimpleArrayGame():
         report on currently available actions after checking board space
         '''
         #return [i for i in range(len(self._state)) if self._state[i] == 0]
-        return [list(np.argwhere(self._state == 0)), 0]
+        #return [list(np.argwhere(self._state == 0)), 0]
+        return [list([tuple(i) for i in (np.argwhere(self._state == 0))]), 0]
+        
 
     def is_game_over(self):
         '''
