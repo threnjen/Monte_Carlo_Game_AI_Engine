@@ -76,7 +76,7 @@ class GameEngine():
             print(self.game._state)
 
             self.turn += 1
-            self.sims_this_turn = int(np.ceil(self.simulations/(self.turn * 2)))
+            self.sims_this_turn = int(np.ceil(self.simulations/(self.turn)))
 
             self.actions=self.game.get_legal_actions()
             self.legal_actions = self.actions[0]
@@ -116,7 +116,6 @@ class GameEngine():
         
         df = pd.DataFrame(first_action_list)
         df['pairs'] = df.apply(lambda x: (str(x[0])+", "+str(x[1])), axis=1)
-        df.drop([0,1], axis=1, inplace=True)
         df.to_pickle('first_action_list'+str(game_label)+'.pkl')
 
 class TurnEngine():
@@ -228,13 +227,10 @@ class TurnEngine():
 
         while len(self.actions_to_pop) != 0:
             # pops off node actions randomly so that the order of try-stuff isn't as deterministic
-            #print(self.actions_to_pop)
             self.action = self.actions_to_pop[np.random.randint(len(self.actions_to_pop))]
-            #print(self.action)
             self.actions_to_pop.remove(self.action) # pops off an untried action
             
             node_depth = self.current_node.depth + 1
-            print(node_depth)
             node_label = ("Node "+str(node_depth)+','+str(self.action)+': ')
 
             child_node = MonteCarloNode(parent=self.current_node, node_action=self.action, label=node_label, depth = node_depth) #   # instantiates a new node from next state and the action selected
@@ -307,7 +303,7 @@ class MonteCarloNode():
         for c in self.children:         
             score = (c.total_score / c.number_of_visits) + c_param * (np.sqrt(abs(np.log(self.number_of_visits)) / c.number_of_visits))
             choices_weights.append(score)
-            print(c.label, score)
+            #print(c.label, score)
 
         return self.children[np.argmax(choices_weights)] # gets index of max score and sends back identity of child
 
@@ -317,5 +313,5 @@ class Player():
 
 players = 2
 game = GameEngine(players)
-game.play_game_byturns(simulations = 10)
-#game.play_entire_game(simulations = 10000)
+#game.play_game_byturns(simulations = 100)
+game.play_entire_game(simulations = 1000, game_label='array_1000')
