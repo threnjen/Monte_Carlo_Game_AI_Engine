@@ -318,7 +318,7 @@ class MonteCarloNode():
         for c in self.children:         
             score = (c.total_score / c.number_of_visits) + c_param * (np.sqrt(abs(np.log(self.number_of_visits)) / c.number_of_visits))
             choices_weights.append(score)
-            print(c.label, score)
+            #print(c.label, score)
 
         return self.children[np.argmax(choices_weights)] # gets index of max score and sends back identity of child
 
