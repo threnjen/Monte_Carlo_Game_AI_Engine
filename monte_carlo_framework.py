@@ -3,8 +3,8 @@
 import numpy as np
 import copy
 import pandas as pd
-#from simple_array_game import SimpleArrayGame as Game
-from tic_tac_toe import Game
+from simple_array_game import SimpleArrayGame as Game
+#from tic_tac_toe import Game
 from random import randint
 
 
@@ -222,17 +222,22 @@ class TurnEngine():
         self.current_node = current_node
 
         self.actions=self.game_copy.get_legal_actions()# call to get legal moves. Calls GET_LEGAL_ACTIONS in GameLogic object
+        #print(self.actions)
         self.actions_to_pop = self.actions[0]
         self.player = self.actions[1] #identify current legal player
 
         while len(self.actions_to_pop) != 0:
             # pops off node actions randomly so that the order of try-stuff isn't as deterministic
+            #print(self.actions_to_pop)
             self.action = self.actions_to_pop[np.random.randint(len(self.actions_to_pop))]
+            #print(self.action)
             self.actions_to_pop.remove(self.action) # pops off an untried action
             
-            #self.action = self.actions_to_pop.pop() # pops off an untried action
+            node_depth = self.current_node.depth + 1
+            print(node_depth)
+            node_label = ("Node "+str(node_depth)+','+str(self.action)+': ')
 
-            child_node = MonteCarloNode(parent=self.current_node, node_action=self.action) # , legal_moves=self.node_actions , state=next_state,  # instantiates a new node from next state and the action selected
+            child_node = MonteCarloNode(parent=self.current_node, node_action=self.action, label=node_label, depth = node_depth) #   # instantiates a new node from next state and the action selected
             current_node.children.append(child_node) # appends this new child node to the current node's list of children            
 
 
@@ -276,7 +281,7 @@ class TurnEngine():
 class MonteCarloNode():
 
     # node_action=None, state=None,
-    def __init__(self, parent=None, node_action=None): #, legal_actions=None
+    def __init__(self, parent=None, node_action=None, label='root', depth=0): #, legal_actions=None
         # self.state = state # board state, in tic tac toe is 3x3 array. (defined by user)
         # none for the root node and for other nodes is = node derived from. First turn will be none
         self.parent = parent
@@ -285,12 +290,14 @@ class MonteCarloNode():
         self.children = []  # all possible actions from current node
         self.number_of_visits = .001  # number of times current node is visited
         self.total_score = 0
+        self.label = label
+        self.depth = depth
         #self._untried_actions = None
         # call to get legal moves. Calls GET_LEGAL_ACTIONS in GameLogic object
         #self._untried_actions = legal_actions
         return
 
-    def best_child(self, c_param=5):
+    def best_child(self, c_param=2):
         '''
         selects best child node from available array
         first param is exploitation and second is exploration
@@ -300,7 +307,7 @@ class MonteCarloNode():
         for c in self.children:         
             score = (c.total_score / c.number_of_visits) + c_param * (np.sqrt(abs(np.log(self.number_of_visits)) / c.number_of_visits))
             choices_weights.append(score)
-            #print(c, score)
+            print(c.label, score)
 
         return self.children[np.argmax(choices_weights)] # gets index of max score and sends back identity of child
 
