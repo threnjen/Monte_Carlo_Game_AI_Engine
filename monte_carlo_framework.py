@@ -126,6 +126,7 @@ class TurnEngine():
 
             while not self.game_copy.is_game_over():
 
+                print("Game is not over")
                 self.rollout_node = self._selection(self.root) # call _selection to mode to node to roll out, taking the moves along the way
 
                 # call _rollout on the node
@@ -133,7 +134,8 @@ class TurnEngine():
                 #print("Reward: "+str(reward))
 
                 self._backpropogate(self.reward, self.rollout_node) # _backpropogates with the reward starting from the rollout_node
-    
+
+        print("Sims complete, selecting best node")
         self.selected_node = self.root.best_child() # returns the best child node to the main function. Calls BEST_CHILD
         self.best_action = self.selected_node.node_action
         print("Best move is: "+str(self.best_action))
@@ -155,6 +157,8 @@ class TurnEngine():
         '''
         self.current_node = node
 
+        print("In the node selection function")
+
         def move_node(current_node):
             self.current_node = current_node
             self.player=self.game_copy.get_legal_actions()[1] # call legal moves to get the current player
@@ -163,12 +167,14 @@ class TurnEngine():
 
         #print("Entering Tree Policy function")
         while len(self.current_node.children) != 0: # while the current node has any child nodes (meaning node is not a leaf):
+            print("Current node has no children")
             self.current_node = self.current_node.best_child() # change the current node to the best child
             move_node(self.current_node) # take the move of the new current node
             # this loop repeats until the current node has no child nodes aka we have reached a leaf node
         
         # we have reached a leaf node
-        if self.current_node.number_of_visits == .001: # if this leaf has never been visited, this will be our current node
+        if self.current_node.number_of_visits == .001 and not self.current_node == self.root: # if this leaf has never been visited, this will be our current node
+            print("Current node has not been visited and is the rollout node")
             return self.current_node
         else:
             try:
