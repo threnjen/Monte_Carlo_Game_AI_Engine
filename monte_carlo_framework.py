@@ -313,5 +313,5 @@ class Player():
 
 players = 2
 game = GameEngine(players)
-#game.play_game_byturns(simulations = 100)
-game.play_entire_game(simulations = 1000, game_label='array_1000')
+game.play_game_byturns(simulations = 10000)
+#game.play_entire_game(simulations = 1000, game_label='array_1000')
