@@ -70,24 +70,37 @@ class GameEngine():
         self.simulations = simulations
         self.turn = 0
 
+        #self.actions=self.game.get_legal_actions()
+        #self.legal_actions = self.actions[0]
+        #self.player = self.actions[1]
+
+        self.current_turn = TurnEngine() #, self.legal_actions, self.player
+        self.current_node = self.current_turn.root
+        print(self.current_node.label)
+
         while not self.game.is_game_over():
             
-            print("New Turn. Current board state:")
-            print(self.game._state)
-
             self.turn += 1
-            self.sims_this_turn = int(np.ceil(self.simulations/(self.turn)))
+
+            print("Turn "+str(self.turn)+". Current board state:")
+            print(self.game._state)
+            print("Starting turn from node: "+str(self.current_node.label))
+
+            print("Game gets "+str(self.simulations)+' simulations for this turn.')
 
             self.actions=self.game.get_legal_actions()
             self.legal_actions = self.actions[0]
+            print("Legal actions this round are: "+str(self.legal_actions))
             self.player = self.actions[1]
-
-            self.current_turn = TurnEngine(self.legal_actions, self.player)
-            self.action = self.current_turn.play_turn(self.sims_this_turn, self.game, self.bot)
+            
+            self.action, self.current_node = self.current_turn.play_turn(self.simulations, self.game, self.bot, self.current_node)
+            print("Action choice is: "+str(self.action)+'\n')
+            #print(self.current_node.label)
 
             self.state = self.game.update_game(self.action, self.player) # updates the true game state with the action
+            self.simulations = int(np.ceil(self.simulations/(self.turn*1.5)))
 
-        print("Game over")
+        print("Game over. Game took "+str(self.turn)+" turns.")
         self.scores = self.game.game_result()
         print(self.game._state)
         print(self.scores)
@@ -120,14 +133,15 @@ class GameEngine():
 
 class TurnEngine():
 
-    def __init__(self, legal_actions=None, player=None):
+    def __init__(self): #, legal_actions=None, player=None
         '''
         Instantiates root monte carlo node
         '''    
         self.root = MonteCarloNode() # legal_actions=legal_actions, node_action=None, state=self.game._state,
-        self.player = player
+        #self.player = player
 
-    def play_turn(self, num_sims, game, bot):
+
+    def play_turn(self, num_sims, game, bot, node):
         '''
         Received a specific game state from which to make a move
 
@@ -140,6 +154,7 @@ class TurnEngine():
         '''
         #print("Starting turn calculation with "+str(num_sims)+" sims")
 
+        self.node = node
         self.bot = bot
 
         for i in range(num_sims):  # how many simulations with this initial state?
@@ -149,7 +164,7 @@ class TurnEngine():
 
             while not self.game_copy.is_game_over():
 
-                self.rollout_node = self._selection(self.root) # call _selection to mode to node to roll out, taking the moves along the way
+                self.rollout_node = self._selection(self.node) # call _selection to move to node to roll out, taking the moves along the way
 
                 # call _rollout on the node
                 self.reward = self._rollout(self.bot)
@@ -161,12 +176,12 @@ class TurnEngine():
                 #print(self.game_copy._state)
                 #print(self.scores)
 
-        self.selected_node = self.root.best_child() # returns the best child node to the main function. Calls BEST_CHILD
+        self.selected_node = self.node.best_child() # returns the best child node to the main function. Calls BEST_CHILD
         self.best_action = self.selected_node.node_action
 
         #print("Best turn move is: "+str(self.best_action))
 
-        return self.best_action
+        return self.best_action, self.selected_node
 
     def _selection(self, node):
         '''
@@ -277,7 +292,7 @@ class TurnEngine():
 class MonteCarloNode():
 
     # node_action=None, state=None,
-    def __init__(self, parent=None, node_action=None, label='root', depth=0): #, legal_actions=None
+    def __init__(self, parent=None, node_action=None, label='Root Node', depth=0): #, legal_actions=None
         # self.state = state # board state, in tic tac toe is 3x3 array. (defined by user)
         # none for the root node and for other nodes is = node derived from. First turn will be none
         self.parent = parent
@@ -303,7 +318,7 @@ class MonteCarloNode():
         for c in self.children:         
             score = (c.total_score / c.number_of_visits) + c_param * (np.sqrt(abs(np.log(self.number_of_visits)) / c.number_of_visits))
             choices_weights.append(score)
-            #print(c.label, score)
+            print(c.label, score)
 
         return self.children[np.argmax(choices_weights)] # gets index of max score and sends back identity of child
 
@@ -311,7 +326,7 @@ class Player():
     def __init__(self):
         self.score = 0
 
-players = 2
+players = 1
 game = GameEngine(players)
-#game.play_game_byturns(simulations = 100)
-game.play_entire_game(simulations = 1000, game_label='array_1000')
+game.play_game_byturns(simulations = 10000)
+#game.play_entire_game(simulations = 1000, game_label='array_1000')
