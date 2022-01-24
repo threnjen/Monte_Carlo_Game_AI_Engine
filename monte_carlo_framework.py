@@ -158,7 +158,8 @@ class TurnEngine():
         print("Starting sim on: "+str(self.node.label)+' player '+str(current_player)+' (play_turn)')
 
         for i in range(num_sims):  # how many simulations with this initial state?
-
+            
+            #print("Simulation "+str(i))
             # COPY THE GAME STATE HERE AND ROLL OUT ON IT NOT THE REAL GAME
             self.game_copy = copy.deepcopy(game)
 
@@ -174,9 +175,8 @@ class TurnEngine():
                 self.scores = self.game_copy.game_result()
 
         print("Current self.node after simulation: "+str(self.node.label)+' (play_turn)')
-        print(self.node.children)
         self.selected_node = self.node.best_child() # returns the best child node to the main function. Calls BEST_CHILD
-        print("Selected best child node: "+str(self.selected_node)+' (play_turn)')
+        print("Selected best child node: "+str(self.selected_node.label)+' (play_turn)')
         self.best_action = self.selected_node.node_action
 
         #print("Best turn move is: "+str(self.best_action))
@@ -198,8 +198,8 @@ class TurnEngine():
         '''
         self.current_node = node
 
-        print("Entering _SELECTION function")
-        print("Our node to check on entry is: "+str(node.label))
+        #print("Entering _SELECTION function")
+        #print("Our node to check on entry is: "+str(node.label))
 
         def move_node(current_node):
             self.current_node = current_node
@@ -209,22 +209,25 @@ class TurnEngine():
 
         ### POINT OF FIX HERE. Only make new leaves as we need to explore them, creating one at a time. Otherwise calling BEST_CHILD breaks if there
         # are not enough sims to expand the leaf.
-        while len(self.current_node.children) != 0: # while the current node has any child nodes (meaning node is not a leaf):
-            print("Current node children: "+str(self.current_node.children))# remove the child node for the last action taken in the game
+        #while len(self.current_node.children) != 0: # while the current node has any child nodes (meaning node is not a leaf):
+        while len(self.current_node.children) != 0 and not self.current_node.number_of_visits == .001: # while the current node has any child nodes (meaning node is not a leaf):
             self.current_node = self.current_node.best_child() # change the current node to the best child
             move_node(self.current_node) # take the move of the new current node
             # this loop repeats until the current node has no child nodes aka we have reached a leaf node
         
         # we have reached a leaf node
         if self.current_node.number_of_visits == .001 and not self.current_node == self.root: # if this leaf has never been visited, this will be our current node
-            print(self.current_node.number_of_visits)
-            print("This node has not been visited")
+            #print("This node has not been visited")
+
+            self._expansion(self.current_node) # _expansion the current leaf
+
+
             return self.current_node
         else:
             try:
-                print("Expand leaf: Go into expansion function")
+                #print("Expand leaf: Go into expansion function")
                 self._expansion(self.current_node) # _expansion the current leaf
-                print("Get best leaf: Call best child on current node")
+                #print("Get best leaf: Call best child on current node")
                 self.current_node = self.current_node.best_child() # get the best child of the current leaf
                 move_node(self.current_node)
             except: 
@@ -244,7 +247,7 @@ class TurnEngine():
         As we pop items off the list and apply them to the
         '''
 
-        print("Entering EXPANSION function")
+        #print("Entering EXPANSION function")
         self.current_node = current_node
 
         self.actions=self.game_copy.get_legal_actions()# call to get legal moves. Calls GET_LEGAL_ACTIONS in GameLogic object
@@ -260,7 +263,7 @@ class TurnEngine():
             self.actions_to_pop.remove(self.action) # pops off an untried action
 
             node_depth = self.current_node.depth
-            node_label = ("Action "+str(self.action))
+            node_label = ("Depth "+str(node_depth+1)+', Action '+str(self.action))
 
             child_node = MonteCarloNode(parent=self.current_node, node_action=self.action, label=node_label, depth = (node_depth+1)) #   # instantiates a new node from next state and the action selected
             current_node.children.append(child_node) # appends this new child node to the current node's list of children            
@@ -271,7 +274,7 @@ class TurnEngine():
         On _rollout call, the entire game is simulated to terminus and the outcome of the game is returned
         '''
 
-        print("Entering ROLLOUT function")
+        #print("Entering ROLLOUT function")
         self.current_player = current_player
 
         while not self.game_copy.is_game_over():  # checks the state for game over boolean and loops if it's false
@@ -295,13 +298,13 @@ class TurnEngine():
         All visits +1
         win stats/scores/etc are incrememnted as needed
         '''
-        print("Entering BACKPROPOGATE function")
+        #print("Entering BACKPROPOGATE function")
 
         node.number_of_visits += 1  # updates self with number of visits
         # updates self with reward (sent in from _backpropogate)
         node.total_score += reward
 
-        print(node.label, node.number_of_visits)
+        #print(node.label, node.number_of_visits)
 
         if node.parent:  # if this node has a parent,
             # call _backpropogate on the parent, so this will continue until root note which has no parent
@@ -332,7 +335,7 @@ class MonteCarloNode():
         selects best child node from available array
         first param is exploitation and second is exploration
         '''
-        print("Entering BEST_CHILD function")
+        #print("Entering BEST_CHILD function")
         # makes an array of the leaf calculations
         choices_weights = []
         for c in self.children:         
