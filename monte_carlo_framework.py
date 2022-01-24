@@ -93,13 +93,13 @@ class GameEngine():
             self.actions=self.game.get_legal_actions()
             self.legal_actions = self.actions[0]
             print("Legal actions this round are: "+str(self.legal_actions))
-            self.player = self.actions[1]
+            self.current_player = self.actions[1]
             
             self.action, self.current_node = self.current_turn.play_turn(self.sims_this_turn, self.game, self.bot, self.current_node)
             print("Action choice is: "+str(self.action)+'\n')
             #print(self.current_node.label)
 
-            self.state = self.game.update_game(self.action, self.player) # updates the true game state with the action
+            self.state = self.game.update_game(self.action, self.current_player) # updates the true game state with the action
 
         print("Game over. Game took "+str(self.turn)+" turns.")
         self.scores = self.game.game_result()
