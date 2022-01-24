@@ -76,32 +76,28 @@ class GameEngine():
         self.sims_this_turn = simulations
 
         while not self.game.is_game_over():
-            
-            self.current_player=self.game.get_legal_actions()[1] # get current player
-            print("\n\nPlayer's turn: Player "+str(self.current_player)+' (play_game_byturns)') #whose turn is it?
-
+        
             print("Turn "+str(self.turn)+". Current board state:"+' (play_game_byturns)')
             print(self.game._state) # prints the game board
 
             self.turn += 1 # increments the game turn
-
             
-            self.sims_this_turn = int(np.ceil(self.sims_this_turn*.9)) # get the number of simulations for the rounds
+            #self.sims_this_turn = int(np.ceil(self.sims_this_turn*.9)) # get the number of simulations for the rounds
             #self.sims_this_turn = int(np.ceil(self.simulations/(self.turn))) # get the number of simulations for the rounds
             print("Game gets "+str(self.sims_this_turn)+' simulations for this turn.'+' (play_game_byturns)')
 
-            self.current_node = self.players[self.current_player].current_node # get current node
+            actions=self.game.get_legal_actions() # poll for legal actions
+            current_player=actions[1] # get current player
+            print("\n\nPlayer's turn: Player "+str(current_player)+' (play_game_byturns)') #whose turn is it?
+
+            current_node = self.players[current_player].current_node # get current node
             #print("Player's starting node: "+str(self.current_node.label)+' (play_game_byturns)')
 
-            self.actions=self.game.get_legal_actions() # poll for legal actions
-            self.legal_actions = self.actions[0] # get legal actions list
-            #print("Legal actions this round are: "+str(self.legal_actions)+' (play_game_byturns)')
-
-            self.action, self.players[self.current_player].current_node = self.players[self.current_player].play_turn(self.sims_this_turn, self.game, self.current_player, self.current_node, self.last_action)
-            print("Player plays "+str(self.players[self.current_player].current_node.label)+' (play_game_byturns)')
+            self.action, self.players[current_player].current_node = self.players[current_player].play_turn(self.sims_this_turn, self.game, current_player, current_node, self.last_action)
+            print("Player plays "+str(self.players[current_player].current_node.label)+' (play_game_byturns)')
     
-            self.state = self.game.update_game(self.action, self.current_player) # updates the true game state with the action
-            self.last_action = self.players[self.current_player].current_node.label
+            self.state = self.game.update_game(self.action, current_player) # updates the true game state with the action
+            self.last_action = self.players[current_player].current_node.label
 
         print("Game over. Game took "+str(self.turn)+" turns."+' (play_game_byturns)')
         self.scores = self.game.game_result() # get game scores
@@ -150,8 +146,8 @@ class TurnEngine():
         Received a specific game state from which to make a move
 
         Runs a given number of simulations to terminus, according to the Monte Carlo schema:
-        1. Find next node to _rollout (Expansion)
-        2. _rollout game (Simulation)
+        1. Find next node to _simulation (Expansion)
+        2. _simulation game (Simulation)
         3. _backpropogate
 
         Returns the optimal turn action for the game state it was provided
@@ -174,15 +170,15 @@ class TurnEngine():
 
                 self.rollout_node = self._selection(self.node) # call _selection to move to node to roll out, taking the moves along the way
 
-                # call _rollout on the node
-                self.reward = self._rollout(current_player)
+                # call _simulation on the node
+                self.reward = self._simulation(current_player)
 
                 self._backpropogate(self.reward, self.rollout_node) # _backpropogates with the reward starting from the rollout_node
 
                 self.scores = self.game_copy.game_result()
 
         #print("Current self.node after simulation: "+str(self.node.label)+' (play_turn)')
-        self.selected_node = self.node.best_child() # returns the best child node to the main function. Calls BEST_CHILD
+        self.selected_node = self.node.best_child(print_weights=True) # returns the best child node to the main function. Calls BEST_CHILD
         self.best_action = self.selected_node.node_action
 
 
@@ -190,7 +186,7 @@ class TurnEngine():
 
     def _selection(self, node):
         '''
-        Selects node to run _rollout. Is looking for the furthest terminal node to roll out.
+        Selects node to run _simulation. Is looking for the furthest terminal node to roll out.
         This function needs some work on the logic to make it work properly
 
         While current node is NOT a leaf: Evaluate by if it has children or not. Children = not leaf. No children = leaf.
@@ -247,45 +243,43 @@ class TurnEngine():
         As we pop items off the list and apply them to the
         '''
 
-        self.current_node = current_node
+        actions=self.game_copy.get_legal_actions()# call to get legal moves. Calls GET_LEGAL_ACTIONS in GameLogic object
+        actions_to_pop = actions[0]
+        self.player = actions[1] #identify current legal player
 
-        self.actions=self.game_copy.get_legal_actions()# call to get legal moves. Calls GET_LEGAL_ACTIONS in GameLogic object
-        self.actions_to_pop = self.actions[0]
-        self.player = self.actions[1] #identify current legal player
-
-        while len(self.actions_to_pop) != 0:
+        while len(actions_to_pop) != 0:
 
             # pops off node actions randomly so that the order of try-stuff isn't as deterministic
-            self.action = self.actions_to_pop[np.random.randint(len(self.actions_to_pop))]
-            self.actions_to_pop.remove(self.action) # pops off an untried action
+            action = actions_to_pop[np.random.randint(len(actions_to_pop))]
+            actions_to_pop.remove(action) # pops off an untried action
 
-            node_depth = self.current_node.depth
-            node_label = ('Action '+str(self.action))
+            node_depth = current_node.depth
+            node_label = ('Action '+str(action))
 
-            child_node = MonteCarloNode(parent=self.current_node, node_action=self.action, label=node_label, depth = (node_depth+1)) #   # instantiates a new node from next state and the action selected
+            child_node = MonteCarloNode(parent=current_node, node_action=action, label=node_label, depth = (node_depth+1)) #   # instantiates a new node from next state and the action selected
             current_node.children.append(child_node) # appends this new child node to the current node's list of children            
 
 
-    def _rollout(self, current_player):
+    def _simulation(self, current_player):
         '''
-        On _rollout call, the entire game is simulated to terminus and the outcome of the game is returned
+        On _simulation call, the entire game is simulated to terminus and the outcome of the game is returned
         '''
 
-        self.current_player = current_player
+        #self.current_player = current_player
 
         while not self.game_copy.is_game_over():  # checks the state for game over boolean and loops if it's false
 
-            self.actions=self.game_copy.get_legal_actions()# call to get legal moves. Calls GET_LEGAL_ACTIONS in GameLogic object
-            self.legal_actions = self.actions[0]
-            self.player = self.actions[1]
+            actions=self.game_copy.get_legal_actions()# call to get legal moves. Calls GET_LEGAL_ACTIONS in GameLogic object
+            legal_actions = actions[0]
+            player = actions[1]
 
-            #action = self._rollout_policy(possible_moves) # Calls _ROLLOUT_POLICY in case needs more complicated
-            self.action = self.legal_actions[np.random.randint(len(self.legal_actions))] # call random move from possible moves
-            self.game_copy.update_game(self.action, self.player) # takes action just pulled at random. Calls MOVE in GameLogic object
+            #action = self._simulation_policy(possible_moves) # Calls _simulation_POLICY in case needs more complicated
+            action = legal_actions[np.random.randint(len(legal_actions))] # call random move from possible moves
+            self.game_copy.update_game(action, player) # takes action just pulled at random. Calls MOVE in GameLogic object
 
         # returns game_result when game is flagged over. Calls GAME_RESULT in GameLogic object
         self.scores = self.game_copy.game_result()
-        return self.scores[self.current_player]
+        return self.scores[current_player]
 
 
     def _backpropogate(self, reward, node):
@@ -322,7 +316,7 @@ class MonteCarloNode():
         #self._untried_actions = legal_actions
         return
 
-    def best_child(self, c_param=5):
+    def best_child(self, c_param=2, print_weights=False):
         '''
         selects best child node from available array
         first param is exploitation and second is exploration
@@ -332,7 +326,8 @@ class MonteCarloNode():
         for c in self.children:
             score = (c.total_score / c.number_of_visits) + c_param * (np.sqrt(abs(np.log(self.number_of_visits)) / c.number_of_visits))
             choices_weights.append(score)
-            #print(c.label, score)
+            if print_weights==True:
+                print(c.label, score)
 
         return self.children[np.argmax(choices_weights)] # gets index of max score and sends back identity of child
 
@@ -342,5 +337,5 @@ class Player():
 
 players = 2
 game = GameEngine(players)
-game.play_game_byturns(simulations = 1000)
+game.play_game_byturns(simulations = 5000)
 #game.play_entire_game(simulations = 1000, game_label='array_1000')
