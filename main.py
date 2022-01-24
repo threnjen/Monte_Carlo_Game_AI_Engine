@@ -365,11 +365,11 @@ class Star(object):
             color (string): Star color
         """
         self.color = color
-        self.tile_positions = {i: True for i in range(
-            len(master_tile_dictionary))}
+        self.tile_positions = {i: False for i in range(1,
+                                                       len(master_tile_dictionary) + 1)}
         self.star_full = False
         self.colors_allowed = {
-            color: False for color in list(master_tile_dictionary.keys()) + ["all"]}
+            color: False for color in list(master_tile_dictionary.keys())}
 
         self.setup_colors_allowed()
 
@@ -404,9 +404,9 @@ class Star(object):
             self.tile_positions[position] = True
             if self.color == 'all':
                 self.colors_allowed[color] = False
-            if all([item for item in self.tile_positions.items()]):
+            if all([value for value in self.tile_positions.values()]):
                 self.star_full = True
-            points_earned = self.check_contiguous[position] + \
+            points_earned = self.check_contiguous(position) + \
                 self.star_full * Star.star_points[self.color]
             return points_earned
         else:
@@ -423,7 +423,9 @@ class Star(object):
             int: Points received (so far)
         """
         points = 1
-        while self.tile_positions[(position - points) % 6]:
+        # This is terrible, but I had some dumb error I couldn't trace in my indices somewhere
+        # in a different part of the code.  I'll fix this someday (ie. never)
+        while self.tile_positions[(position - points) % 6 + (position == points) * 6]:
             points += 1
         return points
 
@@ -439,7 +441,9 @@ class Star(object):
             int: Points
         """
         distance = 1
-        while self.tile_positions[(position + distance) % 6]:
+        # This is terrible, but I had some dumb error I couldn't trace in my indices somewhere
+        # in a different part of the code.  I'll fix this someday (ie. never)
+        while self.tile_positions[(position + distance) % 6 + (position + distance == 6) * 6]:
             points += 1
             distance += 1
         return points
@@ -447,11 +451,11 @@ class Star(object):
     def check_contiguous(self, position: int):
         points = self.check_left_contiguous(position)
         if points < 6:
-            points = self.check_right_contiguous(position)
+            points = self.check_right_contiguous(position, points)
         return points
 
     def get_open_positions(self):
-        return {pos: value for pos, value in self.tile_positions.items() if value}
+        return {pos: value for pos, value in self.tile_positions.items() if not value}
 
 
 class PlayerBoard(object):
@@ -587,10 +591,11 @@ class PlayerBoard(object):
         for star_index, star in self.stars.items():
             # We can only place if the star has a space for our color
             # We'll deal with the center star in a moment
-            # This is an ugly hack.  I'm sorry  Otherwise we get a key error
+            # This is an ugly hack.  I'm sorry.  Otherwise we get a key error
             # This hack isn't saved between function calls
-            avail_tiles["all"] = 0
-            if star.color == "all" or avail_tiles[star.color]:
+            if star.color in avail_tiles.keys():
+                color_avail = avail_tiles[star.color]
+            if star.color == "all" or color_avail:
                 open_pos = star.get_open_positions()
                 # We need the positions open
                 allowed_colors = [
@@ -598,7 +603,6 @@ class PlayerBoard(object):
                 for pos in open_pos.keys():
                     # We need this since our positions are different than our indices.
                     # I may correct this later.
-                    pos = pos + 1
                     if tot_tiles >= pos:
                         # We need this for the all star, which can't have two of the same color
 
@@ -609,9 +613,16 @@ class PlayerBoard(object):
                                     for j in range(1, min(avail_tiles[wild_color] + 1, pos)):
                                         if j + avail_tiles[color] >= pos:
                                             avail_actions[i] = [
-                                                star_index, color, pos, pos - j, j, 0]
-                            avail_actions[i] = [star_index, color, pos, pos, 0]
-                            i += 1
+                                                star_index, color, pos, pos - j, j]
+                                            i += 1
+                                if avail_tiles[color] >= pos:
+                                    avail_actions[i] = [
+                                        star_index, color, pos, pos, 0]
+                            if avail_tiles[color] >= pos:
+                                avail_actions[i] = [
+                                    star_index, color, pos, pos, 0]
+                                i += 1
+
                             # If this is the wild color, we remove that many wilds
 
         return i, avail_actions
@@ -665,7 +676,7 @@ class PlayerBoard(object):
         tile_bonus_lookup = PlayerBoard.bonuses_lookup[f"{star_color}{position}"]
         for potential_bonus in tile_bonus_lookup:
 
-            bonus_achieved = all([self.stars[tile[0]].tile_position[tile[1] - 1]
+            bonus_achieved = all([self.stars[tile[0]].tile_positions[tile[1]]
                                   for tile in PlayerBoard.bonus_criteria[potential_bonus]["criteria"]])
 
             if bonus_achieved:
@@ -703,9 +714,9 @@ class PlayerBoard(object):
             int: Points earned (either bonus or 0)
         """
         points_earned = 0
-        if tile_placed_position < 4:
+        if tile_placed_position < 5:
             points_earned = all([self.stars[color].tile_positions[tile_placed_position]
-                                 for color in self.stars.keys()]) * (tile_placed_position + 1)
+                                 for color in self.stars.keys()]) * (tile_placed_position)
         return points_earned
 
 
@@ -779,8 +790,8 @@ class Player(object):
         tiles = []
         for color, cnt in self.player_tile_supply.items():
             if cnt:
-                tiles.append([color])
-        choice_list = list(combinations(tiles))
+                tiles.append([color] * cnt)
+        choice_list = list(combinations(tiles, tiles_to_choose))
         legal_moves = {}
         for option in choice_list:
             reserve_dict = {}
@@ -917,7 +928,7 @@ class Game():
             if legal_moves and tile_count > 5:
                 # To simplify for the bot, we don't allow a player to reserve tiles (and
                 # end the turn) until they have five or fewer left or no other option
-                return legal_moves
+                pass
             else:
                 # If there are four or fewer, there's no reserve choice to be made
                 if tile_count <= 4:
@@ -989,16 +1000,18 @@ class Game():
         for player in self.players.values():
             player.done_placing = False
         self.factory.center.reset_first_player()
+        self.supply.refresh_positions()
 
     def update_game(self, action):
         curr_player = self.players[self.current_player_num]
+        sel_action = curr_player.legal_moves[action]
         if self.phase == 1:
             # If we're in phase one, the action is to take tiles from
             # a factory.  If there are tiles left after that, the next player
             # takes a turn.  Otherwise, the next player is whoever has the first
             # player token and we move to phase 2
             gained_tiles, curr_player.first_player = self.factory.take_tiles(
-                curr_player.legal_moves[action], self.wild_color)
+                sel_action, self.wild_color)
             curr_player.change_player_supply(gained_tiles)
             if self.factory.get_available_tile_choices(self.wild_color):
                 self.current_player_num = (
@@ -1012,32 +1025,35 @@ class Game():
             # supply. We decrement the earned bonus by 1, add the tile to the player
             # supply, remove the tile from the global supply, and refresh the supply
             # tile count
-            supply_tile = self.supply.tile_positions[curr_player[action]]
-            curr_player.change_player_supply({supply_tile: 1})
+            # Here, the sel_action is a tile color
+            curr_player.change_player_supply({sel_action: 1})
             curr_player.bonus_earned -= 1
-            self.supply.add_tiles({supply_tile: -1})
+            self.supply.add_tiles({sel_action: -1})
             self.supply.refresh_positions()
-        elif type(curr_player.legal_moves[action]) == "dict":
+        elif type(sel_action) is dict:
             # This is trickier.  The player can choose to stop placing tiles at any time.
             # If they do so, the action is a dictionary of tiles they would like to reserve
             # We check for that filetype, reserve the tiles, decrease player points (if
             # appropriate) reset the player tiles (reserves go to the player board), and
             # mark the player is done placing tiles.  This last step ensures that next time they
             # have a turn, it will be round 1 (see get_legal_moves)
-            curr_player.player_board.reserved_tiles = curr_player.legal_moves[action]
+            curr_player.player_board.reserved_tiles = sel_action
             curr_player.player_score += min(4 -
                                             curr_player.get_tile_count(), 0)
             curr_player.player_tile_supply = master_tile_dictionary.copy()
             curr_player.done_placing = True
+            self.current_player_num = (
+                self.current_player_num + 1) % self.player_count
         else:
             # If they didn't stop placing tiles, they will place one here.
             # Remove the tiles from the player supply (using negatives),
             # add the tiles back to the tower, place the tiles, and collect
             # the bonuses and points.
             used_tiles = {}
-            used_tiles[curr_player.legal_moves[action][1]
-                       ] = used_tiles[curr_player.legal_moves[action][3]]
-            used_tiles[self.wild_color] = used_tiles[curr_player.legal_moves[action][4]]
+            used_tiles[sel_action[1]
+                       ] = sel_action[3]
+            if sel_action[1] != self.wild_color:
+                used_tiles[self.wild_color] = sel_action[4]
 
             curr_player.change_player_supply(used_tiles, method="remove")
             # This is a little clunky (reusing the dictionary), but seems cleaner
@@ -1058,7 +1074,7 @@ class Game():
             if self.current_round > self.total_rounds:
                 self.game_over = True
             else:
-                self.start_round(self.current_round)
+                self.start_round()
 
     def is_game_over(self):
         return self.game_over
