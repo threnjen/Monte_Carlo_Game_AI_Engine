@@ -19,7 +19,8 @@ class GameEngine():
         self.players = {}
         
         for i in range(players):
-            self.players[i] = Player()
+            self.players[i] = TurnEngine()
+
 
         # change this to dynamically be the bot player when possible
         self.bot = 0
@@ -67,23 +68,28 @@ class GameEngine():
         Each turn will run a MC for that turn choice
         '''
 
-        self.simulations = simulations
-        self.turn = 0
+        self.simulations = simulations # set number of simulations to run
+        self.turn = 0 # set the turns number for start of game (0 for game start)
 
-        #self.actions=self.game.get_legal_actions()
-        #self.legal_actions = self.actions[0]
-        #self.player = self.actions[1]
+        print(self.players[0])
+        print(self.players[1])
 
-        self.current_turn = TurnEngine() #, self.legal_actions, self.player
-        self.current_node = self.current_turn.root
-        print(self.current_node.label)
-
+        for i in self.players:
+            self.players[i].current_node = self.players[i].root
+        
+        #self.turn_engine = TurnEngine() #, self.legal_actions, self.player
+        #self.current_node = self.turn_engine.root
+        #print(self.turn_engine)
+        #print(self.current_node.label)
 
         while not self.game.is_game_over():
+            
+            self.current_player=self.game.get_legal_actions()[1]
+            print("Player's turn: Player "+str(self.current_player))
 
             print("Turn "+str(self.turn)+". Current board state:")
             print(self.game._state)
-            print("Starting turn from node: "+str(self.current_node.label))
+            print("Starting turn from node: "+str(self.players[self.current_player].current_node.label))
 
             self.turn += 1
 
@@ -95,7 +101,7 @@ class GameEngine():
             print("Legal actions this round are: "+str(self.legal_actions))
             self.current_player = self.actions[1]
             
-            self.action, self.current_node = self.current_turn.play_turn(self.sims_this_turn, self.game, self.bot, self.current_node)
+            self.action, self.current_node = self.turn_engine.play_turn(self.sims_this_turn, self.game, self.bot, self.current_node)
             print("Action choice is: "+str(self.action)+'\n')
             #print(self.current_node.label)
 
@@ -119,13 +125,13 @@ class GameEngine():
         self.legal_actions = self.actions[0]
         self.player = self.actions[1]  
 
-        self.current_turn = TurnEngine(self.legal_actions, self.player)
+        self.turn_engine = TurnEngine(self.legal_actions, self.player)
 
         first_action_list=[]
 
         for i in range(self.simulations):
 
-            self.action = self.current_turn.play_turn(1, self.game, self.bot) 
+            self.action = self.turn_engine.play_turn(1, self.game, self.bot) 
             first_action_list.append(tuple(self.action))         
         
         df = pd.DataFrame(first_action_list)
@@ -327,7 +333,7 @@ class Player():
     def __init__(self):
         self.score = 0
 
-players = 1
+players = 2
 game = GameEngine(players)
 game.play_game_byturns(simulations = 1000)
 #game.play_entire_game(simulations = 1000, game_label='array_1000')
