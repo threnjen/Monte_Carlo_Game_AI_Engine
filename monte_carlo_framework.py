@@ -201,15 +201,16 @@ class TurnEngine():
         #print("Entering _SELECTION function")
         #print("Our node to check on entry is: "+str(node.label))
 
+
+        ##### WORK HERE TO FIX THE REDUNDANT/OVERWRITING PLAY. We need to bring in the last action taken by the opponent and remove it from teh child list.
+
+
         def move_node(current_node):
             self.current_node = current_node
             self.player=self.game_copy.get_legal_actions()[1] # call legal moves to get the current player
             self.action = self.current_node.node_action # get the action to take from the current node
             self.state = self.game_copy.update_game(self.action, self.player) # update the game copy with the action and the player taking the move
 
-        ### POINT OF FIX HERE. Only make new leaves as we need to explore them, creating one at a time. Otherwise calling BEST_CHILD breaks if there
-        # are not enough sims to expand the leaf.
-        #while len(self.current_node.children) != 0: # while the current node has any child nodes (meaning node is not a leaf):
         while len(self.current_node.children) != 0 and not self.current_node.number_of_visits == .001: # while the current node has any child nodes (meaning node is not a leaf):
             self.current_node = self.current_node.best_child() # change the current node to the best child
             move_node(self.current_node) # take the move of the new current node
@@ -218,10 +219,7 @@ class TurnEngine():
         # we have reached a leaf node
         if self.current_node.number_of_visits == .001 and not self.current_node == self.root: # if this leaf has never been visited, this will be our current node
             #print("This node has not been visited")
-
             self._expansion(self.current_node) # _expansion the current leaf
-
-
             return self.current_node
         else:
             try:
