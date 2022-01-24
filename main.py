@@ -141,11 +141,15 @@ class FactoryDisplay(TileContainer):
     Args:
         Tile_Container (Tile_Container): Parent class
     """
-# TODO  rewrite since we cannot take wild tiles from the displays
 
     def get_available_tiles(self, wild_color):
-        return {color: self.tile_dictionary[color] for color in self.tile_dictionary.keys(
-        ) if all([self.tile_dictionary[color] > 0, color != wild_color])}  # returns dictionary of tiles in the container
+        tile_count = sum([cnt for cnt in self.tile_dictionary.values()])
+        if self.tile_dictionary[wild_color] == tile_count and tile_count > 0:
+            return {wild_color: tile_count}
+        else:
+            return {color: self.tile_dictionary[color] for color in self.tile_dictionary.keys(
+            ) if all([self.tile_dictionary[color] > 0, color != wild_color])}
+            # returns dictionary of tiles in the container
         # that are over 0
 
     def choose_tiles(self, chosen_color: str, wild_color: str):
@@ -174,31 +178,32 @@ class FactoryDisplay(TileContainer):
         # I think because it would require the parent master tile dictionary to become corrupted;
         # if that happens the code is broken, so this check is redundant
         # get the tiles avail on the display object
-        available_tiles = self.get_available_tiles()
+        # available_tiles = self.get_available_tiles()
 
-        if chosen_color in available_tiles.keys():  # check if the chosen color is avail
-            if chosen_color != wild_color:  # if the chosen color isn't the wild color,
-                # set the chosen tiles = the chosen color
-                chosen_tiles[chosen_color] = self.tile_dictionary[chosen_color]
-                # set the display object for chosen color to 0
-                self.tile_dictionary[chosen_color] = 0
-                if wild_color in available_tiles.keys():  # if the wild color is also available
-                    # add one wild to the chosen tiles
-                    chosen_tiles[wild_color] = 1
-                    # decrement display object by wild color by 1
-                    self.tile_dictionary[wild_color] -= 1
-            else:  # if the chosen color is the wild color
-                # set chosen tiles to exactly 1 for that color
-                chosen_tiles[chosen_color] = 1
+        # if chosen_color in available_tiles.keys():  # check if the chosen color is avail
+        if chosen_color != wild_color:  # if the chosen color isn't the wild color,
+            # set the chosen tiles = the chosen color
+            chosen_tiles[chosen_color] = self.tile_dictionary[chosen_color]
+            # set the display object for chosen color to 0
+            self.tile_dictionary[chosen_color] = 0
+            # if the wild color is also available
+            if self.tile_dictionary[wild_color]:
+                # add one wild to the chosen tiles
+                chosen_tiles[wild_color] = 1
                 # decrement display object by wild color by 1
-                self.tile_dictionary[chosen_color] -= 1
-            # make a copy of tiles in display object to send to senter
-            send_to_center = self.tile_dictionary.copy()
-            # reset this display object to empty
-            self.tile_dictionary = master_tile_dictionary.copy()
-            return chosen_tiles, send_to_center
-        else:  # return empty dict if chosen color is not avail
-            return {}, {}
+                self.tile_dictionary[wild_color] -= 1
+        else:  # if the chosen color is the wild color
+            # set chosen tiles to exactly 1 for that color
+            chosen_tiles[chosen_color] = 1
+            # decrement display object by wild color by 1
+            self.tile_dictionary[chosen_color] -= 1
+        # make a copy of tiles in display object to send to senter
+        send_to_center = self.tile_dictionary.copy()
+        # reset this display object to empty
+        self.tile_dictionary = master_tile_dictionary.copy()
+        return chosen_tiles, send_to_center
+        # else:  # return empty dict if chosen color is not avail
+        # return {}, {}
         # else:
         #    raise f"Wild color {wild_color} is invalid"
 
@@ -308,7 +313,7 @@ class Factory(object):
         Returns:
             dict: received tiles
         """
-        received_tiles, center_tiles = self.factory_display[display_number].choose_tiles(
+        received_tiles, center_tiles = self.factory_displays[display_number].choose_tiles(
             chosen_color, wild_color)
         self.center.add_tiles(center_tiles)
         return received_tiles, False
@@ -563,25 +568,51 @@ class PlayerBoard(object):
         except KeyError:
             return False
 
-    def get_legal_actions(self, avail_tiles, wild_color):
+    def get_legal_actions(self, avail_tiles: dict, wild_color: str):
+        """Probably the ugliest function I have so far.  This checks the legal placement of tiles
+        based on the board position and the available tiles.
+
+        Args:
+            avail_tiles (dict): Tiles owned by the player
+            wild_color (str): Wild color for the round
+
+        Returns:
+            dict: Dictionary of legal actions, indexed by integers.
+        """
         avail_actions = {}
         i = 0
+        # We need this to limit certain positions
         tot_tiles = sum([cnt for cnt in avail_tiles.values()])
+        # for each star
         for star_index, star in self.stars.items():
+            # We can only place if the star has a space for our color
+            # We'll deal with the center star in a moment
+            # This is an ugly hack.  I'm sorry  Otherwise we get a key error
+            # This hack isn't saved between function calls
+            avail_tiles["all"] = 0
             if star.color == "all" or avail_tiles[star.color]:
                 open_pos = star.get_open_positions()
+                # We need the positions open
+                allowed_colors = [
+                    color for color, open in star.colors_allowed.items() if open]
                 for pos in open_pos.keys():
+                    # We need this since our positions are different than our indices.
+                    # I may correct this later.
+                    pos = pos + 1
                     if tot_tiles >= pos:
-                        for color, color_open in star.colors_allowed.items():
-                            if color_open:
-                                for j in range(1, avail_tiles[color] + 1):
-                                    if color != wild_color:
-                                        if j + avail_tiles[wild_color] >= pos:
+                        # We need this for the all star, which can't have two of the same color
+
+                        for color in allowed_colors:
+                            # We look at options to place that color
+                            if (avail_tiles[color] + avail_tiles[wild_color] >= pos) and color != wild_color:
+                                if avail_tiles[wild_color] and pos > 1:
+                                    for j in range(1, min(avail_tiles[wild_color] + 1, pos)):
+                                        if j + avail_tiles[color] >= pos:
                                             avail_actions[i] = [
-                                                star_index, color, pos, min(j, pos), max(pos - j, 0)]
-                                    elif j >= pos:
-                                        avail_actions[i] = [
-                                            star_index, color, pos, pos, 0]
+                                                star_index, color, pos, pos - j, j, 0]
+                            avail_actions[i] = [star_index, color, pos, pos, 0]
+                            i += 1
+                            # If this is the wild color, we remove that many wilds
 
         return i, avail_actions
 
@@ -674,7 +705,7 @@ class PlayerBoard(object):
         points_earned = 0
         if tile_placed_position < 4:
             points_earned = all([self.stars[color].tile_positions[tile_placed_position]
-                                for color in self.stars.keys()]) * (tile_placed_position + 1)
+                                 for color in self.stars.keys()]) * (tile_placed_position + 1)
         return points_earned
 
 
@@ -744,15 +775,6 @@ class Player(object):
             elif method == "remove":
                 self.player_tile_supply[color] -= added_tiles[color]
 
-    # def take_tiles(self, wild_color):
-    #     take_tiles_input = input(f"""Enter a location and a tile to take, separated by a space.  If you want
-    #     to take from the center, enter -1 as the location.  If you enter the wild color {wild_color},
-    #     you will only receive one tile of that color.  Otherwise, you will receive all tiles of that
-    #     color present on the node, plus exactly one wild (if available).  If you fail to select a
-    #     valid move, you will receive this prompt again.""").split()
-
-    #     return take_tiles_input
-
     def choose_tiles_to_reserve(self, tiles_to_choose=4, act_count=0):
         tiles = []
         for color, cnt in self.player_tile_supply.items():
@@ -768,12 +790,6 @@ class Player(object):
                 reserve_dict[j] += 1
             legal_moves[act_count] = reserve_dict
         return legal_moves
-
-    # def take_supply_tiles(self, wild_color, tiles_to_take):
-    #     take_tiles_input = input(f"""Enter the positions of {tiles_to_take} tiles you'd like from the
-    #     supply, separaate by a space.  As a reminder, {wild_color} is wild.""").split()
-
-    #     return take_tiles_input
 
     # def place_tiles(self, wild_color):
     #     total_tiles = self.get_tile_count()
@@ -982,9 +998,9 @@ class Game():
             # takes a turn.  Otherwise, the next player is whoever has the first
             # player token and we move to phase 2
             gained_tiles, curr_player.first_player = self.factory.take_tiles(
-                curr_player.legal_moves[action])
+                curr_player.legal_moves[action], self.wild_color)
             curr_player.change_player_supply(gained_tiles)
-            if self.factory.get_available_tile_choices():
+            if self.factory.get_available_tile_choices(self.wild_color):
                 self.current_player_num = (
                     self.current_player_num + 1) % self.player_count
             else:
@@ -1053,6 +1069,7 @@ class Game():
     def save_state(self):
         "Called at the end of every players action"
         self._state = ""
+        self._state = f"Phase: {self.phase}"
         self._state += f"Current_player:  {self.current_player_num}\n"
         self._state += f"First player available: {self.factory.center.first_player_avail}\n"
         self._state += f"First player for next round: {self.first_player}\n"
@@ -1080,7 +1097,7 @@ class Game():
             for key, value in self.players[self.current_player_num].legal_moves.items():
                 print(f"{value}:  enter {key}")
 
-            action = input("Choose an action")
+            action = int(input("Choose an action"))
             self.update_game(action)
 
     # def player_turn(self, current_player_index, wild_color):
