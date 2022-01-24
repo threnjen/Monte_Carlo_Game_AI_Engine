@@ -1,7 +1,7 @@
 # Monte Carlo Simulation AI to support Azul Summer Pavilion (and other games)
 
 This project entails two primary components:
-- Monte Carlo AI Engine (authored and maintained by [Jen Wadkins](https://github.com/threnjen) and loosely based on MCTS code by [Bosonic Studios](https://ai-boson.github.io/mcts/)
+- Monte Carlo AI Engine (authored and maintained by [Jen Wadkins](https://github.com/threnjen) and loosely originated/learned from MCTS code by [Bosonic Studios](https://ai-boson.github.io/mcts/))
 - Azul: Summer Pavilion Game Logic (authored and maintained by [Andrew Herrmann](https://github.com/aherrmann85))
 - Minor additional game logic for testing:
   - "Numpy array" 1p testing game
