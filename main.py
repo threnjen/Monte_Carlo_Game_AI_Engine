@@ -800,7 +800,7 @@ class Player(object):
         tiles = []
         for color, cnt in self.player_tile_supply.items():
             if cnt:
-                tiles.append([color] * cnt)
+                tiles.extend([color] * cnt)
         choice_list = list(combinations(tiles, tiles_to_choose))
         legal_moves = {}
         for option in choice_list:
@@ -1010,6 +1010,7 @@ class Game():
         for player in self.players.values():
             player.done_placing = False
         self.factory.center.reset_first_player()
+        self.save_state()
         # self.supply.refresh_positions()
 
     def update_game(self, action):
