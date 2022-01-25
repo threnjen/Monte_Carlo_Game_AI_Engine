@@ -162,10 +162,12 @@ class TurnEngine():
         self.invalid_past_actions.append(last_action)
         #print("Previous player's action to be removed from tree: "+str(last_action))
 
+
+
         #print("Starting sim on: "+str(self.node.label)+' player '+str(current_player)+' (play_turn)')
         
         for i in range(num_sims):  # how many simulations with this initial state?
-            
+
             #print("\n\n*****NEW SIMULATION TURN*****")
             # COPY THE GAME STATE HERE AND ROLL OUT ON IT NOT THE REAL GAME
             self.game_copy = copy.deepcopy(game)
@@ -216,7 +218,10 @@ class TurnEngine():
             self.state = self.game_copy.update_game(self.action, self.player) # update the game copy with the action and the player taking the move
             #print(self.player, self.action)
 
-        while len(self.current_node.children) != 0 and not self.current_node.number_of_visits == 0: # while the current node has any child nodes (meaning node is not a leaf):          
+        while len(self.current_node.children) != 0 and not self.current_node.number_of_visits == 0: 
+            # while the current node has any child nodes (meaning node is not a leaf) and the number of visits isn't 0:
+             
+                    
             #print("Removing action taken by other player")
             for c in self.current_node.children:
                 if c.label in self.invalid_past_actions:
