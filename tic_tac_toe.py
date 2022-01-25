@@ -102,11 +102,11 @@ class Game():
             if win_arr.count(win_arr[0]) == len(win_arr) and win_arr[0] != " ":
                 open_positions = sum(x == ' ' for x in self.positions)
                 if self.players[0].mark == win_arr[0]:
-                    self.scores[0] = 10# + 10*open_positions     
-                    self.scores[1] = -50# - 10*open_positions
+                    self.scores[0] = 10 + 10*open_positions     
+                    self.scores[1] = -10 - 10*open_positions
                 elif self.players[1].mark == win_arr[0]:
-                    self.scores[1] = 10# + 10*open_positions     
-                    self.scores[0] = -50# - 10*open_positions
+                    self.scores[1] = 10 + 10*open_positions     
+                    self.scores[0] = -10 - 10*open_positions
                 return True
         
         if len(avail_actions) == 0:
