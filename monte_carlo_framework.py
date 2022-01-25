@@ -76,27 +76,29 @@ class GameEngine():
         self.sims_this_turn = simulations
 
         while not self.game.is_game_over():
-        
-            print("\n\nTurn "+str(self.turn)+". Current board state:"+' (play_game_byturns)')
-            print(self.game._state) # prints the game board
 
             self.turn += 1 # increments the game turn
             
-            self.sims_this_turn = int(np.ceil(self.sims_this_turn*.8)) # get the number of simulations for the rounds
+            #self.sims_this_turn = int(np.ceil(self.sims_this_turn*.8)) # get the number of simulations for the rounds
             #self.sims_this_turn = int(np.ceil(self.simulations/(self.turn))) # get the number of simulations for the rounds
-            print("Game gets "+str(self.sims_this_turn)+' simulations for this turn.'+' (play_game_byturns)')
+            
 
             actions=self.game.get_legal_actions() # poll for legal actions
             current_player=actions[1] # get current player
-            print("Player's turn: Player "+str(current_player)+' (play_game_byturns)') #whose turn is it?
             
+            print("\n\nTurn "+str(self.turn))
+            print('Current board state: ')
+            print(self.game._state) # prints the game board            
+            print("Game gets "+str(self.sims_this_turn)+' simulations for this turn.'+' (play_game_byturns)')
+            print("Player's turn: Player "+str(current_player)+' (play_game_byturns)') #whose turn is it?
+
             this_turn = TurnEngine()
     
             self.action = this_turn.play_turn(self.sims_this_turn, self.game, current_player)
             
             self.state = self.game.update_game(self.action, current_player) # updates the true game state with the action
 
-        print("Game over. Game took "+str(self.turn)+" turns."+' (play_game_byturns)')
+        print("\n\n\nGame over. Game took "+str(self.turn)+" turns."+' (play_game_byturns)')
         self.scores = self.game.game_result() # get game scores
         print(self.game._state) # print final board
         print(self.scores) # print final scores
@@ -114,7 +116,7 @@ class GameEngine():
         self.legal_actions = self.actions[0]
         self.player = self.actions[1]  
 
-        self.turn_engine = TurnEngine(self.legal_actions, self.player)
+        self.turn_engine = TurnEngine()
 
         first_action_list=[]
 
@@ -133,25 +135,23 @@ class TurnEngine():
         '''
         Instantiates root monte carlo node
         '''    
-        self.root = MonteCarloNode() # legal_actions=legal_actions, node_action=None, state=self.game._state,
-        self.invalid_past_actions = []
-        #self.player = player
-
+        self.root = MonteCarloNode()
 
     def play_turn(self, num_sims, game, current_player):
         '''
         Received a specific game state from which to make a move
 
         Runs a given number of simulations to terminus, according to the Monte Carlo schema:
-        1. Find next node to _simulation (Expansion)
-        2. _simulation game (Simulation)
+        1. Find next node to _rollout (Expansion)
+        2. _rollout game (Simulation)
         3. _backpropogate
 
         Returns the optimal turn action for the game state it was provided
         '''
-       
-        for i in range(num_sims):  # how many simulations with this initial state?
 
+        #print("\nStarting Simulations")
+        for i in range(num_sims):  # how many simulations with this initial state?
+            #print("\nSim "+str(i))
             # COPY THE GAME STATE HERE AND ROLL OUT ON IT NOT THE REAL GAME
             self.game_copy = copy.deepcopy(game)
 
@@ -160,23 +160,30 @@ class TurnEngine():
                 # get the BEST CHILD node   
                 self.rollout_node = self._selection(self.root) # call _selection to move to node to roll out, taking the moves along the way
 
-                # call _simulation on the node
-                self.reward = self._simulation(current_player)
+                # call _rollout on the node
+                #print("\n\nRolling out new simulation from Player "+str(current_player)+" chooses "+str(self.rollout_node.label))
+                self.reward = self._rollout(current_player, self.rollout_node)
                 
-                #print("Backpropogate")
+                #print("\nChose "+str(self.rollout_node.label))
+                #print("Reward: "+str(self.reward))
+
                 self._backpropogate(self.reward, self.rollout_node) # _backpropogates with the reward starting from the rollout_node
-                
+                try:
+                    score = (self.rollout_node.total_score / self.rollout_node.number_of_visits) + 2 * (np.sqrt(np.log(self.rollout_node.parent.number_of_visits) / self.rollout_node.number_of_visits))
+                    #print(score)
+                except:
+                    pass
+
                 self.scores = self.game_copy.game_result()
 
-        self.selected_node = self.root.best_child(print_weights=True) # returns the best child node to the main function. Calls BEST_CHILD
+        self.selected_node = self.root.best_child(print_weights=False) # returns the best child node to the main function. Calls BEST_CHILD
         self.best_action = self.selected_node.node_action
-
 
         return self.best_action
 
     def _selection(self, node):
         '''
-        Selects node to run _simulation. Is looking for the furthest terminal node to roll out.
+        Selects node to run _rollout. Is looking for the furthest terminal node to roll out.
 
         While current node is NOT a leaf: Evaluate by if it has children or not. Children = not leaf. No children = leaf.
             return current child node with highest score (best_child)
@@ -193,26 +200,46 @@ class TurnEngine():
             action = current_node.node_action # get the action to take from the current node
             self.state = self.game_copy.update_game(action, player) # update the game copy with the action and the player taking the move
 
+
+        # Evaluate our incoming node.
+            # Does it have children?
+            # has it been visited?
+
+        # Are we at a leaf node?
         while len(self.current_node.children) != 0 and not self.current_node.number_of_visits == 0: 
-            # while this leaf has children, (meaning node is not a leaf) and the node has been visited before:
+            # HAS CHILDREN
+            # HAS BEEN VISITED
             self.current_node = self.current_node.best_child(print_weights=False) # change the current node to the best child
             move_node(self.current_node) # take the move of the new current node
-
+            # loop and check again if we hit a leaf
+            # this branch may move more than one node down to find a new expansion point
         
-        # we have reached a leaf node
-        if self.current_node.number_of_visits == 0 and not self.current_node == self.root: 
-            # if this leaf has never been visited, and is not the root node
-            self._expansion(self.current_node) # _expansion the current leaf
-            return self.current_node
-        else: # else if one of the above isn't true (either node is root, or node has been visited)
-            try:
-                self._expansion(self.current_node) # _expansion the current leaf
-                self.current_node = self.current_node.best_child(print_weights=False) # get the best child of the current leaf
-                move_node(self.current_node)
-            except: 
-                pass
-            # take action on the node before returning
+        # Now we have reached a leaf node which has never been visited
+        if self.current_node.number_of_visits == 0 and not self.current_node == self.root:
+            # NO CHILDREN
+            # NOT VISITED
+            # NOT ROOT 
+            # if this leaf has never been visited
+            # and is NOT the root node
+            self._expansion(self.current_node) # expand the current leaf
+            return self.current_node # return current leaf for rollout
+
+        elif self.current_node.number_of_visits == 0 and self.current_node == self.root:
+            # NO CHILDREN
+            # NOT VISITED
+            # IS ROOT
+            # if this leaf has never been visited
+            # and IS the root node
+            self._expansion(self.current_node) # expand the root
+            self.current_node = self.current_node.best_child(print_weights=False) # get the best child of the root
+            move_node(self.current_node) # move to the best child
             return self.current_node # return the best child
+        
+        else:
+            # NO CHILDREN
+            # IS VISITED
+            # means game is over
+            return self.current_node
 
 
     def _expansion(self, current_node):
@@ -245,9 +272,9 @@ class TurnEngine():
             current_node.children.append(child_node) # appends this new child node to the current node's list of children            
 
 
-    def _simulation(self, current_player):
+    def _rollout(self, current_player, rollout_node):
         '''
-        On _simulation call, the entire game is simulated to terminus and the outcome of the game is returned
+        On _rollout call, the entire game is simulated to terminus and the outcome of the game is returned
         ''' 
 
         while not self.game_copy.is_game_over():  # checks the state for game over boolean and loops if it's false
@@ -256,11 +283,24 @@ class TurnEngine():
             legal_actions = actions[0]
             player = actions[1]
 
-            #action = self._simulation_policy(possible_moves) # Calls _simulation_POLICY in case needs more complicated
-            action = legal_actions[np.random.randint(len(legal_actions))] # call random move from possible moves
+            if player != current_player:
+                #print("Not active player")
+                killer_action = self.game_copy.check_killer_move(player)
+                if killer_action:
+                    action = killer_action
+                    #print("kill action")
+                else:
+                    action = legal_actions[np.random.randint(len(legal_actions))]
+
+            action = legal_actions[np.random.randint(len(legal_actions))]
+            
+            #print("Player "+str(player)+' chose '+str(action))
             self.game_copy.update_game(action, player) # takes action just pulled at random. Calls MOVE in GameLogic object
         
+        #print("Game is over")
         self.scores = self.game_copy.game_result()
+        #print(self.game_copy._state)
+        #print(self.scores)
         return self.scores[current_player]
 
 

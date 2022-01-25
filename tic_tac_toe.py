@@ -27,14 +27,14 @@ class Game():
         """
         self.positions = [" "] * 9
         self.legal_actions = {}
-        self.players = {0: Player("X"), 1: Player("O")}
+        self.players = {0: Player("0"), 1: Player("1")}
         self.scores = {0: 0, 1: 0}
         self.game_over = False
         self.current_player_num = 0
         self._state = ""
         self.draw_board()
 
-        self.win_arr = {"top_row": [0, 1, 2],
+        self.win_conditions = {"top_row": [0, 1, 2],
                "left_diag": [0, 4, 8],
                "mid_row": [3, 4, 5],
                "bot_row": [6, 7, 8],
@@ -89,6 +89,34 @@ class Game():
         pos = action
         self.make_move(pos, player)
 
+    def check_killer_move(self, player):
+
+        for win_condition in self.win_conditions.values():
+
+            condition_state = [self.positions[num] for num in win_condition]
+            #print("Win condition current state: "+str(condition_state))
+
+            empty = len([i for i in condition_state if i ==' '])
+
+            if empty==1:
+                #print("Two slots filled, checking")
+                condition_index = condition_state.index(' ')
+                action = win_condition[condition_index]
+                #print(action)
+            
+                if len([i for i in condition_state if i==self.players[player].mark])==2:
+                    #print("active player has killing move")
+                    return action
+                
+                for player in self.players:
+                    if len([i for i in condition_state if i==self.players[player].mark])==2:
+                        #print("other player has killing move, must stop")
+                        return action
+                
+        return None
+
+
+
     def is_game_over(self):
         """Checks for the eight win conditions, and whether there are moves left.
 
@@ -97,16 +125,33 @@ class Game():
         """
         avail_actions = self.get_legal_actions()[0]
 
-        for arr in self.win_arr.values():
-            win_arr = [self.positions[num] for num in arr]
-            if win_arr.count(win_arr[0]) == len(win_arr) and win_arr[0] != " ":
+        for win_condition in self.win_conditions.values():
+
+            condition_state = [self.positions[num] for num in win_condition]           
+            #empty = len([i for i in condition_state if i ==' '])
+            #for player in self.players:
+                #print(len([i for i in condition_state if i==self.players[player].mark])==2)
+
+            #print("Win condition being checked: "+str(win_condition))
+            #print("Win condition current state: "+str(condition_state))
+            #print("Win condition slots like first slot: "+str(condition_state.count(condition_state[0])))
+            #print("Win condition slots like second slot: "+str(condition_state.count(condition_state[1])))
+            #print("Win condition slots like second slot: "+str(condition_state.count(condition_state[2])))
+            #print("Win condition slot[0]: "+str(condition_state[0]))
+            #print("Win condition slot[1]: "+str(condition_state[1]))
+            #print("Win condition slot[2]: "+str(condition_state[2]))
+            #print("Slots that are empty: "+str(empty))
+            #print('\n')
+
+            # this counts if all of the slots are the same as the first slot of the condition state, and that the slot is not empty
+            if condition_state.count(condition_state[0]) == len(condition_state) and condition_state[0] != " ":
                 open_positions = sum(x == ' ' for x in self.positions)
-                if self.players[0].mark == win_arr[0]:
-                    self.scores[0] = 10 + 2*open_positions     
-                    self.scores[1] = -10# - 10*open_positions
-                elif self.players[1].mark == win_arr[0]:
-                    self.scores[1] = 10 + 2*open_positions     
-                    self.scores[0] = -10# - 10*open_positions
+                if self.players[0].mark == condition_state[0]:
+                    self.scores[0] = 50   
+                    self.scores[1] = -50# - 10*open_positions
+                elif self.players[1].mark == condition_state[0]:
+                    self.scores[1] = 50
+                    self.scores[0] = -50# - 10*open_positions
                 return True
         
         if len(avail_actions) == 0:
@@ -122,6 +167,7 @@ class Game():
         while not self.is_game_over():
             pos = int(input("Select a move.  "))
             self.make_move(pos, self.current_player_num)
+            #print(self._state)
 
         for player_num in self.scores.keys():
             print(
