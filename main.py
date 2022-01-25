@@ -258,31 +258,41 @@ class CenterOfTable(FactoryDisplay):
         self.first_player_avail = True
 
 
-class Supply(TileContainer):
-    """Supply.  Note: we only need the tile positions for display
-    purposes should we choose to animate the game.  Otherwie, it doesn't matter how we
-    order the tiles.
+class Supply():
+    """Supply.
 
     Args:
         TileContainer ([type]): [description]
     """
 
     def __init__(self, tile_count=0, tile_dictionary=master_tile_dictionary):
-        super(Supply, self).__init__(tile_count, tile_dictionary)
-        self.tile_positions = {i: None for i in range(10)}
+        # super(Supply, self).__init__(tile_count, tile_dictionary)
+        # self.tile_positions = {i: None for i in range(10)}
+        self.tile_positions = []
 
-    def refresh_positions(self):
+    def get_tile_count(self):
+        return len(self.tile_positions)
 
-        pos = 0
+    def fill_supply(self, tiles: dict):
+        for color, cnt in tiles.items():
+            for tile in range(cnt):
+                self.tile_positions.append(color)
 
-        for color in self.tile_dictionary.keys():
-            while self.tile_dictionary[color]:
-                if pos > 10:
-                    raise "Error:  more tiles than spaces available."
-                else:
-                    self.tile_positions[pos] = color
-                    self.tile_dictionary[color] -= 1
-                    pos += 1
+    def get_legal_actions(self):
+        return {pos: self.tile_positions[pos] for pos in range(len(self.tile_positions))}
+
+    # def refresh_positions(self):
+
+    #     pos = 0
+
+    #     for color in self.tile_dictionary.keys():
+    #         while self.tile_dictionary[color]:
+    #             if pos > 10:
+    #                 raise "Error:  more tiles than spaces available."
+    #             else:
+    #                 self.tile_positions[pos] = color
+    #                 self.tile_dictionary[color] -= 1
+    #                 pos += 1
 
 
 class Factory(object):
@@ -901,8 +911,8 @@ class Game():
         of the game, beginning of the round, and after a player is done placing tiles
         in phase two."""
 
-        supply_count = self.supply.tile_count
-        self.supply.add_tiles(self.bag.randomly_choose_tiles(
+        supply_count = self.supply.get_tile_count()
+        self.supply.fill_supply(self.bag.randomly_choose_tiles(
             Game.supply_max - supply_count, self.tower))
 
     def get_legal_actions(self):
@@ -916,7 +926,7 @@ class Game():
             return curr_player.legal_moves, self.current_player_num
         elif curr_player.bonus_earned:
             # Legal actions incluide taking tiles from the supply
-            curr_player.legal_moves = self.supply.tile_positions
+            curr_player.legal_moves = self.supply.get_legal_actions()
             return curr_player.legal_moves.keys(), self.current_player_num
         else:
             # Legal actions include placing tiles on the player board or ending the turn
@@ -1000,7 +1010,7 @@ class Game():
         for player in self.players.values():
             player.done_placing = False
         self.factory.center.reset_first_player()
-        self.supply.refresh_positions()
+        # self.supply.refresh_positions()
 
     def update_game(self, action):
         curr_player = self.players[self.current_player_num]
@@ -1026,10 +1036,11 @@ class Game():
             # supply, remove the tile from the global supply, and refresh the supply
             # tile count
             # Here, the sel_action is a tile color
-            curr_player.change_player_supply({sel_action: 1})
+            curr_player.change_player_supply(
+                {self.supply.tile_positions.pop(action): 1})
             curr_player.bonus_earned -= 1
-            self.supply.add_tiles({sel_action: -1})
-            self.supply.refresh_positions()
+
+            # self.supply.refresh_positions()
         elif type(sel_action) is dict:
             # This is trickier.  The player can choose to stop placing tiles at any time.
             # If they do so, the action is a dictionary of tiles they would like to reserve
@@ -1095,7 +1106,7 @@ class Game():
         self._state += "Center tiles: \n"
         self._state += f"{print_dict(self.factory.center.get_available_tiles(self.wild_color))}\n"
         self._state += "Supply tiles: \n"
-        self._state += f"{print_dict(self.supply.get_available_tiles())}\n"
+        self._state += f"{print(self.supply.tile_positions)}\n"
         for player_number, player in self.players.items():
             self._state += f"Player {player_number} tiles:\n"
             self._state += f"{print_dict(player.player_tile_supply)}\n"
