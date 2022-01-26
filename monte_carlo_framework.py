@@ -22,10 +22,19 @@ class GameEngine():
     def get_legal_actions(self):
         """
         Hook #1
-        Get list of currently available actions
+        Get currently available actions and active player to take an action from the list
+
+        Requires a list with two indices:
+        0: list of legal actions
+        1: active player ID
+
+        Format [[list of legal actions], active player ID]
+
+        The Monte Carlo does not care about the contents of the list of legal actions, and will return
+        a list item in exactly the same format it presents in the list
 
         Returns:
-            [list]: List of legal actions
+            [list]: List of: list of legal actions and active player ID
         """        
 
         return self.game.get_legal_actions()
@@ -34,6 +43,12 @@ class GameEngine():
         """
         Hook #2
         Send action choice and player to game
+
+        After selecting an item from the list of legal actions (see Hook #1),
+        Sends the item back to the game logic. Item is sent back in exactly
+        the same format as received in the list of legal actions.
+
+        Also returns active player ID for action
 
         Args:
             action (list item): selected item from list of legal actions
@@ -46,6 +61,8 @@ class GameEngine():
         Hook #3
         Checks if game has ended
 
+        Requires only True or False
+
         Returns:
             [True/False]: True/False if game is over
         """        
@@ -54,10 +71,13 @@ class GameEngine():
     def game_result(self):
         """
         Hook #4
-        Returns endgame score
+        Retrieves game score
+
+        Must be a dictionary in format playerID: Score 
+        Where playerID matches IDs sent with get_legal_actions
 
         Returns:
-            [type]: [description]
+            [dict]: dictionary in format playerID: score
         """        
         return self.game.game_result()
 
