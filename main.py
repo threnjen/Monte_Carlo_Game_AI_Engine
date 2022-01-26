@@ -10,7 +10,15 @@ master_tile_dictionary = {'red': 0,
                           "orange": 0, "yellow": 0, "green": 0, "blue": 0, "purple": 0}
 
 
-def print_dict(print_dictionary):
+def print_dict(print_dictionary: dict):
+    """Prints a dictionary
+
+    Args:
+        print_dictionary (dict): To print
+
+    Returns:
+        str: Printed dictionary
+    """
     return '\n'.join([f"{key}: {value}" for key, value in print_dictionary.items()])
 
 
@@ -38,6 +46,11 @@ class TileContainer(object):
         self.tile_dictionary = tile_dictionary.copy()
 
     def get_available_tiles(self):
+        """Gets tiles in the container as a dictionary
+
+        Returns:
+            dict: dictionary of color : count pairs
+        """
         return {color: self.tile_dictionary[color] for color in self.tile_dictionary.keys(
         ) if self.tile_dictionary[color] > 0}  # returns dictionary of tiles in the container
         # that are over 0
@@ -217,7 +230,7 @@ class CenterOfTable(FactoryDisplay):
         FactoryDisplay (FactoryDisplay): Parent class
     """
 
-    def __init__(self, tile_count=0, tile_dictionary=master_tile_dictionary, first_player_avail=True):
+    def __init__(self, tile_count=0, tile_dictionary=master_tile_dictionary):
         """Same as factory display, but now takes an optional first_player_avail argument.
         I don't see a case where this would be false on init, but we'll keep it general for now.
 
@@ -231,7 +244,7 @@ class CenterOfTable(FactoryDisplay):
             available.Defaults to True.
         """
         super(CenterOfTable, self).__init__(tile_count, tile_dictionary)
-        self.first_player_avail = first_player_avail
+        self.first_player_avail = True
 
     def take_center_tiles(self, chosen_color: str, wild_color: str):
         """Same as choose_tiles from the FactoryDisplay class, except it returns
@@ -259,40 +272,44 @@ class CenterOfTable(FactoryDisplay):
 
 
 class Supply():
-    """Supply.
+    """Supply, which lives in the center of the scoreboard.
 
-    Args:
-        TileContainer ([type]): [description]
+
     """
 
-    def __init__(self, tile_count=0, tile_dictionary=master_tile_dictionary):
+    def __init__(self):
+        """Generates the supply.  Default is to initialize an empty supply.
+        """
         # super(Supply, self).__init__(tile_count, tile_dictionary)
         # self.tile_positions = {i: None for i in range(10)}
         self.tile_positions = []
 
     def get_tile_count(self):
+        """Returns supply tile count
+
+        Returns:
+            int: tile count
+        """
         return len(self.tile_positions)
 
     def fill_supply(self, tiles: dict):
+        """Fills the supply with tiles from a dictionary.
+        This is called after the get_tile_count method, so there isn't a risk of overfilling.
+
+        Args:
+            tiles (dict): dictionary of tile: count pairs.
+        """
         for color, cnt in tiles.items():
             for tile in range(cnt):
                 self.tile_positions.append(color)
 
     def get_legal_actions(self):
+        """Gets the possible tiles we can pull
+
+        Returns:
+            dict: Dictionary of position : color pairs.
+        """
         return {pos: self.tile_positions[pos] for pos in range(len(self.tile_positions))}
-
-    # def refresh_positions(self):
-
-    #     pos = 0
-
-    #     for color in self.tile_dictionary.keys():
-    #         while self.tile_dictionary[color]:
-    #             if pos > 10:
-    #                 raise "Error:  more tiles than spaces available."
-    #             else:
-    #                 self.tile_positions[pos] = color
-    #                 self.tile_dictionary[color] -= 1
-    #                 pos += 1
 
 
 class Factory(object):
@@ -313,7 +330,9 @@ class Factory(object):
     def take_from_display(self, display_number: int, chosen_color: str, wild_color: str):
         """Takes a tile from the given display and returns the tiles chosen and returns the tiles
         from that display (including a wild, unless the wild was the chosen color).  It puts the
-        remaining tiles in the center location.
+        remaining tiles in the center location.  Note that wild cannot be
+        taken if other tiles are present, and any color choice will also
+        return one wild (if present)
 
         Args:
             display_number (int):  Display to take from
@@ -329,9 +348,29 @@ class Factory(object):
         return received_tiles, False
 
     def take_from_center(self, chosen_color: str, wild_color: str):
+        """Takes tiles from the center object.  Note that wild cannot be
+        taken if other tiles are present, and any color choice will also
+        return one wild (if present)
+
+        Args:
+            chosen_color (str): Color to take
+            wild_color (str): Wild for the round
+
+        Returns:
+            dict: Dictionary of color: count pairs
+        """
         return self.center.take_center_tiles(chosen_color, wild_color)
 
-    def get_available_tile_choices(self, wild_color):
+    def get_available_tile_choices(self, wild_color: str):
+        """Gets available options in all factory displays and
+        in the center.
+
+        Args:
+            wild_color (str): Wild color for the round
+
+        Returns:
+            dict: Dictionary of lists, with choice index : [color, count] pairs
+        """
         tile_choices = {}
         i = 0
         for index, fact in self.factory_displays.items():
@@ -347,6 +386,16 @@ class Factory(object):
         return tile_choices
 
     def take_tiles(self, action, wild_color: str):
+        """Takes tiles based on the action.  The action is derived from the
+        get_available_tile_choices function, so can always be decoded.
+
+        Args:
+            action (list): [index, color] pairs
+            wild_color (str): Wild color for the round
+
+        Returns:
+            dict:  tiles taken, as color: count pairs.  Note there can be at most two pairs
+        """
         index = action[0]
         color = action[1]
         if index == -1:
@@ -459,12 +508,30 @@ class Star(object):
         return points
 
     def check_contiguous(self, position: int):
+        """Checks both left and right contiguous from a given position.
+        This is used to determine points when placing a tile.  Note this is
+        really annoying because star positions are 1-6, not 0-5 (see the
+        individual functions)
+
+        Args:
+            position (int): position to check
+
+        Returns:
+            int: Points earned
+        """
         points = self.check_left_contiguous(position)
         if points < 6:
             points = self.check_right_contiguous(position, points)
         return points
 
     def get_open_positions(self):
+        """Gets open positions.  Note positions are stored as index: False
+        until they are occupied (in other words, the tile_positions dictionary
+        tracks positions that are currently filled with a tile, not open.)
+
+        Returns:
+            dict: position: occupied pairs.  Note all values will be False
+        """
         return {pos: value for pos, value in self.tile_positions.items() if not value}
 
 
@@ -472,6 +539,11 @@ class PlayerBoard(object):
     """The player board stores the player stars, which in turn store the tiles placed.
     It may be best to have a function to add tiles to the star from here."""
 
+    bonus_star_index = 0
+    bonus_pos_index = 1
+    action_star_index = 0
+    action_tile_index = 1
+    action_pos_index = 2
     bonuses_lookup = {"blue1": ["YBS"],
                       "blue2": ["YBS", "BAP"],
                       "blue3": ['BAP', 'BRS'],
@@ -517,6 +589,7 @@ class PlayerBoard(object):
                       }
 
     bonus_criteria = {
+
 
         "BAP": {"criteria": [("blue", 2), ("blue", 3), ("all", 2), ("all", 3)],
                 "reward": 1},
@@ -570,17 +643,27 @@ class PlayerBoard(object):
         self.stars = {color: Star(color) for color in
                       list(master_tile_dictionary.keys()) + ["all"]}
 
-    def check_valid_position(self, star_color, tile_color, position):
-        try:
-            star = self.stars[star_color]
-            valid_position = not star.tile_positions[position]
-            if star_color == "all":
-                valid_color = star.colors_allowed[tile_color]
-                return valid_position and valid_color
-            else:
-                return valid_position and (star_color == tile_color)
-        except KeyError:
-            return False
+    # def check_valid_position(self, star_color, tile_color, position):
+    #     """Checks valid positions in a star.  Deprecated
+
+    #     Args:
+    #         star_color ([type]): [description]
+    #         tile_color ([type]): [description]
+    #         position ([type]): [description]
+
+    #     Returns:
+    #         [type]: [description]
+    #     """
+    #     try:
+    #         star = self.stars[star_color]
+    #         valid_position = not star.tile_positions[position]
+    #         if star_color == "all":
+    #             valid_color = star.colors_allowed[tile_color]
+    #             return valid_position and valid_color
+    #         else:
+    #             return valid_position and (star_color == tile_color)
+    #     except KeyError:
+    #         return False
 
     def get_legal_actions(self, avail_tiles: dict, wild_color: str):
         """Probably the ugliest function I have so far.  This checks the legal placement of tiles
@@ -648,9 +731,9 @@ class PlayerBoard(object):
         Returns:
             [type]: [description]
         """
-        star_color = action[0]
-        tile_color = action[1]
-        position = action[2]
+        star_color = action[self.action_star_index]
+        tile_color = action[self.action_tile_index]
+        position = action[self.action_pos_index]
         tile_points = self.stars[star_color].add_tile(position, tile_color)
         bonus_tile_count = self.bonus_tile_lookup(star_color, position)
         bonus_points = self.check_multistar_bonus(position)
@@ -686,8 +769,8 @@ class PlayerBoard(object):
         tile_bonus_lookup = PlayerBoard.bonuses_lookup[f"{star_color}{position}"]
         for potential_bonus in tile_bonus_lookup:
 
-            bonus_achieved = all([self.stars[tile[0]].tile_positions[tile[1]]
-                                  for tile in PlayerBoard.bonus_criteria[potential_bonus]["criteria"]])
+            bonus_achieved = all([self.stars[tile[self.bonus_star_index]].tile_positions[tile[self.bonus_pos_index]]
+                                 for tile in self.bonus_criteria[potential_bonus]["criteria"]])
 
             if bonus_achieved:
                 bonus_reward += PlayerBoard.bonus_criteria[potential_bonus]["reward"]
@@ -797,6 +880,15 @@ class Player(object):
                 self.player_tile_supply[color] -= added_tiles[color]
 
     def choose_tiles_to_reserve(self, tiles_to_choose=4, act_count=0):
+        """We can only reserve four tiles, so this picks them.
+
+        Args:
+            tiles_to_choose (int, optional): [description]. Defaults to 4.
+            act_count (int, optional): [description]. Defaults to 0.
+
+        Returns:
+            [type]: [description]
+        """
         tiles = []
         for color, cnt in self.player_tile_supply.items():
             if cnt:
@@ -832,33 +924,19 @@ class Player(object):
     def get_tile_count(self):
         return sum([tile_count for tile_count in self.player_tile_supply.values()])
 
-    def check_tile_supply(self, color, wilds_used, tiles_needed):
+    def check_tile_supply(self, color: str, wilds_used: int, tiles_needed: int):
+        """Confirms we have the correct number of tiles to cover a position.
+        Used to determine legal moves.
+
+        Args:
+            color (str): Tile color
+            wilds_used (int): Number of wilds we can use
+            tiles_needed (int): Number of tiles needed
+
+        Returns:
+            bool: Player has sufficient tiles for position
+        """
         return self.player_tile_supply[color] + wilds_used >= tiles_needed
-
-    # def reserve_tiles(self):
-    #     total_tiles = self.get_tile_count()
-    #     reserved_tiles = {}
-
-    #     print(f"""You currently have {total_tiles} remaining.  These are:""")
-    #     for color, value in self.player_tile_supply.items():
-    #         print(f"{color.capitalize()}: {value}")
-    #     while True:
-    #         reserved_input = input(f"""Please select  {Player.max_tile_reserve} tiles to reserve.
-    #         To do so, enter the number of each you would like to reserve in the order shown above
-    #         (Red, Orange, Yellow, Green, Blue, Purple), with each value separated by a space.
-    #         You must include all six colors in your response.""").split()
-    #         try:
-    #             if sum(reserved_input) <= 4:
-    #                 reserved_tiles["red"] = reserved_input[0]
-    #                 reserved_tiles["orange"] = reserved_input[1]
-    #                 reserved_tiles["yellow"] = reserved_input[2]
-    #                 reserved_tiles["green"] = reserved_input[3]
-    #                 reserved_tiles["blue"] = reserved_input[4]
-    #                 reserved_tiles["purple"] = reserved_input[5]
-    #                 self.player_tile_supply = master_tile_dictionary.copy()
-    #                 self.player_board.reserved_tiles = reserved_tiles
-    #         except KeyError:
-    #             pass
 
 
 class Game():
@@ -869,6 +947,7 @@ class Game():
     tiles_per_color = 22
     total_rounds = 6
     supply_max = 10
+    reserve_max = 4
     wild_list = {1: "purple", 2: "green",
                  3: "orange", 4: "yellow", 5: "blue", 6: "red"}
     factory_req = {2: 5, 3: 7, 4: 9}
@@ -952,41 +1031,6 @@ class Game():
 
             return legal_moves.keys(), self.current_player_num
 
-        # def update_game(self, action):
-
-        # def check_tiles_available(self):
-        #     """Checks whether tiles are available in any factory display or in the center.
-        #     We need this to trigger phase two of the round.
-
-        #     Returns:
-        #         bool: Whether there are any tiles remaining.
-        #     """
-        #     tiles_available = all([self.factory.factory_displays[i].get_available_tiles(
-        #     ) for i in self.factory.factory_displays.keys()])
-        #     tiles_available = tiles_available and self.factory.center.get_available_tiles()
-        #     return tiles_available
-
-    # def start_game(self):
-    #     """Starts an instance of the game.
-    #     """
-    #     self.fill_supply()
-    #     while self.current_round < Game.total_rounds:
-    #         self.current_round += 1
-    #         wild_color = Game.wild_list[self.current_round]
-    #         self.start_round(self.current_round, wild_color)
-    #         current_player_index = self.first_player
-    #         # Phase one
-    #         while self.check_tiles_available():
-    #             while True:
-    #                 turn_over = self.player_turn(
-    #                     current_player_index, wild_color)
-    #                 if turn_over:
-    #                     current_player_index += 1
-    #                     break
-    #         # Phase two
-    #         for i in range(self.player_count):
-    #             self.place_tiles(current_player_index, wild_color)
-
     def start_round(self):
         """Begins a round (including the first one).
 
@@ -1014,6 +1058,12 @@ class Game():
         # self.supply.refresh_positions()
 
     def update_game(self, action):
+        """Updates the game with a player action.  Note that an action can be
+        multiple types depending on the action.  This is probably really bad.
+
+        Args:
+            action (var): Player action.
+        """
         curr_player = self.players[self.current_player_num]
         sel_action = curr_player.legal_moves[action]
         if self.phase == 1:
@@ -1050,7 +1100,7 @@ class Game():
             # mark the player is done placing tiles.  This last step ensures that next time they
             # have a turn, it will be round 1 (see get_legal_moves)
             curr_player.player_board.reserved_tiles = sel_action
-            curr_player.player_score += min(4 -
+            curr_player.player_score += min(self.reserve_max -
                                             curr_player.get_tile_count(), 0)
             curr_player.player_tile_supply = master_tile_dictionary.copy()
             curr_player.done_placing = True
@@ -1085,6 +1135,7 @@ class Game():
             self.current_round += 1
             if self.current_round > self.total_rounds:
                 self.game_over = True
+                print(f"Game result: {print_dict(self.game_result())}")
             else:
                 self.start_round()
 
@@ -1119,6 +1170,8 @@ class Game():
                 self._state += f"{print_dict(star.get_open_positions())}\n"
 
     def play_game(self):
+        """Plays the game (in the case where we are not using a bot)
+        """
         while not self.is_game_over():
             self.get_legal_actions()
             print(self._state)
@@ -1127,83 +1180,6 @@ class Game():
 
             action = int(input("Choose an action"))
             self.update_game(action)
-
-    # def player_turn(self, current_player_index, wild_color):
-    #     """Allows the player to collect tiles from a factory display or center.
-
-    #     Args:
-    #         current_player_index (int): Index of current player.  This is NOT the player number.
-    #         wild_color (str): Wild colors
-
-    #     Returns:
-    #         bool: Whether the player took the turn successfully or they took a tile that wasn't
-    #         there.
-    #     """
-
-    #     current_player = self.players[current_player_index %
-    #                                   self.player_count]
-    #     try:
-    #         take_tiles_input = current_player.take_tiles(wild_color)
-    #         display_number = take_tiles_input[0]
-    #         selected_color = take_tiles_input[1]
-    #     except IndexError:
-    #         return False
-    #     if display_number == -1:
-    #         received_tiles, first_player = self.factory.take_from_center(
-    #             selected_color, wild_color)
-    #         if received_tiles:
-    #             current_player.add_to_player_supply(received_tiles)
-    #             if first_player:
-    #                 current_player.first_player = True
-
-    #     else:
-    #         try:
-    #             received_tiles = self.factory.take_from_display(
-    #                 display_number, selected_color, wild_color)
-    #             if received_tiles:
-    #                 current_player.add_to_player_supply(received_tiles)
-    #                 return True
-    #         except IndexError:
-    #             print("Invalid display.")
-    #     return received_tiles
-
-    # def place_tiles(self, current_player_index, wild_color):
-    #     current_player = self.players[current_player_index % self.player_count]
-    #     while True:
-    #         place_tile_input = current_player.place_tiles()
-
-    #         if place_tile_input[0] == 0 and len(place_tile_input) == 1:
-    #             break
-    #         try:
-    #             star_color = place_tile_input[0]
-    #             placement_location = place_tile_input[1]
-    #             tile_color = place_tile_input[2]
-    #             wild_tiles = place_tile_input[3]
-    #             board = current_player.player_board
-    #             try:
-    #                 if board.check_valid_position(star_color, tile_color, placement_location):
-    #                     if current_player.check_tile_supply(tile_color, wild_tiles, placement_location):
-    #                         bonus_count, bonus_points = board.add_tile_to_star(
-    #                             star_color, tile_color, placement_location)
-    #                         current_player.player_score += bonus_points
-    #                         while bonus_count:
-    #                             supply_positions = current_player.take_supply_tiles(
-    #                                 wild_color, bonus_count)
-    #                             for pos in range(bonus_count):
-    #                                 try:
-    #                                     supply_tiles = self.supply.tile_positions
-    #                                     if supply_tiles[supply_positions[pos]]:
-    #                                         current_player.add_to_player_supply(
-    #                                             {supply_tiles[supply_positions[pos]]: 1})
-    #                                         supply_tiles[supply_positions[pos]] = None
-    #                                         bonus_count -= 1
-    #                                 except IndexError:
-    #                                     pass
-    #             except KeyError:
-    #                 pass
-    #         except IndexError:
-    #             pass
-    #     current_player.reserve_tiles()
 
 
 # %%
