@@ -21,7 +21,7 @@ class Game():
     """Tic tac toe game
     """
 
-    def __init__(self):
+    def __init__(self,players):
         """Calling the game doesn't create any unique starting conditions,
         since there are always two players.
         """

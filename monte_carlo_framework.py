@@ -4,7 +4,8 @@ import numpy as np
 import copy
 import pandas as pd
 #from simple_array_game import SimpleArrayGame as Game
-from tic_tac_toe import Game
+#from tic_tac_toe import Game
+from otrio import Game
 from random import randint
 
 
@@ -15,7 +16,7 @@ class GameEngine():
         Initializes game
         Sets player count
         """        
-        self.game = Game()
+        self.game = Game(players)
         #self.state = self.game._state
         self.player_count = players
         
@@ -32,6 +33,9 @@ class GameEngine():
 
         The Monte Carlo does not care about the contents of the list of legal actions, and will return
         a list item in exactly the same format it presents in the list
+
+        The game logic must manage the correct player turns. The Monte Carlo engine will assign the
+        next legal action to the player passed, with no safety checks.
 
         Returns:
             [list]: List of: list of legal actions and active player ID
@@ -54,7 +58,7 @@ class GameEngine():
             action (list item): selected item from list of legal actions
             player (int): player number
         """        
-        #return self.game.update_game(action, player)
+        return self.game.update_game(action, player)
 
     def is_game_over(self):
         """
@@ -212,6 +216,7 @@ class MonteCarloEngine():
         Returns:
             current_node (object instance): MonteCarloNode object instance
         """        
+
         current_node = node
         self.player=current_player # call legal moves to get the current player
 
@@ -307,7 +312,6 @@ class MonteCarloEngine():
         Returns:
             scores (dict): dictionary of scores with player ID as keys
         """        
-
         while not self.game_copy.is_game_over():  # checks the state for game over boolean and loops if it's false
 
             actions=self.game_copy.get_legal_actions() 
@@ -398,6 +402,6 @@ class MonteCarloNode():
         return self.children[np.argmax(choices_weights)] # gets index of max score and sends back identity of child
 
 
-players = 2
+players = 3
 game = GameEngine(players)
-game.play_game_byturns(simulations = 1111)
+game.play_game_byturns(simulations = 50)
