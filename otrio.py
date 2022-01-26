@@ -118,8 +118,13 @@ class Game():
         self.board[position] = player_mark
         self.draw_board()
 
-        self.current_player_num = (
-            self.current_player_num + 1) % self.player_count + 1
+        if self.current_player_num == max(self.scores.keys()):
+            self.current_player_num = 1
+        else:
+            self.current_player_num += 1
+        
+        #self.current_player_num = (
+        #    self.current_player_num + 1) % self.player_count + 1
 
 
     def get_legal_actions(self):
@@ -166,7 +171,6 @@ class Game():
             self.win_array.remove(i)
         
         if len(avail_actions) == 0:
-            print("no avail actions, ending game")
             return True
         else:
             return False
