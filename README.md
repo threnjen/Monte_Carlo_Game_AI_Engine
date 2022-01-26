@@ -1,4 +1,5 @@
-# Monte Carlo Simulation AI to support Azul Summer Pavilion (and other games)
+# Monte Carlo AI Engine
+## with Azul: Summer Pavilion Game Logic
 
 This project entails these components:
 - Monte Carlo AI Engine (authored and maintained by [Jen Wadkins](https://github.com/threnjen))
