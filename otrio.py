@@ -150,22 +150,23 @@ class Game():
             test_indices = [tuple(x) for x in single_win_condition] 
             test_win_contents = [self.board[i] for i in test_indices]
         
-        if 0 not in test_win_contents and not all(element == test_win_contents[0] for element in test_win_contents):
-            remove_conditions.append(single_win_condition)
-        elif 0 not in test_win_contents and all(element == test_win_contents[0] for element in test_win_contents):
-            player_winner = test_win_contents[0]
-            self.scores[player_winner] = 10
-            for k in self.scores.keys():
-                if k != player_winner:
-                    self.scores[k] = -10
-            return True
-        else:
-            pass
+            if 0 not in test_win_contents and not all(element == test_win_contents[0] for element in test_win_contents):
+                remove_conditions.append(single_win_condition)
+            elif 0 not in test_win_contents and all(element == test_win_contents[0] for element in test_win_contents):
+                player_winner = test_win_contents[0]
+                self.scores[player_winner] = 10
+                for k in self.scores.keys():
+                    if k != player_winner:
+                        self.scores[k] = -10
+                return True
+            else:
+                continue
 
         for i in remove_conditions:
             self.win_array.remove(i)
         
         if len(avail_actions) == 0:
+            print("no avail actions, ending game")
             return True
         else:
             return False
