@@ -66,13 +66,14 @@ class GameEngine():
         self.montecarlo = MonteCarloEngine(current_player) # initiate the monte carlo engine
         self.current_node = self.montecarlo.root
 
+        self.sims_this_turn = simulations
+
         while not self.game.is_game_over():
 
             self.turn += 1 # increments the game turn
 
-            # Establish number of simulations per turn. Uncomment other choices below for reduced sims per turn.
-            self.sims_this_turn = simulations
-            #self.sims_this_turn = int(np.ceil(self.sims_this_turn*.8)) # get the number of simulations for the rounds
+            # Establish number of simulations per turn. Uncomment choices below for reduced sims per turn.
+            self.sims_this_turn = int(np.ceil(self.sims_this_turn*.9)) # get the number of simulations for the rounds
             #self.sims_this_turn = int(np.ceil(self.simulations/(self.turn))) # get the number of simulations for the rounds
             
             # Beginning of game repoprting:
@@ -84,9 +85,8 @@ class GameEngine():
 
             # Run the monte carlo engine for this turn. This accesses the meat of the engine right here!
             # returns a chosen action to implement
-            print(current_player)
             self.action, self.current_node = self.montecarlo.play_turn(self.sims_this_turn, self.game, current_player, self.current_node)
-            
+
             self.state = self.game.update_game(self.action, current_player) # updates the true game state with the MC simmed action
 
             current_player = self.game.get_legal_actions()[1] # update current player
@@ -142,21 +142,27 @@ class MonteCarloEngine():
 
         Returns the optimal turn action for the game state it was provided
         '''
+        self.current_node = current_node
+
         for i in range(num_sims):  # Run x simulations for this turn
+            #print("Sim "+str(i))
             # COPY THE GAME STATE HERE AND ROLL OUT ON IT NOT THE REAL GAME
             self.game_copy = copy.deepcopy(game)
 
             while not self.game_copy.is_game_over(): # for as long as the copied game is not over:
 
-                self.rollout_node = self._selection(current_node, current_player) # call _selection to move to a node to roll out, taking the moves along the way
-                self.rollout_node.player_owner
+                # call _selection to find the node to roll out, taking the moves along the way
+                self.rollout_node = self._selection(self.current_node, current_player) 
+                #print("Rollout node: "+str(self.rollout_node))
 
                 self.scores = self._rollout() # call _rollout to finish simulating the game
 
-                self._backpropogate(self.scores, self.rollout_node) # _backpropogates with the reward starting from the rollout_node
+                self._backpropogate(self.scores, self.rollout_node) # _backpropogates with the scores starting from the rollout_node
 
         # Simulations have finished running, time to get the best move and return it to the game engine
-        self.selected_node = self.root.best_child(print_weights=False) # Calls BEST_CHILD for the node we started on
+        #print(self.current_node)
+        #print(len(self.current_node.children))
+        self.selected_node = self.current_node.best_child(print_weights=True) # Calls BEST_CHILD for the node we started on
         self.best_action = self.selected_node.node_action
 
         return self.best_action, self.selected_node # returns the best child node to the main function.
@@ -173,51 +179,64 @@ class MonteCarloEngine():
 
         Now follow _expansion protocol.
         '''
-        self.current_node = node
+        current_node = node
         self.player=current_player # call legal moves to get the current player
+        #print(current_node, current_node.number_of_visits, len(current_node.children))
+
 
         def move_node(current_node, player):
             action = current_node.node_action # get the action to take from the current node
             self.state = self.game_copy.update_game(action, player) # update the game copy with the action and the player taking the move
 
         # Evaluate our incoming node.
-            # Does it have children?
-            # has it been visited?
-            # Who is the player for the node?
-
-        # Are we at a leaf node?
-
-        while len(self.current_node.children) != 0 and not self.current_node.number_of_visits == 0: 
+        while len(current_node.children) > 0 and current_node.number_of_visits > 0: 
+            #print("Node has children, has been visited")
             # HAS CHILDREN
             # HAS BEEN VISITED
-            self.current_node = self.current_node.best_child(print_weights=False) # change the current node to the best child
-            move_node(self.current_node, self.player) # take the move of the new current node
+            current_node = current_node.best_child(print_weights=False) # change the current node to the best child
+            move_node(current_node, self.player) # take the move of the new current node
             self.player=self.game_copy.get_legal_actions()[1]
+            #print(current_node, current_node.number_of_visits, len(current_node.children))
             # loop and check again if we hit a leaf
             # this branch may move more than one node down to find a new expansion point
-        
-        # Now we have reached a leaf node which has never been visited
-        if self.current_node.number_of_visits == 0 and not self.current_node == self.root:
+
+        # Now we have reached a leaf node
+
+        if len(self.game_copy.get_legal_actions()[0])==0:
+            # NO CHILDREN
+            # HAS BEEN VISITED
+            # means game is over
+            #print("Game is over, returning current node")
+            return current_node
+
+
+        elif current_node.number_of_visits == 0 and not current_node == self.root:
+            #print("Node has no children, has not been visited, is not root")
             # NO CHILDREN
             # NOT VISITED
             # NOT ROOT 
-            self._expansion(self.current_node, self.player) # expand the current leaf
-            return self.current_node # return current node for rollout
+            self._expansion(current_node, self.player) # expand the current leaf
+            return current_node # return current node for rollout
 
-        elif self.current_node.number_of_visits == 0 and self.current_node == self.root:
+        elif len(current_node.children) == 0 and current_node.number_of_visits > 0 and not current_node == self.root:
+            #print("Node has no children, has been visited, is not root")
+            # NO CHILDREN
+            # IS VISITED
+            # NOT ROOT
+            self._expansion(current_node, self.player) # expand the root
+            current_node = current_node.best_child(print_weights=False) # get the best child of the root
+            move_node(current_node, self.player) # move to the best child
+            return current_node # return the best child as current node for rollout
+
+        elif current_node.number_of_visits == 0 and current_node == self.root:
+            #print("Node has no children, has not been visited, is root")
             # NO CHILDREN
             # NOT VISITED
             # IS ROOT
-            self._expansion(self.current_node, self.player) # expand the root
-            self.current_node = self.current_node.best_child(print_weights=False) # get the best child of the root
-            move_node(self.current_node, self.player) # move to the best child
-            return self.current_node # return the best child as current node for rollout
-        
-        else:
-            # NO CHILDREN
-            # IS VISITED
-            # means game is over
-            return self.current_node
+            self._expansion(current_node, self.player) # expand the root
+            current_node = current_node.best_child(print_weights=False) # get the best child of the root
+            move_node(current_node, self.player) # move to the best child
+            return current_node # return the best child as current node for rollout
 
 
     def _expansion(self, current_node, current_player):
@@ -321,7 +340,7 @@ class MonteCarloNode():
 
         return
 
-    def best_child(self, c_param=np.sqrt(2), print_weights=False):
+    def best_child(self, c_param=2, print_weights=False):
         '''
         selects best child node from available array
         first param is exploitation and second is exploration
@@ -338,7 +357,7 @@ class MonteCarloNode():
                 choices_weights.append(1000)
             
             if print_weights==True:
-                print(c.depth, c.label, score)
+                print(c.depth, c.label, score, c)
 
         return self.children[np.argmax(choices_weights)] # gets index of max score and sends back identity of child
 
@@ -348,5 +367,5 @@ class Player():
 
 players = 2
 game = GameEngine(players)
-game.play_game_byturns(simulations = 1000)
+game.play_game_byturns(simulations = 1111)
 #game.play_entire_game(simulations = 1000, game_label='array_1000')

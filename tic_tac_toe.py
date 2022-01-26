@@ -147,11 +147,11 @@ class Game():
             if condition_state.count(condition_state[0]) == len(condition_state) and condition_state[0] != " ":
                 open_positions = sum(x == ' ' for x in self.positions)
                 if self.players[0].mark == condition_state[0]:
-                    self.scores[0] = 1   
-                    self.scores[1] = -1# - 10*open_positions
+                    self.scores[0] = 10   
+                    self.scores[1] = -10# - 10*open_positions
                 elif self.players[1].mark == condition_state[0]:
-                    self.scores[1] = 1
-                    self.scores[0] = -1# - 10*open_positions
+                    self.scores[1] = 10
+                    self.scores[0] = -10# - 10*open_positions
                 return True
         
         if len(avail_actions) == 0:
