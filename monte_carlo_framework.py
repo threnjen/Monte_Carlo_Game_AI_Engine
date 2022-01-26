@@ -193,7 +193,7 @@ class MonteCarloEngine():
                 self._backpropogate(self.scores, self.rollout_node) # _backpropogates with the scores starting from the rollout_node
 
         # Simulations have finished running, time to get the best move and return it to the game engine
-        selected_node = self.current_node.best_child(print_weights=True) # Calls BEST_CHILD for the node we started on
+        selected_node = self.current_node.best_child(print_weights=False) # Calls BEST_CHILD for the node we started on
 
         return selected_node # returns the best child node to the main function.
 
@@ -402,6 +402,6 @@ class MonteCarloNode():
         return self.children[np.argmax(choices_weights)] # gets index of max score and sends back identity of child
 
 
-players = 3
+players = 4
 game = GameEngine(players)
-game.play_game_byturns(simulations = 50)
+game.play_game_byturns(simulations = 5556)#5556
