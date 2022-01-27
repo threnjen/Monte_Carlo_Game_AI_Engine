@@ -6,7 +6,8 @@ import sys
 import pandas as pd
 #from simple_array_game import SimpleArrayGame as Game
 #from tic_tac_toe import Game
-from otrio import Game
+#from otrio import Game
+from connect_four import Game
 from random import randint
 
 
@@ -419,7 +420,7 @@ class MonteCarloNode():
         return self.children[np.argmax(choices_weights)] # gets index of max score and sends back identity of child
 
 
-players = 4
+players = int(sys.argv[2])
 game = GameEngine(players)
 
 #print(sys.argv)
