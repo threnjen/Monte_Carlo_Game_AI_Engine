@@ -30,7 +30,7 @@ class Game():
         self.game_over = False
         self.current_player = 0
         self.legal_actions = {}
-        self.state = ""
+        self._state = ""
 
     def test_array(self, test):
         """Simple helper function to determine if an array contains
@@ -126,11 +126,11 @@ class Game():
     def save_state(self):
         """Saves the game state for printing
         """
-        self.state = ""
+        self._state = ""
         for row in range(self.rows):
-            self.state += "|".join(self.grid[row][column]
-                                   for column in range(self.columns)) + "\n"
-            self.state += "_" * (self.columns * 2 - 1) + "\n"
+            self._state += "|".join(self.grid[row][column]
+                                    for column in range(self.columns)) + "\n"
+            self._state += "_" * (self.columns * 2 - 1) + "\n"
 
     def game_result(self):
         """Returns the scores
@@ -144,7 +144,7 @@ class Game():
         self.save_state()
         while not self.is_game_over():
             self.get_legal_actions()
-            print(self.state)
+            print(self._state)
             print(self.legal_actions)
             action = int(input("Choose an action"))
             self.update_game(action)
