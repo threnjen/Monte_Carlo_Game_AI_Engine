@@ -105,7 +105,7 @@ class Game():
         if not legal_actions:
             self.game_over = True
         self.legal_actions = legal_actions
-        return legal_actions.keys(), self.current_player
+        return list(legal_actions.keys()), self.current_player
 
     def update_game(self, action):
         """Processes selected action
