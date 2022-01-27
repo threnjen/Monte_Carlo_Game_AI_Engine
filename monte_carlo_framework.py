@@ -144,7 +144,7 @@ class GameEngine():
             self.game_log = self.game_log.append(turn_log, ignore_index=True)
 
             # Add simulation decay if desired. Uncomment choices below for two types of simulation decay.
-            self.sims_this_turn = int(np.ceil(self.sims_this_turn*.9)) # simulation decay of .9 each round
+            #self.sims_this_turn = int(np.ceil(self.sims_this_turn*.9)) # simulation decay of .9 each round
             #self.sims_this_turn = int(np.ceil(self.simulations/(self.turn))) # simulation decay to absolute simulations/turn each round
             
 

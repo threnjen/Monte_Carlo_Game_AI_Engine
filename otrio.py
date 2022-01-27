@@ -105,8 +105,6 @@ class Game():
                     [[0,2,2], [1,2,2], [2,2,2]], [[0,2,0], [1,2,1], [2,2,2]], [[0,0,2], [1,1,2], [2,2,2]]],
         }
         
-        self.win_array = list(self.win_conditions.values())
-
     def draw_board(self):
 
         self._state = f"""
