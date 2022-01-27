@@ -138,6 +138,7 @@ class GameEngine():
 
             self.current_node = self.montecarlo.play_turn(self.sims_this_turn, self.game, current_player, self.current_node)
             best_action = self.current_node.node_action # gets action of the returned node
+            print("Move: "+str(best_action))
 
             self.game.update_game(best_action, current_player) # updates the true game state with the MC simmed action
             turn_log['Simulations'] = self.sims_this_turn
@@ -247,7 +248,7 @@ class MonteCarloEngine():
         Returns:
             current_node (object instance): MonteCarloNode object instance
         """        
-
+        #print("Selection")
         current_node = node
         self.player=current_player # call legal moves to get the current player
 
@@ -313,6 +314,7 @@ class MonteCarloEngine():
             current_node (object instance): MonteCarloNode object instance
             current_player (int): current player ID
         """        
+        #print("Expansion")
         actions_to_pop=self.game_copy.get_legal_actions()[0] # call to get legal moves. Calls GET_LEGAL_ACTIONS in GameLogic
 
         while len(actions_to_pop) != 0:
@@ -343,6 +345,8 @@ class MonteCarloEngine():
         Returns:
             scores (dict): dictionary of scores with player ID as keys
         """        
+
+        #print("Rollout")
         while not self.game_copy.is_game_over():  # checks the state for game over boolean and loops if it's false
 
             actions=self.game_copy.get_legal_actions() 
