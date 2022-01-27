@@ -35,9 +35,9 @@ class Game():
     def is_game_over(self):
 
         # Row win
-        for i in range(self.rows):
-            for j in range(self.columns - self.win_cnt+1):
-                test = [self.grid[i][j+k] for k in range(self.win_cnt)]
+        for row in range(self.rows):
+            for column in range(self.columns - self.win_cnt+1):
+                test = [self.grid[row][column+k] for k in range(self.win_cnt)]
                 if self.test_array(test):
                     self.game_over = True
                     self.players[self.current_player].score = self.win_points
@@ -45,25 +45,27 @@ class Game():
 
         # Column win
 
-        for j in range(self.columns):
-            for i in range(self.rows - self.win_cnt+1):
-                test = [self.grid[i+k][j] for k in range(self.win_cnt)]
+        for column in range(self.columns):
+            for row in range(self.rows - self.win_cnt+1):
+                test = [self.grid[row+k][column] for k in range(self.win_cnt)]
                 if self.test_array(test):
                     self.game_over = True
                     return True
 
         # Down/right diagonal
-        for i in range(self.rows - self.win_cnt+1):
-            for j in range(self.columns - self.win_cnt+1):
-                test = [self.grid[i+k][j+k] for k in range(self.win_cnt)]
+        for row in range(self.rows - self.win_cnt+1):
+            for column in range(self.columns - self.win_cnt+1):
+                test = [self.grid[row+k][column+k]
+                        for k in range(self.win_cnt)]
                 if self.test_array(test):
                     self.game_over = True
                     return True
 
         # up/right diagonal
-        for i in range(self.win_cnt - 1, self.rows):
-            for j in range(self.columns - self.win_cnt+1):
-                test = [self.grid[i-k][j+k] for k in range(self.win_cnt)]
+        for row in range(self.win_cnt - 1, self.rows):
+            for column in range(self.columns - self.win_cnt+1):
+                test = [self.grid[row-k][column+k]
+                        for k in range(self.win_cnt)]
                 if self.test_array(test):
                     self.game_over = True
                     return True
@@ -76,9 +78,9 @@ class Game():
     def get_legal_actions(self):
         legal_actions = {}
         act_cnt = 0
-        for j in range(self.columns):
-            if not all([self.grid[i][j] != " " for i in range(self.rows)]):
-                legal_actions[act_cnt] = j
+        for column in range(self.columns):
+            if not all([self.grid[row][column] != " " for row in range(self.rows)]):
+                legal_actions[act_cnt] = column
                 act_cnt += 1
 
         if not legal_actions:
@@ -88,10 +90,10 @@ class Game():
 
     def update_game(self, action):
         sel_action = self.legal_actions[action]
-        for i in range(self.rows):
-            if self.grid[self.rows - i - 1][sel_action] == " ":
+        for row in range(self.rows):
+            if self.grid[self.rows - row - 1][sel_action] == " ":
                 self.grid[self.rows -
-                          i - 1][sel_action] = self.players[self.current_player].mark
+                          row - 1][sel_action] = self.players[self.current_player].mark
                 break
         self.current_player = (self.current_player + 1) % self.player_count
         self.is_game_over()
@@ -103,6 +105,9 @@ class Game():
             self.state += "|".join(self.grid[i][j]
                                    for j in range(self.columns)) + "\n"
             self.state += "_" * (self.columns * 2 - 1) + "\n"
+
+    def game_result(self):
+        return {player_num: player.score for player_num, player in self.players.items()}
 
     def play_game(self):
         self.save_state()
