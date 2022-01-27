@@ -31,6 +31,7 @@ class Game():
         self.current_player = 0
         self.legal_actions = {}
         self._state = ""
+        self.name = "Connect Four"
 
     def test_array(self, test):
         """Simple helper function to determine if an array contains
