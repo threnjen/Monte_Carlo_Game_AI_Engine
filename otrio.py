@@ -1,3 +1,4 @@
+from cgi import test
 import numpy as np
 
 class Player():
@@ -17,7 +18,6 @@ class Game():
 
     def __init__(self, players):
 
-        print("Initializing board...")
         self.board = np.zeros((3,3,3)).astype('int')
         self.game_over = False
         self._state = ""
@@ -25,6 +25,7 @@ class Game():
         self.scores = {n+1:0 for n in range(players)}
         self.current_player_num = 1
         self.name = "otrio"
+        self.turn = 1
 
         if players >= 2:
             self.players = {1: Player(1, 1), 2: Player(2, 2)}
@@ -36,8 +37,6 @@ class Game():
             print("Invalid player number selection. Must enter players from 2-4")
 
         self.player_count = players
-
-        print("Setting up win conditions")
 
         self.win_position_ref = {
             '[0, 0, 0]':[[[0,0,0], [0,0,1], [0,0,2]], [[0,0,0], [0,1,0], [0,2,0]], [[0,0,0], [0,1,1], [0,2,2]], 
@@ -117,7 +116,8 @@ class Game():
         """
 
     def make_move(self, action, current_player_num):
-
+        
+        self.turn += 1
         position = tuple(action)
         player_marker = self.players[current_player_num].pieces[action[0]].pop()
         self.board[position] = player_marker
@@ -164,6 +164,31 @@ class Game():
         legal_actions = np.argwhere(self.board == 0).tolist()
         legal_actions = [x for x in legal_actions if x[0] not in invalid_player_levels]
 
+        if self.turn >= self.player_count*2:
+
+                for potential_kill_move in legal_actions:
+
+                        for single_win_condition in self.win_position_ref[str(potential_kill_move)]:
+
+                                test_indices = [tuple(x) for x in single_win_condition] 
+                                test_win_contents = [self.board[i] for i in test_indices]
+
+                                if test_win_contents.count(current_player)==2:
+                                        legal_actions = [potential_kill_move]
+                                        return [legal_actions, self.current_player_num]
+                                
+                                elif test_win_contents.count(0) == 1:
+                                        if len(set(test_win_contents))==2:
+                                                if current_player == max(self.scores.keys()):
+                                                        next_player = 1
+                                                else:
+                                                        next_player = current_player + 1
+                                                if test_win_contents.count(next_player) > 0:
+                                                        #print(test_win_contents, potential_kill_move)
+                                                        legal_actions = [potential_kill_move]
+                                                        return [legal_actions, self.current_player_num]
+                                                else: pass
+
         return [legal_actions, self.current_player_num]        
 
     
@@ -191,7 +216,6 @@ class Game():
 
             pos = int(input("Select a move.  "))
             self.make_move(pos, self.current_player_num)
-            #print(self._state)
 
         for player_num in self.scores.keys():
             print(

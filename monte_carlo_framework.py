@@ -130,6 +130,12 @@ class GameEngine():
 
             # Run the monte carlo engine for this turn. This accesses the meat of the engine right here!
             # returns a chosen action to implement and the new active node
+            #try:
+            #    print("Entry state") 
+            #    print(self.current_node.depth, self.current_node.node_action, self.current_node.player_owner, self.current_node)
+            #    selected_node = self.current_node.best_child(print_weights=True)
+            #except: pass
+
             self.current_node = self.montecarlo.play_turn(self.sims_this_turn, self.game, current_player, self.current_node)
             best_action = self.current_node.node_action # gets action of the returned node
 
@@ -201,6 +207,7 @@ class MonteCarloEngine():
             selected_node (object instance): MonteCarloNode object instance
         """        
         self.current_node = current_node # set current node to received node
+        
 
         for i in range(num_sims):  # Run x simulations for this turn
             
@@ -216,6 +223,7 @@ class MonteCarloEngine():
                 self._backpropogate(self.scores, self.rollout_node) # _backpropogates with the scores starting from the rollout_node
 
         # Simulations have finished running, time to get the best move and return it to the game engine
+        #print("Exit state")
         selected_node = self.current_node.best_child(print_weights=False) # Calls BEST_CHILD for the node we started on
 
         return selected_node # returns the best child node to the main function.
@@ -362,11 +370,14 @@ class MonteCarloEngine():
         owner = node.player_owner
         node.number_of_visits += 1  # updates self with number of visits
         # updates self with reward (sent in from _backpropogate)
-        if scores[owner] > 0:
-            node.total_score += scores[owner]
-        elif scores[owner] == 0:
-            node.total_score += .5
-        else: pass
+
+        node.total_score += scores[owner]
+
+        #if scores[owner] > 0:
+        #    node.total_score += scores[owner]
+        #elif scores[owner] == 0:
+        #    node.total_score += .5
+        #else: pass
 
         if node.parent:  # if this node has a parent,
             # call _backpropogate on the parent, so this will continue until root note which has no parent
@@ -398,7 +409,7 @@ class MonteCarloNode():
         self.player_owner = player # the player who owns/plays this node layer. Should be same player at any given depth.
         return
 
-    def best_child(self, c_param=np.sqrt(2), print_weights=False):
+    def best_child(self, c_param=2, print_weights=False):
         """
         Evaluates all available children for highest scoring child node
         first param is exploitation and second is exploration
@@ -424,7 +435,7 @@ class MonteCarloNode():
             
             if print_weights==True:
                 # if toggled, will print score for each child
-                print(c.depth, c.label, score, c)
+                print(c.depth, c.node_action, c.player_owner, score, c)
 
         return self.children[np.argmax(choices_weights)] # gets index of max score and sends back identity of child
 
