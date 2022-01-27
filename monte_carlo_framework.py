@@ -149,7 +149,7 @@ class GameEngine():
         print(self.game._state) # print final board
         print(self.scores) # print final scores
 
-        self.game_log.to_pickle('game_log_'+str(randint(1000000))+'.pkl')
+        self.game_log.to_pickle('game_log_'+str(randint(1,1000000))+'.pkl')
         #first_action_list=[]
 
         #for i in range(self.simulations):
