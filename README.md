@@ -9,7 +9,7 @@ This project entails these components:
   - "Numpy array" 1p testing game
   - Tic Tac Toe 2p testing game
 
-Monte Carlo Tree Search is an AI method that allows an AI to make a game move based on an exploration of potential future game states. Unlike a fully exhaustive tree search, which would require the AI to play out every possible game permutation from a given game state, Monte Carlo Tree Search will explore promising game states until either a time or simulation count has been reached. At this point it will return the best possible move found within the alloted search time. This AI method allows great flexibility in tuning opponent difficulty. If given enough simulations, the MCTS will inevitably optimize each turn. If constrained to very few simulations, it can be effectively handicapped to a lower skill level. As a method it is agnostic to game rules and requires/allows no hard-coding of game decisions.
+Monte Carlo Tree Search is an AI method that allows an AI to make a game move based on an exploration of potential future game states. Unlike a fully exhaustive tree search, which would require the AI to play out every possible game permutation from a given game state, Monte Carlo Tree Search will explore promising game states until either a time or simulation count has been reached. At this point it will return the best possible move found within the alloted search time. This AI method allows great flexibility in tuning opponent difficulty. If given enough simulations, the MCTS will inevitably optimize each turn. If constrained to very few simulations, it can be effectively handicapped to a lower skill level. As a method it is agnostic to game rules and requires no hard-coding of game decisions.
 
 The goal of the Monte Carlo AI Engine is one of portability and reusability. Using simple game-agnostic hooks, any game logic rules can interface with the engine. The engine does not require knowledge of any game rules in order to function, and can operate with any number of players. All or some of the players can be AI, and all AI players will play using MCTS. Optional game reports can be saved to disk for further analysis.
 
@@ -22,6 +22,8 @@ For use with the Monte Carlo AI Engine, a game logic requires only four lightwei
 > Hook #3 asks if the game is over and receives a True/False boolean.
 
 > Hook #4 gets the game score and requires a dictionary in the format of {playerID : score}. The playerID in the scores must match the ID used for Hooks #1 and #2.
+
+> Additionally, the engine requires a few specific self items in your intialized game. See documentation for additional details.
 
 The game logic must manage the correct player turns and the game flow, so that it is always prepared to send a list of available actions along with the correct player to take those actions. The engine has no checks on the accuracy of the player ID or the actions presented.
 
