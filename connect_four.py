@@ -22,11 +22,11 @@ class Game():
         """player_count is unused but is generally required for other games, so we add it here.
 
         Args:
-            player_count (int): Player count.  Defaults to 2.
+            player_count (int): Play0er count.  Defaults to 2.
         """
         self.players = {0: Player('X'), 1: Player('O')}
-        self.grid = [[" " for i in range(self.rows)]
-                     for j in range(self.columns)]
+        self.grid = [[" " for column in range(self.columns)]
+                     for row in range(self.rows)]
         self.game_over = False
         self.current_player = 0
         self.legal_actions = {}
@@ -148,9 +148,9 @@ class Game():
             print(self._state)
             print(self.legal_actions)
             action = int(input("Choose an action"))
-            self.update_game(action)
+            self.update_game(action, self.current_player)
 
 
-# test = Game(2)
+test = Game(2)
 
-# test.play_game()
+test.play_game()
