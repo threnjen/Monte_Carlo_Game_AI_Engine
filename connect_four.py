@@ -99,6 +99,7 @@ class Game():
             list: dictionary of legal actions
             int:  current player number
         """
+
         legal_actions = {}
         act_cnt = 0
         for column in range(self.columns):
@@ -123,8 +124,8 @@ class Game():
                 self.grid[self.rows -
                           row - 1][sel_action] = self.players[player_num].mark
                 break
-        self.current_player = (self.current_player + 1) % self.player_count
         self.is_game_over()
+        self.current_player = (self.current_player + 1) % self.player_count
         self.save_state()
 
     def save_state(self):
@@ -154,6 +155,6 @@ class Game():
             self.update_game(action, self.current_player)
 
 
-# test = Game(2)
+test = Game(2)
 
-# test.play_game()
+test.play_game()
