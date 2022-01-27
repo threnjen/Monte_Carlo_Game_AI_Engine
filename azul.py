@@ -1,7 +1,4 @@
 # %%
-
-
-# %%
 from random import choice
 from random import randrange
 from itertools import combinations
@@ -1185,5 +1182,3 @@ class Game():
 # %%
 test = Game(2)
 test.play_game()
-
-# %%

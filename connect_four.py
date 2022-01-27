@@ -1,5 +1,7 @@
 
 class Player():
+    """No functions, just storage.
+    """
 
     def __init__(self, mark):
         self.mark = mark
@@ -7,33 +9,44 @@ class Player():
 
 
 class Game():
+    """Basic game of connect four.
+
+    """
     player_count = 2
     rows = 7
     columns = 7
     win_cnt = 4
     win_points = 10
 
-    def __init__(self, player_count):
+    def __init__(self, player_count=2):
+        """player_count is unused but is generally required for other games, so we add it here.
+
+        Args:
+            player_count (int): Player count.  Defaults to 2.
+        """
         self.players = {0: Player('X'), 1: Player('O')}
         self.grid = [[" " for i in range(self.rows)]
                      for j in range(self.columns)]
         self.game_over = False
         self.current_player = 0
         self.legal_actions = {}
-        self.state = ""
-
-    # def get_legal_actions(self):
-    #     legal_moves = {}
-    #     for j in range(self.columns):
-    #         legal_moves[j] = not all(
-    #             [self.grid[i][j] != " " for i in range(self.rows())])
-    #     return {key: value for key, value in legal_moves.items() if value}
+        self._state = ""
 
     def test_array(self, test):
+        """Simple helper function to determine if an array contains
+        four x's or o's
+
+        Args:
+            test (list): list on the grid
+        """
         return(test.count(test[0]) == len(test)) & (test[0] != " ")
 
     def is_game_over(self):
-
+        """Tests for four types of wins:  row, column, and both diagonals.
+        Also tests for a draw.
+        Returns:
+            bool: Whether the game is over.
+        """
         # Row win
         for row in range(self.rows):
             for column in range(self.columns - self.win_cnt+1):
@@ -76,6 +89,12 @@ class Game():
         return False
 
     def get_legal_actions(self):
+        """Checks which of the columns can have a piece added.
+
+        Returns:
+            list: dictionary of legal actions
+            int:  current player number
+        """
         legal_actions = {}
         act_cnt = 0
         for column in range(self.columns):
@@ -89,6 +108,11 @@ class Game():
         return legal_actions.keys(), self.current_player
 
     def update_game(self, action):
+        """Processes selected action
+
+        Args:
+            action (int): lookup index for the selected actions.  Ranges 0-6.
+        """
         sel_action = self.legal_actions[action]
         for row in range(self.rows):
             if self.grid[self.rows - row - 1][sel_action] == " ":
@@ -100,20 +124,27 @@ class Game():
         self.save_state()
 
     def save_state(self):
-        self.state = ""
-        for i in range(self.columns):
-            self.state += "|".join(self.grid[i][j]
-                                   for j in range(self.columns)) + "\n"
-            self.state += "_" * (self.columns * 2 - 1) + "\n"
+        """Saves the game state for printing
+        """
+        self._state = ""
+        for row in range(self.rows):
+            self._state += "|".join(self.grid[row][column]
+                                    for column in range(self.columns)) + "\n"
+            self._state += "_" * (self.columns * 2 - 1) + "\n"
 
     def game_result(self):
+        """Returns the scores
+
+        Returns:
+            dict: player number: score
+        """
         return {player_num: player.score for player_num, player in self.players.items()}
 
     def play_game(self):
         self.save_state()
         while not self.is_game_over():
             self.get_legal_actions()
-            print(self.state)
+            print(self._state)
             print(self.legal_actions)
             action = int(input("Choose an action"))
             self.update_game(action)
