@@ -33,6 +33,7 @@ class Game():
         self.current_player_num = 0
         self._state = ""
         self.draw_board()
+        self.name = "Tic_Tac_Toe"
 
         self.win_conditions = {"top_row": [0, 1, 2],
                "left_diag": [0, 4, 8],

@@ -138,7 +138,8 @@ class GameEngine():
             turn_log['Simulations'] = self.sims_this_turn
             turn_log['Player']= current_player
             turn_log['Action']= str(best_action)
-            turn_log['Score']=self.game.scores[current_player]
+            self.scores = self.game.game_result() # get game scores
+            turn_log['Score']=self.scores[current_player]
 
             current_player = self.game.get_legal_actions()[1] # update current player
 
@@ -150,7 +151,7 @@ class GameEngine():
         print(self.game._state) # print final board
         print(self.scores) # print final scores
 
-        self.game_log.to_pickle('game_log_'+str(randint(1,1000000))+'.pkl')
+        self.game_log.to_pickle(self.game.name+'game_log_'+str(randint(1,1000000))+'.pkl')
         #first_action_list=[]
 
         #for i in range(self.simulations):
