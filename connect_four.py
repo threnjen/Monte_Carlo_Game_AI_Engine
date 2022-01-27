@@ -24,7 +24,7 @@ class Game():
         Args:
             player_count (int): Play0er count.  Defaults to 2.
         """
-        self.players = {0: Player('X'), 1: Player('O')}
+        self.players = {0: Player('0'), 1: Player('1')}
         self.grid = [[" " for column in range(self.columns)]
                      for row in range(self.rows)]
         self.game_over = False
@@ -48,10 +48,12 @@ class Game():
         Returns:
             bool: Whether the game is over.
         """
+
         # Row win
         for row in range(self.rows):
-            for column in range(self.columns - self.win_cnt+1):
-                test = [self.grid[row][column+k] for k in range(self.win_cnt)]
+            for column in range(self.columns - self.win_cnt + 1):
+                test = [self.grid[row][column + k]
+                        for k in range(self.win_cnt)]
                 if self.test_array(test):
                     self.game_over = True
                     self.players[self.current_player].score = self.win_points
@@ -60,16 +62,17 @@ class Game():
         # Column win
 
         for column in range(self.columns):
-            for row in range(self.rows - self.win_cnt+1):
-                test = [self.grid[row+k][column] for k in range(self.win_cnt)]
+            for row in range(self.rows - self.win_cnt + 1):
+                test = [self.grid[row + k][column]
+                        for k in range(self.win_cnt)]
                 if self.test_array(test):
                     self.game_over = True
                     return True
 
         # Down/right diagonal
-        for row in range(self.rows - self.win_cnt+1):
-            for column in range(self.columns - self.win_cnt+1):
-                test = [self.grid[row+k][column+k]
+        for row in range(self.rows - self.win_cnt + 1):
+            for column in range(self.columns - self.win_cnt + 1):
+                test = [self.grid[row + k][column + k]
                         for k in range(self.win_cnt)]
                 if self.test_array(test):
                     self.game_over = True
@@ -77,8 +80,8 @@ class Game():
 
         # up/right diagonal
         for row in range(self.win_cnt - 1, self.rows):
-            for column in range(self.columns - self.win_cnt+1):
-                test = [self.grid[row-k][column+k]
+            for column in range(self.columns - self.win_cnt + 1):
+                test = [self.grid[row - k][column + k]
                         for k in range(self.win_cnt)]
                 if self.test_array(test):
                     self.game_over = True
