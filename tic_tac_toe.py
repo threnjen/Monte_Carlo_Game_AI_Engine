@@ -21,12 +21,12 @@ class Game():
     """Tic tac toe game
     """
 
-    def __init__(self):
+    def __init__(self,players):
         """Calling the game doesn't create any unique starting conditions,
         since there are always two players.
         """
         self.positions = [" "] * 9
-        self.legal_actions = {}
+        #self.legal_actions = {}
         self.players = {0: Player("0"), 1: Player("1")}
         self.scores = {0: 0, 1: 0}
         self.game_over = False
@@ -89,33 +89,6 @@ class Game():
         pos = action
         self.make_move(pos, player)
 
-    def check_killer_move(self, player):
-
-        for win_condition in self.win_conditions.values():
-
-            condition_state = [self.positions[num] for num in win_condition]
-            #print("Win condition current state: "+str(condition_state))
-
-            empty = len([i for i in condition_state if i ==' '])
-
-            if empty==1:
-                #print("Two slots filled, checking")
-                condition_index = condition_state.index(' ')
-                action = win_condition[condition_index]
-                #print(action)
-            
-                if len([i for i in condition_state if i==self.players[player].mark])==2:
-                    #print("active player has killing move")
-                    return action
-                
-                for player in self.players:
-                    if len([i for i in condition_state if i==self.players[player].mark])==2:
-                        #print("other player has killing move, must stop")
-                        return action
-                
-        return None
-
-
 
     def is_game_over(self):
         """Checks for the eight win conditions, and whether there are moves left.
@@ -147,11 +120,11 @@ class Game():
             if condition_state.count(condition_state[0]) == len(condition_state) and condition_state[0] != " ":
                 open_positions = sum(x == ' ' for x in self.positions)
                 if self.players[0].mark == condition_state[0]:
-                    self.scores[0] = 50   
-                    self.scores[1] = -50# - 10*open_positions
+                    self.scores[0] = 10   
+                    self.scores[1] = -10# - 10*open_positions
                 elif self.players[1].mark == condition_state[0]:
-                    self.scores[1] = 50
-                    self.scores[0] = -50# - 10*open_positions
+                    self.scores[1] = 10
+                    self.scores[0] = -10# - 10*open_positions
                 return True
         
         if len(avail_actions) == 0:
