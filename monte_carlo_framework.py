@@ -4,11 +4,13 @@ import numpy as np
 import copy
 import sys
 import pandas as pd
+from random import randint
+
 #from simple_array_game import SimpleArrayGame as Game
 #from tic_tac_toe import Game
 from otrio import Game
 #from connect_four import Game
-from random import randint
+
 
 
 class GameEngine():
@@ -117,10 +119,6 @@ class GameEngine():
 
             actions=self.game.get_legal_actions()[0]
             turn_log['Actions']=actions
-
-            # Add simulation decay if desired. Uncomment choices below for two types of simulation decay.
-            self.sims_this_turn = int(np.ceil(self.sims_this_turn*.9)) # simulation decay of .9 each round
-            #self.sims_this_turn = int(np.ceil(self.simulations/(self.turn))) # simulation decay to absolute simulations/turn each round
             
             # Beginning of game repoprting:
             print("\n\nTurn "+str(self.turn))
@@ -144,6 +142,11 @@ class GameEngine():
             current_player = self.game.get_legal_actions()[1] # update current player
 
             self.game_log = self.game_log.append(turn_log, ignore_index=True)
+
+            # Add simulation decay if desired. Uncomment choices below for two types of simulation decay.
+            #self.sims_this_turn = int(np.ceil(self.sims_this_turn*.9)) # simulation decay of .9 each round
+            #self.sims_this_turn = int(np.ceil(self.simulations/(self.turn))) # simulation decay to absolute simulations/turn each round
+            
 
         # Game over report
         print("\n\n\nGame over. Game took "+str(self.turn)+" turns.")
@@ -419,7 +422,6 @@ class MonteCarloNode():
                 print(c.depth, c.label, score, c)
 
         return self.children[np.argmax(choices_weights)] # gets index of max score and sends back identity of child
-
 
 players = int(sys.argv[2])
 game = GameEngine(players)

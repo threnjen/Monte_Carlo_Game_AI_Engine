@@ -38,6 +38,172 @@ class Game():
         self.player_count = players
 
         print("Setting up win conditions")
+
+        self.win_position_ref = {
+            '[0, 0, 0]':[[[0,0,0], [0,0,1], [0,0,2]], [[0,0,0], [0,1,0], [0,2,0]], [[0,0,0], [0,1,1], [0,2,2]], 
+                     [[0,0,0], [1,0,0], [2,0,0]], [[0,0,0], [1,0,1], [2,0,2]], [[0,0,0], [1,1,0], [2,2,0]]],
+            '[0, 1, 0]':[[[0,1,0], [0,1,1], [0,1,2]], [[0,0,0], [0,1,0], [0,2,0]], [[0,1,0], [1,1,0], [2,1,0]], 
+                [[0,1,0], [1,1,1], [2,1,2]]],
+            '[0, 2, 0]':[[[0,2,0], [0,2,1], [0,2,2]], [[0,0,0], [0,1,0], [0,2,0]], [[0,0,2], [0,1,1], [0,2,0]], 
+                    [[0,2,0], [1,2,0], [2,2,0]], [[0,2,0], [1,2,1], [2,2,2]], [[0,2,0], [1,1,0], [2,0,0]], 
+                    [[0,2,0], [1,1,1], [2,0,2]]],
+            '[0, 0, 1]':[[[0,0,0], [0,0,1], [0,0,2]], [[0,0,1], [0,1,1], [0,1,2]], [[0,0,1], [1,0,1], [2,0,1]], 
+                    [[0,0,1], [1,1,1], [2,2,1]]],
+            '[0, 0, 2]':[[[0,0,0], [0,0,1], [0,0,2]], [[0,0,2], [0,1,2], [0,2,2]], [[0,0,2], [0,1,1], [0,2,0]], 
+                    [[0,0,2], [1,0,2], [2,0,2]], [[2,0,0], [1,0,1], [0,0,2]], [[2,1,0], [1,1,1], [0,0,2]], 
+                    [[0,0,2], [1,1,2], [2,2,2]], [[2,2,0], [1,1,1], [0,0,2]]],
+            '[0, 1, 1]':[[[0,1,0], [0,1,1], [0,1,2]], [[0,0,1], [0,1,1], [0,1,2]], [[0,0,0], [0,1,1], [0,2,2]], 
+                    [[0,0,2], [0,1,1], [0,2,2]], [[0,1,1], [1,1,1], [2,1,1]]],
+            '[0, 1, 2]':[[[0,1,0], [0,1,1], [0,1,2]], [[0,0,1], [0,1,1], [0,1,2]], [[0,1,2], [1,1,2], [2,1,2]]],
+            '[0, 2, 1]':[[[0,2,0], [0,2,1], [0,2,2]], [[0,0,2], [0,1,1], [0,2,0]], [[0,2,1], [1,2,1], [2,2,1]], 
+                    [[0,2,1], [1,1,1], [2,0,1]]],
+            '[0, 2, 2]':[[[0,2,0], [0,2,1], [0,2,2]], [[0,0,2], [0,1,2], [0,2,2]], [[0,0,0], [0,1,1], [0,2,2]], 
+                    [[0,2,2], [1,2,2], [2,2,2]], [[2,2,0], [1,2,1], [0,2,2]], [[2,0,0], [1,1,1], [0,2,2]],],
+            
+
+            '[1, 0, 0]':[[[1,0,0], [1,0,1], [1,0,2]], [[1,0,0], [1,1,0], [1,2,0]], [[1,0,0], [1,1,1], [1,2,2]],
+                    [[0,0,0], [1,0,0], [2,0,0]], ],
+            '[1, 1, 0]':[[[1,1,0], [1,1,1], [1,1,2]], [[1,0,0], [1,1,0], [1,2,0]], 
+                    [[0,1,0], [1,1,0], [2,1,0]], [[0,0,0], [1,1,0], [2,2,0]], [[0,2,0], [1,1,0], [2,0,0]],],
+            '[1, 2, 0]':[[[1,2,0], [1,2,1], [1,2,2]], [[1,0,0], [1,1,0], [1,2,0]], [[1,0,2], [1,1,1], [1,2,0]],
+                    [[0,2,0], [1,2,0], [2,2,0]], ],
+            '[1, 0, 1]':[[[1,0,0], [1,0,1], [1,0,2]], [[1,0,1], [1,1,1], [1,2,1]], 
+                    [[0,0,1], [1,0,1], [2,0,1]], [[0,0,0], [1,0,1], [2,0,2]], [[2,0,0], [1,0,1], [0,0,2]],],
+            '[1, 0, 2]':[[[1,0,0], [1,0,1], [1,0,2]], [[1,0,2], [1,1,2], [1,2,2]], [[1,0,2], [1,1,1], [1,2,0]],
+                    [[0,0,2], [1,0,2], [2,0,2]], ],
+            '[1, 1, 1]':[[[1,1,0], [1,1,1], [1,1,2]], [[1,0,1], [1,1,1], [1,2,1]], [[1,0,0], [1,1,1], [1,2,2]], 
+                    [[1,0,2], [1,1,1], [1,2,0]], [[0,1,1], [1,1,1], [2,1,1]], [[0,1,0], [1,1,1], [2,1,2]], 
+                    [[2,1,0], [1,1,1], [0,0,2]], [[0,0,1], [1,1,1], [2,2,1]], [[0,2,1], [1,1,1], [2,0,1]], 
+                    [[2,0,0], [1,1,1], [0,2,2]], [[0,2,0], [1,1,1], [2,0,2]], [[2,2,0], [1,1,1], [0,0,2]]],
+            '[1, 1, 2]':[[[1,1,0], [1,1,1], [1,1,2]], [[1,0,2], [1,1,2], [1,2,2]], [[0,1,2], [1,1,2], [2,1,2]], 
+                    [[0,0,2], [1,1,2], [2,2,2]]],
+            '[1, 2, 1]':[[[1,2,0], [1,2,1], [1,2,2]], [[1,0,1], [1,1,1], [1,2,1]], [[0,2,1], [1,2,1], [2,2,1]], 
+                    [[0,2,0], [1,2,1], [2,2,2]], [[2,2,0], [1,2,1], [0,2,2]]],
+            '[1, 2, 2]':[[[1,2,0], [1,2,1], [1,2,2]], [[1,0,2], [1,1,2], [1,2,2]], [[1,0,0], [1,1,1], [1,2,2]],
+                    [[0,2,2], [1,2,2], [2,2,2]]],
+
+
+            '[2, 0, 0]':[[[2,0,0], [2,0,1], [2,0,2]], [[2,0,0], [2,1,0], [2,2,0]], [[2,0,0], [2,1,1], [2,2,2]],
+                    [[0,0,0], [1,0,0], [2,0,0]], [[2,0,0], [1,0,1], [0,0,2]], [[0,2,0], [1,1,0], [2,0,0]], 
+                    [[2,0,0], [1,1,1], [0,2,2]]],
+            '[2, 1, 0]':[[[2,1,0], [2,1,1], [2,1,2]], [[2,0,0], [2,1,0], [2,2,0]], [[0,1,0], [1,1,0], [2,1,0]], 
+                    [[2,1,0], [1,1,1], [0,0,2]]],
+            '[2, 2, 0]':[[[2,2,0], [2,2,1], [2,2,2]], [[2,0,0], [2,1,0], [2,2,0]], [[0,2,0], [1,2,0], [2,2,0]], 
+                    [[2,2,0], [1,2,1], [0,2,2]], [[0,0,0], [1,1,0], [2,2,0]], [[2,2,0], [1,1,1], [0,0,2]]],
+            '[2, 0, 1]':[[[2,0,0], [2,0,1], [2,0,2]], [[2,0,1], [2,1,1], [2,2,1]], 
+                    [[0,0,1], [1,0,1], [2,0,1]], [[0,2,1], [1,1,1], [2,0,1]]],
+            '[2, 0, 2]':[[[2,0,0], [2,0,1], [2,0,2]], [[2,0,2], [2,1,2], [2,2,2]], [[2,0,2], [2,1,2], [2,2,2]], 
+                    [[2,0,0], [2,1,1], [2,2,2]], [[0,0,2], [1,0,2], [2,0,2]], [[0,0,0], [1,0,1], [2,0,2]], 
+                    [[0,2,0], [1,1,1], [2,0,2]]],
+            '[2, 1, 1]':[[[2,1,0], [2,1,1], [2,1,2]], [[2,0,1], [2,1,1], [2,2,1]], [[2,0,0], [2,1,1], [2,2,2]],
+                    [[0,1,1], [1,1,1], [2,1,1]]],
+            '[2, 1, 2]':[[[2,1,0], [2,1,1], [2,1,2]], [[2,0,2], [2,1,2], [2,2,2]], [[2,0,2], [2,1,2], [2,2,2]], 
+                    [[0,1,2], [1,1,2], [2,1,2]], [[0,1,0], [1,1,1], [2,1,2]]],
+            '[2, 2, 1]':[[[2,2,0], [2,2,1], [2,2,2]], [[2,0,1], [2,1,1], [2,2,1]], [[0,2,1], [1,2,1], [2,2,1]], 
+                    [[0,0,1], [1,1,1], [2,2,1]]],
+            '[2, 2, 2]':[[[2,2,0], [2,2,1], [2,2,2]], [[2,0,2], [2,1,2], [2,2,2]], [[2,0,2], [2,1,2], [2,2,2]], 
+                    [[0,2,2], [1,2,2], [2,2,2]], [[0,2,0], [1,2,1], [2,2,2]], [[0,0,2], [1,1,2], [2,2,2]]],
+        }
+        
+    def draw_board(self):
+
+        self._state = f"""
+        Level 1\t\t\tLevel 2\t\t\tLevel 3\n
+        {self.board[0,0,0]}|{self.board[0,0,1]}|{self.board[0,0,2]}\t\t\t{self.board[1,0,0]}|{self.board[1,0,1]}|{self.board[1,0,2]}\t\t\t{self.board[2,0,0]}|{self.board[2,0,1]}|{self.board[2,0,2]}       
+        _____\t\t\t_____\t\t\t_____
+        {self.board[0,1,0]}|{self.board[0,1,1]}|{self.board[0,1,2]}\t\t\t{self.board[1,1,0]}|{self.board[1,1,1]}|{self.board[1,1,2]}\t\t\t{self.board[2,1,0]}|{self.board[2,1,1]}|{self.board[2,1,2]}
+        _____\t\t\t_____\t\t\t_____
+        {self.board[0,2,0]}|{self.board[0,2,1]}|{self.board[0,2,2]}\t\t\t{self.board[1,2,0]}|{self.board[1,2,1]}|{self.board[1,2,2]}\t\t\t{self.board[2,2,0]}|{self.board[2,2,1]}|{self.board[2,2,2]}
+        """
+
+    def make_move(self, action, current_player_num):
+
+        position = tuple(action)
+        player_marker = self.players[current_player_num].pieces[action[0]].pop()
+        self.board[position] = player_marker
+        self.draw_board()
+
+        # call game over conditions here
+
+        remove_conditions = []
+        lookup_index = str(action)
+
+        for single_win_condition in self.win_position_ref[lookup_index]:
+
+            test_indices = [tuple(x) for x in single_win_condition] 
+            test_win_contents = [self.board[i] for i in test_indices]
+        
+            if 0 not in test_win_contents and not all(element == test_win_contents[0] for element in test_win_contents):
+                remove_conditions.append(lookup_index)
+            elif 0 not in test_win_contents and all(element == test_win_contents[0] for element in test_win_contents):
+                player_winner = test_win_contents[0]
+                self.scores[player_winner] = 10
+                for k in self.scores.keys():
+                    if k != player_winner:
+                        self.scores[k] = -10
+                self.game_over = True
+            else:
+                continue
+        
+        remove_conditions = list(set(remove_conditions))
+        for item in remove_conditions:
+            del self.win_position_ref[item]
+
+        if self.current_player_num == max(self.scores.keys()):
+            self.current_player_num = 1
+        else:
+            self.current_player_num += 1
+
+
+    def get_legal_actions(self):
+
+        current_player = self.current_player_num
+
+        invalid_player_levels = [k for k,v in self.players[current_player].pieces.items() if len(v)==0]
+
+        legal_actions = np.argwhere(self.board == 0).tolist()
+        legal_actions = [x for x in legal_actions if x[0] not in invalid_player_levels]
+
+        return [legal_actions, self.current_player_num]        
+
+    
+    def update_game(self, action, player):
+
+        self.make_move(action, player)
+
+    
+    def is_game_over(self):
+
+        avail_actions = self.get_legal_actions()[0]
+        if len(avail_actions) == 0:
+            self.game_over=True
+            return self.game_over
+        else:
+            return self.game_over
+
+    def game_result(self):
+
+        return self.scores
+
+    def play_game(self):
+
+        while not self.is_game_over():
+
+            pos = int(input("Select a move.  "))
+            self.make_move(pos, self.current_player_num)
+            #print(self._state)
+
+        for player_num in self.scores.keys():
+            print(
+                f"{self.players[player_num].mark}:  {self.scores[player_num]}")
+
+        return self.scores
+    
+#game = Game(4)
+#game.play_game()
+
+
+'''
         self.win_conditions = {
 
             "Level 1 top_row":[[0,0,0], [0,0,1], [0,0,2]],
@@ -47,7 +213,7 @@ class Game():
             "Level 1 mid_col":[[0,0,1], [0,1,1], [0,1,2]],
             "Level 1 right_col":[[0,0,2], [0,1,2], [0,2,2]],
             "Level 1 left_diag":[[0,0,0], [0,1,1], [0,2,2]],
-            "Level 1 right_diag":[[0,0,2], [0,1,1], [0,2,0]],
+            "Level 1 right_diag":[[0,0,2], [0,1,1], [0,2,1]],
 
             "Level 2 top_row":[[1,0,0], [1,0,1], [1,0,2]],
             "Level 2 mid_row":[[1,1,0], [1,1,1], [1,1,2]],
@@ -94,106 +260,4 @@ class Game():
             "Diag left_diag desc":[[0,2,0], [1,1,1], [2,0,2]],
             "Diag right_diag desc":[[2,2,0], [1,1,1], [0,0,2]],
 
-                }
-        
-        self.win_array = list(self.win_conditions.values())
-
-    def draw_board(self):
-
-        self._state = f"""
-        Level 1\t\t\tLevel 2\t\t\tLevel 3\n
-        {self.board[0,0,0]}|{self.board[0,0,1]}|{self.board[0,0,2]}\t\t\t{self.board[1,0,0]}|{self.board[1,0,1]}|{self.board[1,0,2]}\t\t\t{self.board[2,0,0]}|{self.board[2,0,1]}|{self.board[2,0,2]}       
-        _____\t\t\t_____\t\t\t_____
-        {self.board[0,1,0]}|{self.board[0,1,1]}|{self.board[0,1,2]}\t\t\t{self.board[1,1,0]}|{self.board[1,1,1]}|{self.board[1,1,2]}\t\t\t{self.board[2,1,0]}|{self.board[2,1,1]}|{self.board[2,1,2]}
-        _____\t\t\t_____\t\t\t_____
-        {self.board[0,2,0]}|{self.board[0,2,1]}|{self.board[0,2,2]}\t\t\t{self.board[1,2,0]}|{self.board[1,2,1]}|{self.board[1,2,2]}\t\t\t{self.board[2,2,0]}|{self.board[2,2,1]}|{self.board[2,2,2]}
-        """
-
-    def make_move(self, action, current_player_num):
-
-        
-        position = tuple(action)
-
-        player_mark = self.players[current_player_num].pieces[action[0]].pop()
-
-        self.board[position] = player_mark
-        self.draw_board()
-
-        if self.current_player_num == max(self.scores.keys()):
-            self.current_player_num = 1
-        else:
-            self.current_player_num += 1
-        
-        #self.current_player_num = (
-        #    self.current_player_num + 1) % self.player_count + 1
-
-
-    def get_legal_actions(self):
-
-        current_player = self.current_player_num
-
-        invalid_player_levels = [k for k,v in self.players[current_player].pieces.items() if len(v)==0]
-
-        legal_actions = np.argwhere(self.board == 0).tolist()
-        legal_actions = [x for x in legal_actions if x[0] not in invalid_player_levels]
-
-        return [legal_actions, self.current_player_num]        
-
-    
-    def update_game(self, action, player):
-
-        self.make_move(action, player)
-
-    
-    def is_game_over(self):
-
-        avail_actions = self.get_legal_actions()[0]
-
-        remove_conditions = []
-
-        for single_win_condition in self.win_array:
-
-            test_indices = [tuple(x) for x in single_win_condition] 
-            test_win_contents = [self.board[i] for i in test_indices]
-        
-            if 0 not in test_win_contents and not all(element == test_win_contents[0] for element in test_win_contents):
-                remove_conditions.append(single_win_condition)
-            elif 0 not in test_win_contents and all(element == test_win_contents[0] for element in test_win_contents):
-                player_winner = test_win_contents[0]
-                self.scores[player_winner] = 10
-                for k in self.scores.keys():
-                    if k != player_winner:
-                        self.scores[k] = -10
-                return True
-            else:
-                continue
-
-        for i in remove_conditions:
-            self.win_array.remove(i)
-        
-        if len(avail_actions) == 0:
-            return True
-        else:
-            return False
-
-    def game_result(self):
-
-        return self.scores
-
-    def play_game(self):
-
-        while not self.is_game_over():
-
-            pos = int(input("Select a move.  "))
-            self.make_move(pos, self.current_player_num)
-            #print(self._state)
-
-        for player_num in self.scores.keys():
-            print(
-                f"{self.players[player_num].mark}:  {self.scores[player_num]}")
-
-        return self.scores
-    
-
-#game = Game(4)
-#game.play_game()
+                }'''
