@@ -975,6 +975,7 @@ class Game():
         self.start_round()
         self.game_over = False
         self.save_state()
+        self.name = "Azul"
 
     def select_starting_player(self):
         """Called once at the beginning of the game.
