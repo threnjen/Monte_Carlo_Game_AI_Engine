@@ -137,10 +137,10 @@ class Game():
                 remove_conditions.append(lookup_index)
             elif 0 not in test_win_contents and all(element == test_win_contents[0] for element in test_win_contents):
                 player_winner = test_win_contents[0]
-                self.scores[player_winner] = 10
+                self.scores[player_winner] = 1
                 for k in self.scores.keys():
                     if k != player_winner:
-                        self.scores[k] = -10
+                        self.scores[k] = -1
                 self.game_over = True
             else:
                 continue

@@ -8,8 +8,8 @@ from random import randint
 
 #from simple_array_game import SimpleArrayGame as Game
 #from tic_tac_toe import Game
-#from otrio import Game
-from connect_four import Game
+from otrio import Game
+#from connect_four import Game
 class GameEngine():
     
     def __init__(self, players):
@@ -362,7 +362,11 @@ class MonteCarloEngine():
         owner = node.player_owner
         node.number_of_visits += 1  # updates self with number of visits
         # updates self with reward (sent in from _backpropogate)
-        node.total_score += scores[owner]
+        if scores[owner] > 0:
+            node.total_score += scores[owner]
+        elif scores[owner] == 0:
+            node.total_score += .5
+        else: pass
 
         if node.parent:  # if this node has a parent,
             # call _backpropogate on the parent, so this will continue until root note which has no parent
