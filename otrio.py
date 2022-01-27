@@ -24,7 +24,7 @@ class Game():
         self.draw_board()
         self.scores = {n+1:0 for n in range(players)}
         self.current_player_num = 1
-        self.name = "Otrio"
+        self.name = "otrio"
 
         if players >= 2:
             self.players = {1: Player(1, 1), 2: Player(2, 2)}

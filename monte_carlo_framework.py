@@ -6,8 +6,8 @@ import sys
 import pandas as pd
 #from simple_array_game import SimpleArrayGame as Game
 #from tic_tac_toe import Game
-#from otrio import Game
-from connect_four import Game
+from otrio import Game
+#from connect_four import Game
 from random import randint
 
 
@@ -151,7 +151,7 @@ class GameEngine():
         print(self.game._state) # print final board
         print(self.scores) # print final scores
 
-        self.game_log.to_pickle(self.game.name+'game_log_'+str(randint(1,1000000))+'.pkl')
+        self.game_log.to_pickle('logs/'+self.game.name+'_game_log_'+str(randint(1,1000000))+'.pkl')
         #first_action_list=[]
 
         #for i in range(self.simulations):

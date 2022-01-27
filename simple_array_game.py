@@ -12,7 +12,7 @@ class SimpleArrayGame():
 
     def __init__(self):
         self._state = np.zeros((5, 5))
-        self.game = "Array_test"
+        self.game = "array_test"
 
     def update_game(self, action, player):
         '''
