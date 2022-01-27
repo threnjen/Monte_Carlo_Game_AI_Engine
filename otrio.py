@@ -163,7 +163,7 @@ class Game():
             self.current_player_num += 1
 
 
-    def get_legal_actions(self):
+    def get_legal_actions(self, rollout=False):
 
         current_player = self.current_player_num
         #print("Current player: "+str(current_player))
@@ -172,37 +172,46 @@ class Game():
         legal_actions = np.argwhere(self.board == 0).tolist()
         legal_actions = [x for x in legal_actions if x[0] not in invalid_player_levels]
 
-        for potential_kill_move in legal_actions:
+        if rollout==True:
+                for potential_kill_move in legal_actions:
 
-                for single_win_condition in self.win_position_ref[str(potential_kill_move)]:
+                        for single_win_condition in self.win_position_ref[str(potential_kill_move)]:
 
-                        test_indices = [tuple(x) for x in single_win_condition] 
-                        test_win_contents = [self.board[i] for i in test_indices]
+                                test_indices = [tuple(x) for x in single_win_condition] 
+                                test_win_contents = [self.board[i] for i in test_indices]
 
-                        if test_win_contents.count(current_player)==2:
-                                #print("killing move for this player:")
-                                #print(test_win_contents, potential_kill_move)
-                                legal_actions = [potential_kill_move]
-                                return [legal_actions, self.current_player_num]
-                                
-                        elif test_win_contents.count(0) == 1:
-                                if len(set(test_win_contents))==2:
+                                if test_win_contents.count(current_player)==2:
+                                        print("killing move for this player "+str(current_player))
+                                        print(test_win_contents, potential_kill_move)
                                         legal_actions = [potential_kill_move]
-                                        if current_player == max(self.scores.keys()):
-                                                next_player = 1
-                                        else:
-                                                next_player = current_player + 1
-                                        if test_win_contents.count(next_player) == 2:
-                                                #print("killing move for next player:")
-                                                #print(test_win_contents, potential_kill_move)
+                                        return [legal_actions, self.current_player_num]
+                                else: pass
+
+                for potential_kill_move in legal_actions:
+
+                        for single_win_condition in self.win_position_ref[str(potential_kill_move)]:
+
+                                test_indices = [tuple(x) for x in single_win_condition] 
+                                test_win_contents = [self.board[i] for i in test_indices]                                
+
+                                if test_win_contents.count(0) == 1:
+                                        if len(set(test_win_contents))==2:
                                                 legal_actions = [potential_kill_move]
-                                                return [legal_actions, self.current_player_num]
-                                        else:
-                                                #print("killing move for other player:")
-                                                #print(test_win_contents, potential_kill_move)
-                                                return [legal_actions, self.current_player_num]
+                                                if current_player == max(self.scores.keys()):
+                                                        next_player = 1
+                                                else:
+                                                        next_player = current_player + 1
+                                                if test_win_contents.count(next_player) == 2:
+                                                        print("killing move for next player after "+str(current_player))
+                                                        print(test_win_contents, potential_kill_move)
+                                                        legal_actions = [potential_kill_move]
+                                                        return [legal_actions, self.current_player_num]
+                                                else:
+                                                        print("killing move for other player besides "+str(current_player))
+                                                        print(test_win_contents, potential_kill_move)
+                                                        return [legal_actions, self.current_player_num]
                                         
-                        else: pass
+                                else: pass
 
         return [legal_actions, self.current_player_num]        
 
