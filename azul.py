@@ -975,6 +975,7 @@ class Game():
         self.start_round()
         self.game_over = False
         self.save_state()
+        self.name = "Azul"
 
     def select_starting_player(self):
         """Called once at the beginning of the game.
@@ -1140,7 +1141,7 @@ class Game():
         return self.game_over
 
     def game_result(self):
-        return {player_num: player.score for player_num, player in self.players.items()}
+        return {player_num: player.player_score for player_num, player in self.players.items()}
 
     def save_state(self):
         "Called at the end of every players action"

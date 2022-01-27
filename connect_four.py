@@ -13,7 +13,7 @@ class Game():
 
     """
     player_count = 2
-    rows = 7
+    rows = 6
     columns = 7
     win_cnt = 4
     win_points = 10
@@ -31,6 +31,7 @@ class Game():
         self.current_player = 0
         self.legal_actions = {}
         self._state = ""
+        self.name = "Connect_Four"
 
     def test_array(self, test):
         """Simple helper function to determine if an array contains
