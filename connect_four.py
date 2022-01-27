@@ -13,7 +13,7 @@ class Game():
 
     """
     player_count = 2
-    rows = 7
+    rows = 6
     columns = 7
     win_cnt = 4
     win_points = 10

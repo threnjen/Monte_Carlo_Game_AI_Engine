@@ -1140,7 +1140,7 @@ class Game():
         return self.game_over
 
     def game_result(self):
-        return {player_num: player.score for player_num, player in self.players.items()}
+        return {player_num: player.player_score for player_num, player in self.players.items()}
 
     def save_state(self):
         "Called at the end of every players action"
