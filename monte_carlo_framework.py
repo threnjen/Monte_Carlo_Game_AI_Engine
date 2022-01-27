@@ -2,6 +2,7 @@
 
 import numpy as np
 import copy
+import sys
 import pandas as pd
 #from simple_array_game import SimpleArrayGame as Game
 #from tic_tac_toe import Game
@@ -19,6 +20,8 @@ class GameEngine():
         self.game = Game(players)
         #self.state = self.game._state
         self.player_count = players
+
+        self.game_log = pd.DataFrame(columns=['Turn', 'Actions', 'Player', 'Action', 'Score', 'Simulations'])
         
     def get_legal_actions(self):
         """
@@ -77,7 +80,7 @@ class GameEngine():
         Hook #4
         Retrieves game score
 
-        Must be a dictionary in format playerID: Score 
+        Must be a dictionary in format {playerID: Score}
         Where playerID matches IDs sent with get_legal_actions
 
         Returns:
@@ -105,7 +108,14 @@ class GameEngine():
 
         while not self.game.is_game_over():
 
+            #turn_log = pd.DataFrame(columns=['Turn', 'Actions', 'Player', 'Action', 'Score', 'Simulations'])
+            turn_log = {}
+
             self.turn += 1 # increments the game turn
+            turn_log['Turn']=self.turn
+
+            actions=self.game.get_legal_actions()[0]
+            turn_log['Actions']=actions
 
             # Add simulation decay if desired. Uncomment choices below for two types of simulation decay.
             self.sims_this_turn = int(np.ceil(self.sims_this_turn*.9)) # simulation decay of .9 each round
@@ -124,8 +134,14 @@ class GameEngine():
             best_action = self.current_node.node_action # gets action of the returned node
 
             self.game.update_game(best_action, current_player) # updates the true game state with the MC simmed action
+            turn_log['Simulations'] = self.sims_this_turn
+            turn_log['Player']= current_player
+            turn_log['Action']= str(best_action)
+            turn_log['Score']=self.game.scores[current_player]
 
             current_player = self.game.get_legal_actions()[1] # update current player
+
+            self.game_log = self.game_log.append(turn_log, ignore_index=True)
 
         # Game over report
         print("\n\n\nGame over. Game took "+str(self.turn)+" turns.")
@@ -133,6 +149,7 @@ class GameEngine():
         print(self.game._state) # print final board
         print(self.scores) # print final scores
 
+        self.game_log.to_pickle('game_log_'+str(randint(1000000))+'.pkl')
         #first_action_list=[]
 
         #for i in range(self.simulations):
@@ -404,4 +421,6 @@ class MonteCarloNode():
 
 players = 4
 game = GameEngine(players)
-game.play_game_byturns(simulations = 5556)#5556
+
+#print(sys.argv)
+game.play_game_byturns(simulations = int(sys.argv[1]))#5556
