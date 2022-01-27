@@ -107,7 +107,7 @@ class Game():
         self.legal_actions = legal_actions
         return list(legal_actions.keys()), self.current_player
 
-    def update_game(self, action):
+    def update_game(self, action, player_num):
         """Processes selected action
 
         Args:
@@ -117,7 +117,7 @@ class Game():
         for row in range(self.rows):
             if self.grid[self.rows - row - 1][sel_action] == " ":
                 self.grid[self.rows -
-                          row - 1][sel_action] = self.players[self.current_player].mark
+                          row - 1][sel_action] = self.players[player_num].mark
                 break
         self.current_player = (self.current_player + 1) % self.player_count
         self.is_game_over()

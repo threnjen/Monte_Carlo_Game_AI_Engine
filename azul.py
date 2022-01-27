@@ -1026,7 +1026,7 @@ class Game():
 
             curr_player.legal_moves = legal_moves
 
-            return legal_moves.keys(), self.current_player_num
+            return list(legal_moves.keys()), self.current_player_num
 
     def start_round(self):
         """Begins a round (including the first one).
@@ -1054,14 +1054,14 @@ class Game():
         self.save_state()
         # self.supply.refresh_positions()
 
-    def update_game(self, action):
+    def update_game(self, action, player_num):
         """Updates the game with a player action.  Note that an action can be
         multiple types depending on the action.  This is probably really bad.
 
         Args:
             action (var): Player action.
         """
-        curr_player = self.players[self.current_player_num]
+        curr_player = self.players[player_num]
         sel_action = curr_player.legal_moves[action]
         if self.phase == 1:
             # If we're in phase one, the action is to take tiles from
