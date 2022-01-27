@@ -8,17 +8,18 @@ from random import randint
 
 #from simple_array_game import SimpleArrayGame as Game
 #from tic_tac_toe import Game
-from otrio import Game
-#from connect_four import Game
-
-
-
+#from otrio import Game
+from connect_four import Game
 class GameEngine():
     
     def __init__(self, players):
         """
-        Initializes game
-        Sets player count
+        Initializes game.
+
+        The following hooks are required in the Game __init__ file:
+        self._state: is used to display whatever information you want to print to the player (ex. game board in tic tac toe)
+        self.scores: dictionary holds the player scores and should be initialized with the player ID and base score (0 in many games)
+        self.name: a lowercase string with no spaces to define the game in log files
         """        
         self.game = Game(players)
         #self.state = self.game._state
