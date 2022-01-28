@@ -166,7 +166,7 @@ class GameEngine():
 
         
         sys.stdout.close()
-        self.game_log.to_pickle('logs/'+self.game.name+'_game_log_'+str(randint(1,1000000))+'.pkl')
+        #self.game_log.to_pickle('logs/'+self.game.name+'_game_log_'+str(randint(1,1000000))+'.pkl')
         #first_action_list=[]
 
         #for i in range(self.simulations):
@@ -456,8 +456,8 @@ class MonteCarloNode():
                     choices_weights.append(score)
                 except:
                     # if calculation runs into a divide by 0 error because child has never been visted
-                    score=0
-                    choices_weights.append(0)
+                    score=1000
+                    choices_weights.append(1000)
             
                 if print_weights==True:
                     # if toggled, will print score for each child
@@ -473,8 +473,8 @@ class MonteCarloNode():
                     choices_weights.append(score)
                 except:
                     # if calculation runs into a divide by 0 error because child has never been visted
-                    score=0
-                    choices_weights.append(0)
+                    score=1000
+                    choices_weights.append(1000)
             
                 if print_weights==True:
                     # if toggled, will print score for each child
