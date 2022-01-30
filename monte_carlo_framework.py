@@ -99,7 +99,7 @@ class GameEngine():
             simulations (int): Number of simulations to run per turn
         """        
         # toggle to print to file
-        #sys.stdout = open("game_output.txt", "w")
+        sys.stdout = open("game_output.txt", "w")
 
         self.turn = 0 # Set the initial turn as 0
         
@@ -129,11 +129,11 @@ class GameEngine():
             print("Player's turn: Player "+str(current_player)) #whose turn is it?
 
             # Toggle the following block for heavy reporting
-            '''try:
+            try:
                 print("Entry state") 
                 print(self.current_node.depth, self.current_node.node_action, self.current_node.player_owner, self.current_node)
                 selected_node = self.current_node.best_child(print_weights=True)
-            except: pass'''
+            except: pass
 
             # Run the monte carlo engine for this turn. This accesses the meat of the engine right here!
             # returns a chosen action to implement and the new active node
@@ -164,7 +164,7 @@ class GameEngine():
         print(self.scores) # print final scores
 
         # toggle to print to file
-        #sys.stdout.close()
+        sys.stdout.close()
 
         #self.game_log.to_pickle('logs/'+self.game.name+'_game_log_'+str(randint(1,1000000))+'.pkl')
         #first_action_list=[]
@@ -216,23 +216,23 @@ class MonteCarloEngine():
 
         for i in range(num_sims):  # Run x simulations for this turn
             
-            #print("\nSimulation "+str(i))
+            print("\nSimulation "+str(i))
             # COPY THE GAME STATE HERE AND ROLL OUT ON IT NOT THE REAL GAME
             self.game_copy = copy.deepcopy(game)
 
             while not self.game_copy.is_game_over(): # for as long as the copied game is not over:
                 
                 self.rollout_node = self._selection(self.current_node, current_player) # call _selection to find the node to roll out, taking the moves along the way
-                #print("Rollout node selected: "+str(self.rollout_node.depth)+str(self.rollout_node.label)+str(self.rollout_node))
+                print("Rollout node selected: "+str(self.rollout_node.depth)+str(self.rollout_node.label)+str(self.rollout_node))
 
                 self.scores = self._rollout() # call _rollout to finish simulating the game
-                #print(self.scores)
+                print(self.scores)
 
-                #print("Scores before backpropogation:")
-                #test = self.current_node.best_child(print_weights=True)
+                print("Scores before backpropogation:")
+                test = self.current_node.best_child(print_weights=True)
                 self._backpropogate(self.scores, self.rollout_node) # _backpropogates with the scores starting from the rollout_node
-                #print("Scores after backpropogation:")
-                #test = self.current_node.best_child(print_weights=True)
+                print("Scores after backpropogation:")
+                test = self.current_node.best_child(print_weights=True)
 
         # Simulations have finished running, time to get the best move and return it to the game engine
         print("Exit state")
@@ -259,7 +259,7 @@ class MonteCarloEngine():
         Returns:
             current_node (object instance): MonteCarloNode object instance
         """        
-        #print("Selection")
+        print("Selection")
         current_node = node
         self.player=current_player # call legal moves to get the current player
 
@@ -273,7 +273,7 @@ class MonteCarloEngine():
             # HAS CHILDREN
             # HAS BEEN VISITED
             # CHECK GAME END AFTER LOOP
-            #print(str(current_node.label)+"Not leaf, moving down")
+            print(str(current_node.label)+"Not leaf, moving down")
             current_node = current_node.best_child(print_weights=False) # change the current node to the best child
             move_node(current_node, self.player) # take the move of the new current node
             if self.game_copy.is_game_over==True:
@@ -330,7 +330,7 @@ class MonteCarloEngine():
             current_node (object instance): MonteCarloNode object instance
             current_player (int): current player ID
         """        
-        #print("Expansion")
+        print("Expansion")
         actions_to_pop=self.game_copy.get_legal_actions(policy=True)[0] # call to get legal moves. Calls GET_LEGAL_ACTIONS in GameLogic
 
         while len(actions_to_pop) != 0:
@@ -370,7 +370,7 @@ class MonteCarloEngine():
 
             action = legal_actions[np.random.randint(len(legal_actions))] # take a random action from legal moves
             
-            #print("Rollout: "+str(player)+str(action))
+            print("Rollout: "+str(player)+str(action))
 
             self.game_copy.update_game(action, player) # takes action just pulled at random
         
@@ -394,7 +394,7 @@ class MonteCarloEngine():
 
         node.total_score += scores[owner]
 
-        #print("Updated node "+str(node.depth)+str(node.node_action)+" with score of "+str(scores[owner])+', new score is '+str(node.total_score)+'and avg is '+str(node.total_score/node.number_of_visits))
+        print("Updated node "+str(node.depth)+str(node.node_action)+" with score of "+str(scores[owner])+', new score is '+str(node.total_score)+'and avg is '+str(node.total_score/node.number_of_visits))
 
 
         #if scores[owner] > 0:
