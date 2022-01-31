@@ -8,8 +8,8 @@ from random import randint
 
 #from simple_array_game import SimpleArrayGame as Game
 #from tic_tac_toe import Game
-from otrio import Game
-#from connect_four import Game
+#from otrio import Game
+from connect_four import Game
 class GameEngine():
     
     def __init__(self, players):
@@ -280,12 +280,12 @@ class MonteCarloEngine():
             move_node(current_node, self.player) # take the move of the new current node
             if self.game_copy.is_game_over==True:
                 return current_node
-            self.player=self.game_copy.get_legal_actions(policy=True)[1]
+            self.player=self.game_copy.get_legal_actions(policy=False)[1]
             # loop and check again if we hit a leaf; this branch may move more than one node down to find a new expansion point
   
         # Now we have reached a leaf node
 
-        if len(self.game_copy.get_legal_actions(policy=True)[0])==0:
+        if len(self.game_copy.get_legal_actions(policy=False)[0])==0:
             # NO CHILDREN
             # HAS BEEN VISITED
             # means game is over
@@ -333,7 +333,7 @@ class MonteCarloEngine():
             current_player (int): current player ID
         """        
         print("Expansion")
-        actions_to_pop=self.game_copy.get_legal_actions(policy=True)[0] # call to get legal moves. Calls GET_LEGAL_ACTIONS in GameLogic
+        actions_to_pop=self.game_copy.get_legal_actions(policy=False)[0] # call to get legal moves. Calls GET_LEGAL_ACTIONS in GameLogic
 
         while len(actions_to_pop) != 0:
 
@@ -366,7 +366,7 @@ class MonteCarloEngine():
 
         while not self.game_copy.is_game_over():  # checks the state for game over boolean and loops if it's false
 
-            actions=self.game_copy.get_legal_actions(policy=True) 
+            actions=self.game_copy.get_legal_actions(policy=False) 
             legal_actions = actions[0] # get legal moves
             player = actions[1] # get player
 
