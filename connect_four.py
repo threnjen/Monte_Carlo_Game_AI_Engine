@@ -255,6 +255,6 @@ class Game():
             self.update_game(action, self.current_player)
 
 
-test = Game(2)
+# test = Game(2)
 
-test.play_game()
+# test.play_game()
