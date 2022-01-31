@@ -16,7 +16,7 @@ class Game():
     rows = 6
     columns = 7
     win_cnt = 4
-    win_points = 10
+    win_points = 1
 
     def __init__(self, player_count=2):
         """player_count is unused but is generally required for other games, so we add it here.
@@ -44,7 +44,10 @@ class Game():
         """
         return(test.count(test[0]) == len(test)) & (test[0] != " ")
 
-    def is_game_over(self, latest_piece):
+    def is_game_over(self):
+        return self.game_over
+
+    def check_game_over(self, latest_piece):
         """Tests for four types of wins:  row, column, and both diagonals.
         Also tests for a draw.
         Returns:
@@ -179,43 +182,6 @@ class Game():
                     else:
                         win_dict.pop(winkey)
 
-        # for row in range(self.rows):
-        #     for column in range(self.columns - self.win_cnt + 1):
-        #         test = [self.grid[row][column + k]
-        #                 for k in range(self.win_cnt)]
-        #         if self.test_array(test):
-        #             self.game_over = True
-        #             self.players[self.current_player].score = self.win_points
-        #             return True
-
-        # # Column win
-
-        # for column in range(self.columns):
-        #     for row in range(self.rows - self.win_cnt + 1):
-        #         test = [self.grid[row + k][column]
-        #                 for k in range(self.win_cnt)]
-        #         if self.test_array(test):
-        #             self.game_over = True
-        #             return True
-
-        # # Down/right diagonal
-        # for row in range(self.rows - self.win_cnt + 1):
-        #     for column in range(self.columns - self.win_cnt + 1):
-        #         test = [self.grid[row + k][column + k]
-        #                 for k in range(self.win_cnt)]
-        #         if self.test_array(test):
-        #             self.game_over = True
-        #             return True
-
-        # # up/right diagonal
-        # for row in range(self.win_cnt - 1, self.rows):
-        #     for column in range(self.columns - self.win_cnt + 1):
-        #         test = [self.grid[row - k][column + k]
-        #                 for k in range(self.win_cnt)]
-        #         if self.test_array(test):
-        #             self.game_over = True
-        #             return True
-
         if not self.get_legal_actions()[0]:
             return True
 
@@ -258,7 +224,7 @@ class Game():
                 break
         self.pieces_placed += 1
         if self.pieces_placed > 2 * (self.win_cnt - 1):
-            self.is_game_over(f"{latest_row}{sel_action}")
+            self.check_game_over(f"{latest_row}{sel_action}")
         self.current_player = (self.current_player + 1) % self.player_count
         self.save_state()
 
@@ -289,6 +255,6 @@ class Game():
             self.update_game(action, self.current_player)
 
 
-# test = Game(2)
+test = Game(2)
 
-# test.play_game()
+test.play_game()
