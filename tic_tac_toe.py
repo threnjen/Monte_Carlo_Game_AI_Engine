@@ -71,7 +71,7 @@ class Game():
             self.current_player_num + 1) % self.player_count
 
 
-    def get_legal_actions(self):
+    def get_legal_actions(self, rollout):
         """Gets available moves in a dictionary.
         The bot will only ever need the keys; values should be unknown
 
