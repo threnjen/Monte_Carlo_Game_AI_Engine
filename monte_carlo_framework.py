@@ -99,7 +99,9 @@ class GameEngine():
             simulations (int): Number of simulations to run per turn
         """        
         # toggle to print to file
-        sys.stdout = open('logs/'+self.game.name+'_game_log_'+str(randint(1,1000000))+'.txt', "w")
+        sys.stdout = open('logs/'+self.game.name+'_'+str(self.player_count)+'players_'+str(simulations)+'sims_'+str(randint(1,1000000))+'.txt', "w")
+        print("Players: "+str(self.player_count))
+        print("Sims: "+str(simulations))
 
         self.turn = 0 # Set the initial turn as 0
         
