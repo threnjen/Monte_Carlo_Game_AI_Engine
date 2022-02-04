@@ -2,6 +2,8 @@
 from random import choice
 from random import randrange
 from itertools import combinations
+from gui_test import display_stuff
+from collections import Counter
 
 master_tile_dictionary = {'red': 0,
                           "orange": 0, "yellow": 0, "green": 0, "blue": 0, "purple": 0}
@@ -1055,22 +1057,26 @@ class Game():
         self.save_state()
         # self.supply.refresh_positions()
 
-    def update_game(self, action, player_num):
+    def update_game(self, action, player_num=-1):
         """Updates the game with a player action.  Note that an action can be
         multiple types depending on the action.  This is probably really bad.
 
         Args:
             action (var): Player action.
         """
-        curr_player = self.players[player_num]
+
+        curr_player = self.players[self.current_player_num]
         sel_action = curr_player.legal_moves[action]
         if self.phase == 1:
             # If we're in phase one, the action is to take tiles from
             # a factory.  If there are tiles left after that, the next player
             # takes a turn.  Otherwise, the next player is whoever has the first
             # player token and we move to phase 2
-            gained_tiles, curr_player.first_player = self.factory.take_tiles(
+            gained_tiles, first_player_change = self.factory.take_tiles(
                 sel_action, self.wild_color)
+            if first_player_change:
+                self.first_player = self.current_player_num
+                curr_player.first_player = True
             curr_player.change_player_supply(gained_tiles)
             if self.factory.get_available_tile_choices(self.wild_color):
                 self.current_player_num = (
@@ -1145,8 +1151,7 @@ class Game():
 
     def save_state(self):
         "Called at the end of every players action"
-        self._state = ""
-        self._state = f"Phase: {self.phase}"
+        self._state = f"Phase: {self.phase}\n"
         self._state += f"Current_player:  {self.current_player_num}\n"
         self._state += f"First player available: {self.factory.center.first_player_avail}\n"
         self._state += f"First player for next round: {self.first_player}\n"
@@ -1156,8 +1161,9 @@ class Game():
         self._state += "Center tiles: \n"
         self._state += f"{print_dict(self.factory.center.get_available_tiles(self.wild_color))}\n"
         self._state += "Supply tiles: \n"
-        self._state += f"{print(self.supply.tile_positions)}\n"
+        self._state += f"{self.supply.tile_positions}"
         for player_number, player in self.players.items():
+            self._state += f"Player {player_number} score: {player.player_score}\n"
             self._state += f"Player {player_number} tiles:\n"
             self._state += f"{print_dict(player.player_tile_supply)}\n"
             for color, star in player.player_board.stars.items():
@@ -1167,15 +1173,32 @@ class Game():
                 self._state += f"Player {player_number} {color} star open positions: \n"
                 self._state += f"{print_dict(star.get_open_positions())}\n"
 
+    def prep_display(self):
+        factory_dict = {}
+        for ind, disp in self.factory.factory_displays.items():
+            factory_dict[ind] = disp.tile_dictionary
+        factory_dict[-1] = self.factory.center.tile_dictionary
+        supply_dict = Counter(self.supply.tile_positions)
+        player_dict = {}
+        stars = {}
+        for ind, player in self.players.items():
+            player_dict[ind] = player.player_tile_supply
+            stars[ind] = {}
+            for star_ind, star in player.player_board.stars.items():
+                stars[ind].update({star_ind: star.tile_positions})
+        display_stuff(factory_dict, supply_dict,
+                      player_dict, stars, self.phase)
+
     def play_game(self):
         """Plays the game (in the case where we are not using a bot)
         """
         while not self.is_game_over():
             self.get_legal_actions()
-            print(self._state)
+            # print(self._state)
+            
             for key, value in self.players[self.current_player_num].legal_moves.items():
                 print(f"{value}:  enter {key}")
-
+            self.prep_display()
             action = int(input("Choose an action"))
             self.update_game(action)
 
@@ -1183,3 +1206,5 @@ class Game():
 # %%
 test = Game(2)
 test.play_game()
+
+# %%

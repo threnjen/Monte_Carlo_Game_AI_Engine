@@ -35,14 +35,14 @@ class Game():
         self.pieces_placed = 0
         self.allowed_columns = {0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 6}
 
-    def test_array(self, test):
+    def test_array(self, test_arr):
         """Simple helper function to determine if an array contains
         four x's or o's
 
         Args:
             test (list): list on the grid
         """
-        return(test.count(test[0]) == len(test)) & (test[0] != " ")
+        return(test_arr.count(test_arr[0]) == len(test_arr)) & (test_arr[0] != " ")
 
     def is_game_over(self):
         return self.game_over
@@ -121,7 +121,7 @@ class Game():
                     '23diag': [[2, 3], [3, 4], [4, 5], [5, 6]],
                     '33diag': [[3, 3], [2, 4], [1, 5], [0, 6]],
                     '43diag': [[4, 3], [3, 4], [2, 5], [1, 6]],
-                    '53diag': [[5, 3], [4, 4], [3, 5], [2, 6]], }
+                    '53diag ': [[5, 3], [4, 4], [3, 5], [2, 6]], }
 
         arr_dict = {'00': ['00row', '00col', '00diag'],
                     '01': ['00row', '01row', '01col', '01diag'],
@@ -173,9 +173,9 @@ class Game():
         for winkey in pot_wins:
             if winkey in win_dict.keys():
                 win_arr = win_dict[winkey]
-                test = [self.grid[item[0]][item[1]] for item in win_arr]
-                if all(test):
-                    if self.test_array(test):
+                test_arr = [self.grid[item[0]][item[1]] for item in win_arr]
+                if all([item != " " for item in test_arr]):
+                    if self.test_array(test_arr):
                         self.game_over = True
                         self.players[self.current_player].score = self.win_points
                         return True
@@ -255,6 +255,6 @@ class Game():
             self.update_game(action, self.current_player)
 
 
-# test = Game(2)
+test = Game(2)
 
-# test.play_game()
+test.play_game()
