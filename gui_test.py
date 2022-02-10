@@ -48,23 +48,27 @@ def container(tile_dict: dict, label: str, prefix: str):
     for tile, count in tile_dict.items():
         for i in range(count):
             sg_col_array.append(
-                sg.Button('   ', button_color=tile, key=f"{prefix}{tile}"))
+                sg.Button('   ', button_color=tile, key=f"{prefix}{tile}_{i}"))
     return sg_col_array
 
 
-def star(color: str, pos_dict: dict):
+def star(color: str, pos_dict: dict, player: str):
+    prefix = 'star'
     star_array = [sg.Text(f"{color} star")]
     for pos, occupied in pos_dict.items():
         if occupied:
-            b_color = color
+            if color == "all":
+                b_color = "white"
+            else:
+                b_color = color
         else:
             b_color = "gray"
         star_array.append(
-            sg.Button(f' {pos} ', button_color=b_color, key=f""))
+            sg.Button(f' {pos} ', button_color=b_color, key=f"{prefix}_{player}_{color}_{pos}"))
     return star_array
 
 
-def display_stuff(factory_dict: dict, supply_dict: dict, player_dict: dict, player_stars: dict, phase: int):
+def display_stuff(factory_dict: dict, supply_dict: dict, player_dict: dict, player_stars: dict, legal_moves: dict, score_dict: dict):
     fact_layout = []
     for fact, fact_tiles in factory_dict.items():
         if fact == -1:
@@ -77,11 +81,12 @@ def display_stuff(factory_dict: dict, supply_dict: dict, player_dict: dict, play
 
     player_layout = []
     for player, player_tiles in player_dict.items():
+
         player_layout.append(
             container(player_tiles, f"Player {player}: ", f"player_{player}"))
-        player_star_layout = []
+        player_layout.append([sg.Text(f"Score: {score_dict[player]}")])
         for color, pos_dict in player_stars[player].items():
-            player_layout.append(star(color, pos_dict))
+            player_layout.append(star(color, pos_dict, player))
 
     # ----- Full layout -----
     layout = [
@@ -96,5 +101,12 @@ def display_stuff(factory_dict: dict, supply_dict: dict, player_dict: dict, play
 
     while True:
         event, values = window.read()
+        for index, action in legal_moves.items():
+            try:
+                if action[-1] in event:
+                    window.close()
+                    return index
+            except KeyError:
+                pass
         if event == "Exit" or event == sg.WIN_CLOSED:
-            break
+            return 0
