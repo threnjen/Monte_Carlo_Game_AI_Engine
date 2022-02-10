@@ -1049,7 +1049,6 @@ class Game():
             round (int): Round number
             wild_color (str): Wild color for the round.
         """
-        self.select_starting_player()
         self.fill_supply()
         self.wild_color = Game.wild_list[self.current_round]
         for display in self.factory.factory_displays.values():
@@ -1120,6 +1119,7 @@ class Game():
                                             curr_player.get_tile_count(), 0)
             curr_player.player_tile_supply = master_tile_dictionary.copy()
             curr_player.done_placing = True
+            self.fill_supply()
             self.current_player_num = (
                 self.current_player_num + 1) % self.player_count
         else:
