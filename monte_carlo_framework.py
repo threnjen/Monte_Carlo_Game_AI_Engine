@@ -8,8 +8,11 @@ from random import randint
 
 #from simple_array_game import SimpleArrayGame as Game
 #from tic_tac_toe import Game
-from otrio import Game
+#from otrio import Game
 #from connect_four import Game
+from azul import Game
+
+
 class GameEngine():
     
     def __init__(self, players):

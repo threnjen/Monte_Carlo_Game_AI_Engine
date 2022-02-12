@@ -7,13 +7,40 @@ from colorama import init, Fore, Back, Style
 # Initializes Colorama
 init(autoreset=True)
 
-class Player():
+class Board():
 
-    def __init__(self, player_board, scorer):
+    def __init__(self):
         self.board ={}
         for i in range(4):
             for j in range(5):
-                self.board[(i,j)] = '  '        
+                self.board[(i,j)] = '  '  
+    
+        self.adjacency = {}
+        self.adjacency[0,0] = [(0,1), (1,0)]
+        self.adjacency[0,1] = [(0,0), (0,2), (1,1)]
+        self.adjacency[0,2] = [(0,1), (0,3), (1,2)]
+        self.adjacency[0,3] = [(0,2), (0,4), (1,3)]
+        self.adjacency[0,4] = [(0,3), (1,4)]
+        self.adjacency[1,0] = [(0,0), (1,1), (2,0)]
+        self.adjacency[1,1] = [(1,0), (0,1), (1,2), (2,1)]
+        self.adjacency[1,2] = [(1,1), (0,2), (1,3), (2,2)]
+        self.adjacency[1,3] = [(1,2), (0,3), (1,4), (2,3)]
+        self.adjacency[1,4] = [(0,4), (1,3), (2,4)]
+        self.adjacency[2,0] = [(1,0), (2,1), (3,0)]
+        self.adjacency[2,1] = [(2,0), (1,1), (2,2), (3,1)]
+        self.adjacency[2,2] = [(2,1), (1,2), (2,3), (3,2)]
+        self.adjacency[2,3] = [(2,2), (1,3), (2,4), (3,3)]
+        self.adjacency[2,4] = [(2,3), (1,4), (3,4)]
+        self.adjacency[3,0] = [(2,0), (3,1)]
+        self.adjacency[3,1] = [(3,0), (2,1), (3,2)]
+        self.adjacency[3,2] = [(3,1), (2,2), (3,3)]
+        self.adjacency[3,3] = [(3,2), (2,3), (3,4)]
+        self.adjacency[3,4] = [(3,3), (2,4)]
+
+class Player():
+
+    def __init__(self, player_board, scorer):
+        self.player = Board()      
         self.map_reference = player_board[0]
         self.tokens = player_board[1]
         self.score_color = scorer
@@ -26,13 +53,13 @@ class Player():
         self.player_board  = f"""\n
         Player Board\t\t\tReference Map\n
         ________________\t\t\t___________
-        |{self.board[0,0]}|{self.board[0,1]}|{self.board[0,2]}|{self.board[0,3]}|{self.board[0,4]}|\t\t\t|{self.map_reference[0,0]}|{self.map_reference[0,1]}|{self.map_reference[0,2]}|{self.map_reference[0,3]}|{self.map_reference[0,4]}|          
+        |{self.player.board[0,0]}|{self.player.board[0,1]}|{self.player.board[0,2]}|{self.player.board[0,3]}|{self.player.board[0,4]}|\t\t\t|{self.map_reference[0,0]}|{self.map_reference[0,1]}|{self.map_reference[0,2]}|{self.map_reference[0,3]}|{self.map_reference[0,4]}|          
         ________________\t\t\t___________
-        |{self.board[1,0]}|{self.board[1,1]}|{self.board[1,2]}|{self.board[1,3]}|{self.board[1,4]}|\t\t\t|{self.map_reference[1,0]}|{self.map_reference[1,1]}|{self.map_reference[1,2]}|{self.map_reference[1,3]}|{self.map_reference[1,4]}|
+        |{self.player.board[1,0]}|{self.player.board[1,1]}|{self.player.board[1,2]}|{self.player.board[1,3]}|{self.player.board[1,4]}|\t\t\t|{self.map_reference[1,0]}|{self.map_reference[1,1]}|{self.map_reference[1,2]}|{self.map_reference[1,3]}|{self.map_reference[1,4]}|
         ________________\t\t\t___________
-        |{self.board[2,0]}|{self.board[2,1]}|{self.board[2,2]}|{self.board[2,3]}|{self.board[2,4]}|\t\t\t|{self.map_reference[2,0]}|{self.map_reference[2,1]}|{self.map_reference[2,2]}|{self.map_reference[2,3]}|{self.map_reference[2,4]}|
+        |{self.player.board[2,0]}|{self.player.board[2,1]}|{self.player.board[2,2]}|{self.player.board[2,3]}|{self.player.board[2,4]}|\t\t\t|{self.map_reference[2,0]}|{self.map_reference[2,1]}|{self.map_reference[2,2]}|{self.map_reference[2,3]}|{self.map_reference[2,4]}|
         ________________\t\t\t___________
-        |{self.board[3,0]}|{self.board[3,1]}|{self.board[3,2]}|{self.board[3,3]}|{self.board[3,4]}|\t\t\t|{self.map_reference[3,0]}|{self.map_reference[3,1]}|{self.map_reference[3,2]}|{self.map_reference[3,3]}|{self.map_reference[3,4]}|
+        |{self.player.board[3,0]}|{self.player.board[3,1]}|{self.player.board[3,2]}|{self.player.board[3,3]}|{self.player.board[3,4]}|\t\t\t|{self.map_reference[3,0]}|{self.map_reference[3,1]}|{self.map_reference[3,2]}|{self.map_reference[3,3]}|{self.map_reference[3,4]}|
         ________________\t\t\t___________
         """
         print(self.player_board)
@@ -57,13 +84,33 @@ class Player():
                         continue
             self.first_turn=False
             return legal_positions
+        
+        occupied = [k for (k,v) in self.player.board.items() if v != '  ']
 
-        return[k for (k,v) in self.board.items() if v == '  ']
+        potential = []
+        for i in occupied:
+            for k in self.player.adjacency[i]:
+                potential.append(k)
 
-        for spot in legal_positions.copy():
-            if self.board[spot] != '  ':
-                print(self.board[spot])
-                legal_positions.remove(spot)
+        legal_positions = []
+        for i in potential:
+            if self.player.board[i] != '  ':
+                continue
+            elif self.player.board[i][0]==self.color:
+                print(f"space contains {self.color}")
+                continue
+            elif self.player.board[i][1]==self.number:
+                print(f"space contains {self.number}")
+                continue
+            else:
+                if self.map_reference[i] == ' ':
+                    legal_positions.append((i))
+                elif self.map_reference[i].lower().isdigit() and int(self.map_reference[i])==self.number:
+                    legal_positions.append((i))
+                elif self.map_reference[i].lower().isalpha() and self.map_reference[i].lower()==self.color:
+                    legal_positions.append((i))
+                else:
+                    continue
 
         if len(legal_positions) == 0:
             legal_positions.append('None')
@@ -71,10 +118,8 @@ class Player():
         return legal_positions
 
     def update_board(self, position):
-        print(f'position returned is {position}')
-
         if position != 'None':
-            self.board[position] = f'{self.color}{self.number}'
+            self.player.board[position] = f'{self.color}{self.number}'
 
 class DiceHolder():
 
@@ -169,20 +214,17 @@ class Game():
         self.turn_order += self.turn_order[::-1]
 
         self.current_player_num = self.turn_order[0]
-        print(self.turn_order)
     
     def get_legal_actions(self):
         '''Hook #1 Sends legal actions in
         Format [[list of legal actions], active player ID]'''
 
         if self.flag == 'draw':
-            print("getting draw actions")
             self.players[self.current_player_num].draw_player_board()
             self.legal_actions = (self.round_draw, self.current_player_num)
             return self.legal_actions
         
         if self.flag == 'place':
-            print("getting place actions")
             self.legal_positions = self.players[self.current_player_num].check_legal_positions(self.die)
             self.legal_actions = (self.legal_positions, self.current_player_num)
             return self.legal_actions            
@@ -202,19 +244,14 @@ class Game():
             print("Game is over")
 
         if self.flag == 'draw':
-            print("Update game: drawing")
             self.die = self.round_draw[action]
             del self.round_draw[action] 
             self.flag = 'place'     
             
         else:
-            print("Update game: placing")
-            # Do player board stuff here! 
             action = self.legal_positions[action]
-            print("Do player board stuff here")
             self.players[self.current_player_num].update_board(action)
             self.current_player_num = self.turn_order[(self.num_players*2) - len(self.round_draw)+1]
-            print(f"Just updated current player to {self.current_player_num}")
             self.flag = 'draw'
 
     def is_game_over(self):
@@ -238,12 +275,9 @@ class Play():
         game = Game(players)
 
         while game.game_over == False:
-
-            print("requesting actions")
             actions, player = game.get_legal_actions()
-            print(actions, player)
+            print(f"Actions: {actions} Player: {player}")
             action = int(input(f"Enter action as index 0-{len(actions)-1}: "))
-            print("update game")
             game.update_game(action, player)
 
 game = Play(3)
