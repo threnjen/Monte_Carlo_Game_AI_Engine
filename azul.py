@@ -64,14 +64,9 @@ class TileContainer(object):
             f: Error when passed dictionary contains unknown key.
         """
         for color in new_tiles.keys():  # loop through color in new dictionary
-            # TODO:  change to if/then (or find a way to reject new dictionary items)
-            if color in self.tile_dictionary.keys():
-                # update self tile dictionary
-                self.tile_dictionary[color] += new_tiles[color]
-                self.tile_count += new_tiles[color]
-            else:
-                # TODO:  this can be made into a generic error
-                raise f"Error:  invalid tilename passed ({color})"
+            # update self tile dictionary
+            self.tile_dictionary[color] += new_tiles[color]
+            self.tile_count += new_tiles[color]
 
 
 class Tower(TileContainer):
@@ -91,7 +86,7 @@ class Tower(TileContainer):
             dictionary: Tiles dumped or an empty dictionary.
         """
 
-        if bool(self.get_available_tiles()):  # check if available tiles exist
+        if self.tile_count:  # check if available tiles exist
             # converts contents of Tower dictionary into a dump dictionary
             dump_tiles = self.tile_dictionary.copy()
             # resets tower dictionary to empty
@@ -137,12 +132,10 @@ class Bag(TileContainer):
                 self.tile_dictionary = tower.dump_all_tiles()
                 available_tiles = self.get_available_tiles()
             color = choice(list(available_tiles.keys()))
-            if color in chosen_tiles.keys():
-                chosen_tiles[color] += 1
-                self.tile_dictionary[color] -= 1
-                self.tile_count -= 1
-            else:
-                raise f"Error:  invalid tilename passed ({color})"
+            chosen_tiles[color] += 1
+            self.tile_dictionary[color] -= 1
+            self.tile_count -= 1
+
         return chosen_tiles
 
 
@@ -185,12 +178,7 @@ class FactoryDisplay(TileContainer):
             dict: leftover tiles, to be placed in the center
         """
         chosen_tiles = {}
-        # if wild_color in master_tile_dictionary.keys(): # I don't love this particular error check
-        # but not sure how to revise atm.
-        # I think because it would require the parent master tile dictionary to become corrupted;
-        # if that happens the code is broken, so this check is redundant
         # get the tiles avail on the display object
-        # available_tiles = self.get_available_tiles()
 
         # if chosen_color in available_tiles.keys():  # check if the chosen color is avail
         if chosen_color != wild_color:  # if the chosen color isn't the wild color,
@@ -214,10 +202,6 @@ class FactoryDisplay(TileContainer):
         # reset this display object to empty
         self.tile_dictionary = master_tile_dictionary.copy()
         return chosen_tiles, send_to_center
-        # else:  # return empty dict if chosen color is not avail
-        # return {}, {}
-        # else:
-        #    raise f"Wild color {wild_color} is invalid"
 
 
 class CenterOfTable(FactoryDisplay):
@@ -315,6 +299,8 @@ class Supply():
 class Factory(object):
 
     tile_prefix = "fact"
+    fact_index = 0
+    color_index = 1
 
     def __init__(self, display_count):
         """Builds a factory, which contains a center and a number of displays,
@@ -325,7 +311,6 @@ class Factory(object):
             display_count (int): Number of displays to generate.
         """
         self.display_count = display_count
-        # self.factory_displays = Dict[int, Factory]
         self.factory_displays = {i: FactoryDisplay()
                                  for i in range(display_count)}
         self.center = CenterOfTable()
@@ -401,8 +386,8 @@ class Factory(object):
         Returns:
             dict:  tiles taken, as color: count pairs.  Note there can be at most two pairs
         """
-        index = action[0]
-        color = action[1]
+        index = action[self.fact_index]
+        color = action[self.color_index]
         if index == -1:
             return self.take_from_center(color, wild_color)
         else:
@@ -464,17 +449,14 @@ class Star(object):
             int: Points gained from tile placement, including completing the star if applicable.
         """
 
-        if self.colors_allowed[color] and not self.tile_positions[position]:
-            self.tile_positions[position] = True
-            if self.color == 'all':
-                self.colors_allowed[color] = False
-            if all([value for value in self.tile_positions.values()]):
-                self.star_full = True
-            points_earned = self.check_contiguous(position) + \
-                self.star_full * Star.star_points[self.color]
-            return points_earned
-        else:
-            return KeyError
+        self.tile_positions[position] = True
+        if self.color == 'all':
+            self.colors_allowed[color] = False
+        if all([value for value in self.tile_positions.values()]):
+            self.star_full = True
+        points_earned = self.check_contiguous(position) + \
+            self.star_full * Star.star_points[self.color]
+        return points_earned
 
     def check_left_contiguous(self, position: int):
         """Checks the number of contiguous tiles to the left and returns the point value,
@@ -692,8 +674,6 @@ class PlayerBoard(object):
         for star_index, star in self.stars.items():
             # We can only place if the star has a space for our color
             # We'll deal with the center star in a moment
-            # This is an ugly hack.  I'm sorry.  Otherwise we get a key error
-            # This hack isn't saved between function calls
             if star.color in avail_tiles.keys():
                 color_avail = avail_tiles[star.color]
             if star.color == "all" or color_avail:
@@ -706,7 +686,6 @@ class PlayerBoard(object):
                     # I may correct this later.
                     if tot_tiles >= pos:
                         # We need this for the all star, which can't have two of the same color
-
                         for color in allowed_colors:
                             tile_name = f"{self.tile_prefix}_{self.player}_{star.color}_{pos}"
                             # We look at options to place that color
@@ -998,7 +977,7 @@ class Game():
             curr_player.legal_moves = self.factory.get_legal_actions(
                 self.wild_color)
             return curr_player.legal_moves, self.current_player_num
-        elif curr_player.bonus_earned:
+        elif curr_player.bonus_earned and self.supply.get_tile_count():
             # Legal actions incluide taking tiles from the supply
             curr_player.legal_moves = self.supply.get_legal_actions()
             return curr_player.legal_moves.keys(), self.current_player_num
@@ -1105,6 +1084,12 @@ class Game():
             # mark the player is done placing tiles.  This last step ensures that next time they
             # have a turn, it will be round 1 (see get_legal_moves)
             curr_player.player_board.reserved_tiles = sel_action
+            for tile, tile_count in curr_player.player_tile_supply.items():
+                try:
+                    self.tower.tile_dictionary[tile] += tile_count - \
+                        sel_action[tile]
+                except KeyError:
+                    self.tower.tile_dictionary[tile] += tile_count
             curr_player.player_score += min(self.reserve_max -
                                             curr_player.get_tile_count(), 0)
             curr_player.player_tile_supply = master_tile_dictionary.copy()
