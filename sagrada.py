@@ -7,13 +7,40 @@ from colorama import init, Fore, Back, Style
 # Initializes Colorama
 init(autoreset=True)
 
-class Player():
+class Board():
 
-    def __init__(self, player_board, scorer):
+    def __init__(self):
         self.board ={}
         for i in range(4):
             for j in range(5):
-                self.board[(i,j)] = '  '        
+                self.board[(i,j)] = '  '  
+    
+        self.adjacency = {}
+        self.adjacency[0,0] = [(0,1), (1,0)]
+        self.adjacency[0,1] = [(0,0), (0,2), (1,1)]
+        self.adjacency[0,2] = [(0,1), (0,3), (1,2)]
+        self.adjacency[0,3] = [(0,2), (0,4), (1,3)]
+        self.adjacency[0,4] = [(0,3), (1,4)]
+        self.adjacency[1,0] = [(0,0), (1,1), (2,0)]
+        self.adjacency[1,1] = [(1,0), (0,1), (1,2), (2,1)]
+        self.adjacency[1,2] = [(1,1), (0,2), (1,3), (2,2)]
+        self.adjacency[1,3] = [(1,2), (0,3), (1,4), (2,3)]
+        self.adjacency[1,4] = [(0,4), (1,3), (2,4)]
+        self.adjacency[2,0] = [(1,0), (2,1), (3,0)]
+        self.adjacency[2,1] = [(2,0), (1,1), (2,2), (3,1)]
+        self.adjacency[2,2] = [(2,1), (1,2), (2,3), (3,2)]
+        self.adjacency[2,3] = [(2,2), (1,3), (2,4), (3,3)]
+        self.adjacency[2,4] = [(2,3), (1,4), (3,4)]
+        self.adjacency[3,0] = [(2,0), (3,1)]
+        self.adjacency[3,1] = [(3,0), (2,1), (3,2)]
+        self.adjacency[3,2] = [(3,1), (2,2), (3,3)]
+        self.adjacency[3,3] = [(3,2), (2,3), (3,4)]
+        self.adjacency[3,4] = [(3,3), (2,4)]
+
+class Player():
+
+    def __init__(self, player_board, scorer):
+        self.player = Board()      
         self.map_reference = player_board[0]
         self.tokens = player_board[1]
         self.score_color = scorer
@@ -26,13 +53,13 @@ class Player():
         self.player_board  = f"""\n
         Player Board\t\t\tReference Map\n
         ________________\t\t\t___________
-        |{self.board[0,0]}|{self.board[0,1]}|{self.board[0,2]}|{self.board[0,3]}|{self.board[0,4]}|\t\t\t|{self.map_reference[0,0]}|{self.map_reference[0,1]}|{self.map_reference[0,2]}|{self.map_reference[0,3]}|{self.map_reference[0,4]}|          
+        |{self.player.board[0,0]}|{self.player.board[0,1]}|{self.player.board[0,2]}|{self.player.board[0,3]}|{self.player.board[0,4]}|\t\t\t|{self.map_reference[0,0]}|{self.map_reference[0,1]}|{self.map_reference[0,2]}|{self.map_reference[0,3]}|{self.map_reference[0,4]}|          
         ________________\t\t\t___________
-        |{self.board[1,0]}|{self.board[1,1]}|{self.board[1,2]}|{self.board[1,3]}|{self.board[1,4]}|\t\t\t|{self.map_reference[1,0]}|{self.map_reference[1,1]}|{self.map_reference[1,2]}|{self.map_reference[1,3]}|{self.map_reference[1,4]}|
+        |{self.player.board[1,0]}|{self.player.board[1,1]}|{self.player.board[1,2]}|{self.player.board[1,3]}|{self.player.board[1,4]}|\t\t\t|{self.map_reference[1,0]}|{self.map_reference[1,1]}|{self.map_reference[1,2]}|{self.map_reference[1,3]}|{self.map_reference[1,4]}|
         ________________\t\t\t___________
-        |{self.board[2,0]}|{self.board[2,1]}|{self.board[2,2]}|{self.board[2,3]}|{self.board[2,4]}|\t\t\t|{self.map_reference[2,0]}|{self.map_reference[2,1]}|{self.map_reference[2,2]}|{self.map_reference[2,3]}|{self.map_reference[2,4]}|
+        |{self.player.board[2,0]}|{self.player.board[2,1]}|{self.player.board[2,2]}|{self.player.board[2,3]}|{self.player.board[2,4]}|\t\t\t|{self.map_reference[2,0]}|{self.map_reference[2,1]}|{self.map_reference[2,2]}|{self.map_reference[2,3]}|{self.map_reference[2,4]}|
         ________________\t\t\t___________
-        |{self.board[3,0]}|{self.board[3,1]}|{self.board[3,2]}|{self.board[3,3]}|{self.board[3,4]}|\t\t\t|{self.map_reference[3,0]}|{self.map_reference[3,1]}|{self.map_reference[3,2]}|{self.map_reference[3,3]}|{self.map_reference[3,4]}|
+        |{self.player.board[3,0]}|{self.player.board[3,1]}|{self.player.board[3,2]}|{self.player.board[3,3]}|{self.player.board[3,4]}|\t\t\t|{self.map_reference[3,0]}|{self.map_reference[3,1]}|{self.map_reference[3,2]}|{self.map_reference[3,3]}|{self.map_reference[3,4]}|
         ________________\t\t\t___________
         """
         print(self.player_board)
@@ -58,11 +85,29 @@ class Player():
             self.first_turn=False
             return legal_positions
 
-        return[k for (k,v) in self.board.items() if v == '  ']
+        
+        occupied = [k for (k,v) in self.player.board.items() if v != '  ']
+        print(occupied)
+
+
+
+        
+
+        for i in range(self.map_reference.shape[0]):
+            for j in range(self.map_reference.shape[1]):
+                if self.map_reference[i,j] == ' ':
+                    legal_positions.append((i,j))
+                elif self.map_reference[i,j].lower().isdigit() and int(self.map_reference[i,j])==self.number:
+                    legal_positions.append((i,j))
+                elif self.map_reference[i,j].lower().isalpha() and self.map_reference[i,j].lower()==self.color:
+                    legal_positions.append((i,j))
+                else:
+                    continue
+
 
         for spot in legal_positions.copy():
-            if self.board[spot] != '  ':
-                print(self.board[spot])
+            if self.player.board[spot] != '  ':
+                print(self.player.board[spot])
                 legal_positions.remove(spot)
 
         if len(legal_positions) == 0:
@@ -74,7 +119,7 @@ class Player():
         print(f'position returned is {position}')
 
         if position != 'None':
-            self.board[position] = f'{self.color}{self.number}'
+            self.player.board[position] = f'{self.color}{self.number}'
 
 class DiceHolder():
 
