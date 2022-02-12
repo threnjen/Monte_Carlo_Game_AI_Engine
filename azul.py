@@ -765,23 +765,6 @@ class PlayerBoard(object):
 
         return bonus_reward
 
-    # def reserve_tiles(self, tile_dictionary: dict):
-    #     """Adds tiles to the player reserve to hold between rounds.
-
-    #     Args:
-    #         tile_dictionary (dict): Dictionary of color/quantity pairs.
-
-    #     Raises:
-    #         f: Errors out if more than four tiles are passed.  Shouldn't happen, as this will
-    #         be restricted elsewhere.
-    #     """
-    #     tiles_reserved = sum(
-    #         [tile_count for tile_count in tile_dictionary.items()])
-    #     if tiles_reserved > 4:
-    #         raise f"Error:  too many tiles attempted to reserver ({tiles_reserved})"
-    #     else:
-    #         self.reserved_tiles = tile_dictionary.copy()
-
     def check_multistar_bonus(self, tile_placed_position: int):
         """This checks if a point bonus is received for placing all tiles of a particular
         number.  Note that again tile position range (0-5 or 1-6) is causing a problem:
@@ -1031,7 +1014,6 @@ class Game():
             player.done_placing = False
         self.factory.center.reset_first_player()
         self.save_state()
-        # self.supply.refresh_positions()
 
     def update_game(self, action, player_num=-1):
         """Updates the game with a player action.  Note that an action can be
@@ -1198,7 +1180,7 @@ class Game():
 
 
 # %%
-test = Game(1)
-test.play_game()
+# test = Game(1)
+# test.play_game()
 
 # %%
