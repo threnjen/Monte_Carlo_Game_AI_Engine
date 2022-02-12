@@ -84,31 +84,33 @@ class Player():
                         continue
             self.first_turn=False
             return legal_positions
-
         
         occupied = [k for (k,v) in self.player.board.items() if v != '  ']
-        print(occupied)
 
+        potential = []
+        for i in occupied:
+            for k in self.player.adjacency[i]:
+                potential.append(k)
 
-
-        
-
-        for i in range(self.map_reference.shape[0]):
-            for j in range(self.map_reference.shape[1]):
-                if self.map_reference[i,j] == ' ':
-                    legal_positions.append((i,j))
-                elif self.map_reference[i,j].lower().isdigit() and int(self.map_reference[i,j])==self.number:
-                    legal_positions.append((i,j))
-                elif self.map_reference[i,j].lower().isalpha() and self.map_reference[i,j].lower()==self.color:
-                    legal_positions.append((i,j))
+        legal_positions = []
+        for i in potential:
+            if self.player.board[i] != '  ':
+                continue
+            elif self.player.board[i][0]==self.color:
+                print(f"space contains {self.color}")
+                continue
+            elif self.player.board[i][1]==self.number:
+                print(f"space contains {self.number}")
+                continue
+            else:
+                if self.map_reference[i] == ' ':
+                    legal_positions.append((i))
+                elif self.map_reference[i].lower().isdigit() and int(self.map_reference[i])==self.number:
+                    legal_positions.append((i))
+                elif self.map_reference[i].lower().isalpha() and self.map_reference[i].lower()==self.color:
+                    legal_positions.append((i))
                 else:
                     continue
-
-
-        for spot in legal_positions.copy():
-            if self.player.board[spot] != '  ':
-                print(self.player.board[spot])
-                legal_positions.remove(spot)
 
         if len(legal_positions) == 0:
             legal_positions.append('None')
@@ -116,8 +118,6 @@ class Player():
         return legal_positions
 
     def update_board(self, position):
-        print(f'position returned is {position}')
-
         if position != 'None':
             self.player.board[position] = f'{self.color}{self.number}'
 
@@ -214,20 +214,17 @@ class Game():
         self.turn_order += self.turn_order[::-1]
 
         self.current_player_num = self.turn_order[0]
-        print(self.turn_order)
     
     def get_legal_actions(self):
         '''Hook #1 Sends legal actions in
         Format [[list of legal actions], active player ID]'''
 
         if self.flag == 'draw':
-            print("getting draw actions")
             self.players[self.current_player_num].draw_player_board()
             self.legal_actions = (self.round_draw, self.current_player_num)
             return self.legal_actions
         
         if self.flag == 'place':
-            print("getting place actions")
             self.legal_positions = self.players[self.current_player_num].check_legal_positions(self.die)
             self.legal_actions = (self.legal_positions, self.current_player_num)
             return self.legal_actions            
@@ -247,19 +244,14 @@ class Game():
             print("Game is over")
 
         if self.flag == 'draw':
-            print("Update game: drawing")
             self.die = self.round_draw[action]
             del self.round_draw[action] 
             self.flag = 'place'     
             
         else:
-            print("Update game: placing")
-            # Do player board stuff here! 
             action = self.legal_positions[action]
-            print("Do player board stuff here")
             self.players[self.current_player_num].update_board(action)
             self.current_player_num = self.turn_order[(self.num_players*2) - len(self.round_draw)+1]
-            print(f"Just updated current player to {self.current_player_num}")
             self.flag = 'draw'
 
     def is_game_over(self):
@@ -283,12 +275,9 @@ class Play():
         game = Game(players)
 
         while game.game_over == False:
-
-            print("requesting actions")
             actions, player = game.get_legal_actions()
-            print(actions, player)
+            print(f"Actions: {actions} Player: {player}")
             action = int(input(f"Enter action as index 0-{len(actions)-1}: "))
-            print("update game")
             game.update_game(action, player)
 
 game = Play(3)
