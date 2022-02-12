@@ -8,8 +8,8 @@ from random import randint
 
 #from simple_array_game import SimpleArrayGame as Game
 #from tic_tac_toe import Game
-#from otrio import Game
-from connect_four import Game
+from otrio import Game
+#from connect_four import Game
 class GameEngine():
     
     def __init__(self, players):
@@ -17,6 +17,7 @@ class GameEngine():
         Initializes game.
 
         The following hooks are required in the Game __init__ file:
+        game init must accept players argument (int)
         self._state: is used to display whatever information you want to print to the player (ex. game board in tic tac toe)
         self.scores: dictionary holds the player scores and should be initialized with the player ID and base score (0 in many games)
         self.name: a lowercase string with no spaces to define the game in log files
@@ -48,7 +49,7 @@ class GameEngine():
             [list]: List of: list of legal actions and active player ID
         """        
 
-    def update_game(self, action, player):
+    #def update_game(self, action, player):
         """
         Hook #2
         Send action choice and player to game
@@ -63,9 +64,9 @@ class GameEngine():
             action (list item): selected item from list of legal actions
             player (int): player number
         """        
-        return self.game.update_game(action, player)
+        #return self.game.update_game(action, player)
 
-    def is_game_over(self):
+    #def is_game_over(self):
         """
         Hook #3
         Checks if game has ended
@@ -75,9 +76,9 @@ class GameEngine():
         Returns:
             [True/False]: True/False if game is over
         """        
-        return self.game.is_game_over()
+        #return self.game.is_game_over()
 
-    def game_result(self):
+    #def game_result(self):
         """
         Hook #4
         Retrieves game score
@@ -88,7 +89,7 @@ class GameEngine():
         Returns:
             [dict]: dictionary in format playerID: score
         """        
-        return self.game.game_result()
+        #return self.game.game_result()
 
     def play_game_byturns(self, simulations):
         """
@@ -99,7 +100,7 @@ class GameEngine():
             simulations (int): Number of simulations to run per turn
         """        
         # toggle to print to file
-        sys.stdout = open('logs/'+self.game.name+'_'+str(self.player_count)+'players_'+str(simulations)+'sims_'+str(randint(1,1000000))+'.txt', "w")
+        #sys.stdout = open('logs/'+self.game.name+'_'+str(self.player_count)+'players_'+str(simulations)+'sims_'+str(randint(1,1000000))+'.txt', "w")
         print("Players: "+str(self.player_count))
         print("Sims: "+str(simulations))
 
@@ -131,11 +132,11 @@ class GameEngine():
             print("Player's turn: Player "+str(current_player)) #whose turn is it?
 
             # Toggle the following block for heavy reporting
-            try:
-                print("Entry state") 
-                print(self.current_node.depth, self.current_node.node_action, self.current_node.player_owner, self.current_node)
-                selected_node = self.current_node.best_child(print_weights=True)
-            except: pass
+            #try:
+            #    print("Entry state") 
+            #    print(self.current_node.depth, self.current_node.node_action, self.current_node.player_owner, self.current_node)
+            #    selected_node = self.current_node.best_child(print_weights=True)
+            #except: pass
 
             # Run the monte carlo engine for this turn. This accesses the meat of the engine right here!
             # returns a chosen action to implement and the new active node
@@ -166,7 +167,7 @@ class GameEngine():
         print(self.scores) # print final scores
 
         # toggle to print to file
-        sys.stdout.close()
+        #sys.stdout.close()
 
         #self.game_log.to_pickle('logs/'+self.game.name+'_game_log_'+str(randint(1,1000000))+'.pkl')
         #first_action_list=[]
@@ -230,11 +231,11 @@ class MonteCarloEngine():
                 self.scores = self._rollout() # call _rollout to finish simulating the game
                 print(self.scores)
 
-                print("Scores before backpropogation:")
-                test = self.current_node.best_child(print_weights=True)
+                #print("Scores before backpropogation:")
+                #test = self.current_node.best_child(print_weights=True)
                 self._backpropogate(self.scores, self.rollout_node) # _backpropogates with the scores starting from the rollout_node
-                print("Scores after backpropogation:")
-                test = self.current_node.best_child(print_weights=True)
+                #print("Scores after backpropogation:")
+                #test = self.current_node.best_child(print_weights=True)
 
         # Simulations have finished running, time to get the best move and return it to the game engine
         print("Exit state")
