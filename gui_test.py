@@ -101,6 +101,8 @@ def display_stuff(factory_dict: dict, supply_dict: dict, player_dict: dict, play
 
     while True:
         event, values = window.read()
+        if event == "Exit" or event == sg.WIN_CLOSED:
+            return 0
         for index, action in legal_moves.items():
             try:
                 if action[-1] in event:
@@ -108,5 +110,4 @@ def display_stuff(factory_dict: dict, supply_dict: dict, player_dict: dict, play
                     return index
             except KeyError:
                 pass
-        if event == "Exit" or event == sg.WIN_CLOSED:
-            return 0
+        

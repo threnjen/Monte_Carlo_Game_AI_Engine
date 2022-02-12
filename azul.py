@@ -273,8 +273,6 @@ class CenterOfTable(FactoryDisplay):
 class Supply():
     tile_prefix = "supply"
     """Supply, which lives in the center of the scoreboard.
-
-
     """
 
     def __init__(self):
@@ -489,11 +487,12 @@ class Star(object):
             int: Points received (so far)
         """
         points = 1
-        # This is terrible, but I had some dumb error I couldn't trace in my indices somewhere
-        # in a different part of the code.  I'll fix this someday (ie. never)
-        while self.tile_positions[(position - points) % 6 + (position == points) * 6]:
-            points += 1
-        return points
+        for points in range(1, 7):
+            if self.tile_positions[(position - points - 1) % 6 + 1]:
+                pass
+            else:
+                return points
+        return 6
 
     def check_right_contiguous(self, position: int, points: int):
         """Checks the number of right contiguous tiles and returns the point value, in addition
@@ -509,10 +508,12 @@ class Star(object):
         distance = 1
         # This is terrible, but I had some dumb error I couldn't trace in my indices somewhere
         # in a different part of the code.  I'll fix this someday (ie. never)
-        while self.tile_positions[(position + distance) % 6 + (position + distance == 6) * 6]:
-            points += 1
-            distance += 1
-        return points
+        for distance in range(1, 7):
+            if self.tile_positions[(position + distance - 1) % 6 + 1]:
+                points += 1
+            else:
+                return points
+        return 6
 
     def check_contiguous(self, position: int):
         """Checks both left and right contiguous from a given position.
@@ -914,23 +915,6 @@ class Player(object):
             act_count += 1
         return legal_moves
 
-    # def place_tiles(self, wild_color):
-    #     total_tiles = self.get_tile_count()
-    #     place_tile_input = input(f"""Select a location to place tiles.
-    #     To enter your selection, enter a star_color, position on the star, tile color (which will
-    #     match the star except for the center star),
-    #     and number of wild ({wild_color} this round) tiles.  Enter "all" for the center star.
-    #     Separate each input by a space.  As
-    #     a reminder, you must use at least one matching tile, and you cannot place two of the same
-    #     color in the center "all" star.  If you fail to select a valid move, you will receive this
-    #     prompt again.
-    #     If you are done placing tiles, return 0.  Currently, you have {total_tiles} remaining,
-    #     and will lose {max(total_tiles-Player.max_tile_reserve, 0)} points and your excess
-    #     tiles.  If this is the last round, you will lose all tiles and {total_tiles} points.
-    #     """).split()
-
-    #     return place_tile_input
-
     def get_tile_count(self):
         return sum([tile_count for tile_count in self.player_tile_supply.values()])
 
@@ -960,7 +944,7 @@ class Game():
     reserve_max = 4
     wild_list = {1: "purple", 2: "green",
                  3: "orange", 4: "yellow", 5: "blue", 6: "red"}
-    factory_req = {2: 5, 3: 7, 4: 9}
+    factory_req = {1: 9, 2: 5, 3: 7, 4: 9}
     first_player_cost = -2
 
     def __init__(self, player_count):
@@ -1042,6 +1026,11 @@ class Game():
 
             return list(legal_moves.keys()), self.current_player_num
 
+    def move_reserves_to_player_supply(self):
+        for player in self.players.values():
+            player.change_player_supply(player.player_board.reserved_tiles)
+            player.player_board.reserved_tiles = {}
+
     def start_round(self):
         """Begins a round (including the first one).
 
@@ -1056,9 +1045,7 @@ class Game():
                 Game.tiles_per_factory, self.tower)
             display.add_tiles(tile_dict)
 
-        for player in self.players.values():
-            player.change_player_supply(player.player_board.reserved_tiles)
-            player.player_board.reserved_tiles = {}
+        self.move_reserves_to_player_supply()
         self.phase = 1
         self.current_player_num = self.first_player
         for player in self.players.values():
@@ -1096,15 +1083,18 @@ class Game():
                 self.phase = 2
                 self.current_player_num = self.first_player
 
-        elif curr_player.bonus_earned:
+        elif curr_player.bonus_earned and self.supply.get_tile_count():
             # If the player earned a bonus, the action is to take a tile from the
             # supply. We decrement the earned bonus by 1, add the tile to the player
             # supply, remove the tile from the global supply, and refresh the supply
             # tile count
             # Here, the sel_action is a tile color
-            curr_player.change_player_supply(
-                {self.supply.tile_positions.pop(action): 1})
-            curr_player.bonus_earned -= 1
+            if self.supply.get_tile_count():
+                curr_player.change_player_supply(
+                    {self.supply.tile_positions.pop(action): 1})
+                curr_player.bonus_earned -= 1
+            else:
+                curr_player.bonus_earned = 0
 
             # self.supply.refresh_positions()
         elif type(sel_action) is dict:
@@ -1150,6 +1140,9 @@ class Game():
         if all([player.done_placing for player in self.players.values()]):
             self.current_round += 1
             if self.current_round > self.total_rounds:
+                self.move_reserves_to_player_supply()
+                for player in self.players.values():
+                    player.player_score += -player.get_tile_count()
                 self.game_over = True
                 print(f"Game result: {print_dict(self.game_result())}")
             else:
@@ -1220,7 +1213,7 @@ class Game():
 
 
 # %%
-test = Game(2)
+test = Game(1)
 test.play_game()
 
 # %%
