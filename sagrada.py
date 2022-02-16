@@ -97,10 +97,8 @@ class Player():
             if self.player.board[i] != '  ':
                 continue
             elif self.player.board[i][0]==self.color:
-                print(f"space contains {self.color}")
                 continue
             elif self.player.board[i][1]==self.number:
-                print(f"space contains {self.number}")
                 continue
             else:
                 if self.map_reference[i] == ' ':
@@ -143,27 +141,41 @@ class DiceHolder():
 class Public_Scorers():
     '''Public scoring cards for end game scoring'''
     def __init__(self):
-        pass
+        self.scoring_plans = {
+
+
+        }
 
 class Player_Boards():
 
     def __init__(self):
         self.board_maps = {
-            'Fulgor del Cielo 1': [np.array([
+            'Fulgor del Cielo': [np.array([
                                 [' ','B','R',' ',' '],
                                 [' ','4','5',' ','B'],
                                 ['B','2',' ','R','5'],
                                 ['6','R','3','1',' ']]) , 5],
-            'Fulgor del Cielo 2': [np.array([
-                                [' ','B','R',' ',' '],
-                                [' ','4','5',' ','B'],
-                                ['B','2',' ','R','5'],
-                                ['6','R','3','1',' ']]) , 5],
-            'Fulgor del Cielo 3': [np.array([
-                                [' ','B','R',' ',' '],
-                                [' ','4','5',' ','B'],
-                                ['B','2',' ','R','5'],
-                                ['6','R','3','1',' ']]) , 5],
+            'Luz Celestial': [np.array([
+                                [' ',' ','R','5',' '],
+                                ['P','4',' ','G','3'],
+                                ['6',' ',' ','B',' '],
+                                [' ','Y','2',' ',' ']]) , 3],
+            'Shadow Thief': [np.array([
+                                ['6','P',' ',' ','5'],
+                                ['5',' ','P',' ',' '],
+                                ['R','6',' ','P',' '],
+                                ['Y','R','5','4','3']]) , 5],
+            'Sun Catcher': [np.array([
+                                [' ','B','2',' ','Y'],
+                                [' ','4',' ','R',' '],
+                                [' ',' ','5','Y',' '],
+                                ['G','3',' ',' ','P']]) , 3],
+            #'Blank': [np.array([
+            #                    ['','','','',''],
+            #                    ['','','','',''],
+            #                    ['','','','',''],
+            #                    ['','','','','']]) , 0],
+
                              }
         
         self.special_scorer = ['red', 'yellow', 'green', 'purple', 'blue']
