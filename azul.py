@@ -951,7 +951,7 @@ class Game():
         self.supply.fill_supply(self.bag.randomly_choose_tiles(
             Game.supply_max - supply_count, self.tower))
 
-    def get_legal_actions(self):
+    def get_legal_actions(self,rollout=False):
         """Called before every players turn.  Depends on the board state and current player.
         This shouldn't alter the game state except at the beginning of a round"""
         curr_player = self.players[self.current_player_num]
