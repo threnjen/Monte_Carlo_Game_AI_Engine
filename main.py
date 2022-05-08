@@ -37,5 +37,5 @@ if __name__ == "__main__":
 
     print(f"Initializing game: {game}, # sims: {sims}, # players: {players}, verbose: {verbose}")
 
-    #game = GameEngine(game, players, verbose)
-    #game.play_game_byturns(sims)
+    game = GameEngine(game, players, verbose)
+    game.play_game_byturns(sims)

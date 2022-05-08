@@ -1,7 +1,7 @@
 import numpy as np
 import copy
 
-from monte_carlo_node import MonteCarloNode
+from .monte_carlo_node import MonteCarloNode
 
 class MonteCarloEngine():
 

@@ -5,8 +5,10 @@ name = "pypi"
 
 [packages]
 pandas = "*"
+numpy = "*"
 
 [dev-packages]
+yapf = "*"
 
 [requires]
-python_version = "3.10"
+python_version = "3.9"

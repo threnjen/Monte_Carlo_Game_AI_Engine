@@ -5,7 +5,7 @@ import pandas as pd
 from random import randint
 import importlib
 
-from monte_carlo_engine import MonteCarloEngine
+from .monte_carlo_engine import MonteCarloEngine
 
 class GameEngine():
     
@@ -20,76 +20,14 @@ class GameEngine():
         self.name: a lowercase string with no spaces to define the game in log files
         """      
         # import game module based on argument  
-        game_module = importlib.import_module(game)
-        self.game = game_module.Game(players)
-        #self.state = self.game._state
+        game_module = importlib.import_module(f'.{game}', package='games')
+        instance = getattr(game_module, 'Game')
+        self.game = instance(players)
+        print(self.game)
         self.player_count = players
         self.verbose = verbose
 
         self.game_log = pd.DataFrame(columns=['Turn', 'Actions', 'Player', 'Action', 'Score', 'Simulations'])
-        
-    # get_legal_actions(self, rollout=False):
-        """
-        Hook #1
-        Get currently available actions and active player to take an action from the list
-
-        Requires a list with two indices:
-        0: list of legal actions
-        1: active player ID
-
-        Format [[list of legal actions], active player ID]
-
-        The Monte Carlo does not care about the contents of the list of legal actions, and will return
-        a list item in exactly the same format it presents in the list
-
-        The game logic must manage the correct player turns. The Monte Carlo engine will assign the
-        next legal action to the player passed, with no safety checks.
-
-        Returns:
-            [list]: List of: list of legal actions and active player ID
-        """        
-
-    #def update_game(self, action, player):
-        """
-        Hook #2
-        Send action choice and player to game
-
-        After selecting an item from the list of legal actions (see Hook #1),
-        Sends the item back to the game logic. Item is sent back in exactly
-        the same format as received in the list of legal actions.
-
-        Also returns active player ID for action
-
-        Args:
-            action (list item): selected item from list of legal actions
-            player (int): player number
-        """        
-        #return self.game.update_game(action, player)
-
-    #def is_game_over(self):
-        """
-        Hook #3
-        Checks if game has ended
-
-        Requires only True or False
-
-        Returns:
-            [True/False]: True/False if game is over
-        """        
-        #return self.game.is_game_over()
-
-    #def game_result(self):
-        """
-        Hook #4
-        Retrieves game score
-
-        Must be a dictionary in format {playerID: Score}
-        Where playerID matches IDs sent with get_legal_actions
-
-        Returns:
-            [dict]: dictionary in format playerID: score
-        """        
-        #return self.game.game_result()
 
     def play_game_byturns(self, simulations):
         """
@@ -182,4 +120,65 @@ class GameEngine():
         #df.to_pickle('first_action_list'+str(game_label)+'.pkl')
 
 
+    # get_legal_actions(self, rollout=False):
+        """
+        Hook #1
+        Get currently available actions and active player to take an action from the list
 
+        Requires a list with two indices:
+        0: list of legal actions
+        1: active player ID
+
+        Format [[list of legal actions], active player ID]
+
+        The Monte Carlo does not care about the contents of the list of legal actions, and will return
+        a list item in exactly the same format it presents in the list
+
+        The game logic must manage the correct player turns. The Monte Carlo engine will assign the
+        next legal action to the player passed, with no safety checks.
+
+        Returns:
+            [list]: List of: list of legal actions and active player ID
+        """        
+
+    #def update_game(self, action, player):
+        """
+        Hook #2
+        Send action choice and player to game
+
+        After selecting an item from the list of legal actions (see Hook #1),
+        Sends the item back to the game logic. Item is sent back in exactly
+        the same format as received in the list of legal actions.
+
+        Also returns active player ID for action
+
+        Args:
+            action (list item): selected item from list of legal actions
+            player (int): player number
+        """        
+        #return self.game.update_game(action, player)
+
+    #def is_game_over(self):
+        """
+        Hook #3
+        Checks if game has ended
+
+        Requires only True or False
+
+        Returns:
+            [True/False]: True/False if game is over
+        """        
+        #return self.game.is_game_over()
+
+    #def game_result(self):
+        """
+        Hook #4
+        Retrieves game score
+
+        Must be a dictionary in format {playerID: Score}
+        Where playerID matches IDs sent with get_legal_actions
+
+        Returns:
+            [dict]: dictionary in format playerID: score
+        """        
+        #return self.game.game_result()
