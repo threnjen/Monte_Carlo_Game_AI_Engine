@@ -10,7 +10,7 @@ def parseArguments():
     parser.add_argument("game", help="Game name", type=str)
 
     # Optional arguments
-    parser.add_argument("-s", help="Number of simulations", type=int, default=1000)
+    parser.add_argument("-s", help="Number of simulations", type=int, default=100)
     parser.add_argument("-p", help="Number of players", type=int, default=2)
     parser.add_argument("-v", help="Verbosity", type=bool, default=False)
 
@@ -21,7 +21,7 @@ def parseArguments():
 
 if __name__ == "__main__":
     '''
-    game = game name (required)
+    game_name = game name (required)
     -s = # of simulations (default 1000)
     -p = # of players (default 2)
     -v = verbosity (default False)
@@ -30,12 +30,12 @@ if __name__ == "__main__":
     # Parse the arguments
     args = parseArguments()
     
-    game = args.__dict__['game']
+    game_name = args.__dict__['game']
     sims = args.__dict__['s']
     players = args.__dict__['p']
     verbose = args.__dict__['v']
 
-    print(f"Initializing game: {game}, # sims: {sims}, # players: {players}, verbose: {verbose}")
+    print(f"Initializing game: {game_name}, # sims: {sims}, # players: {players}, verbose: {verbose}")
 
-    game = GameEngine(game, players, verbose)
-    game.play_game_byturns(sims)
+    game = GameEngine(game_name, sims, players, verbose)
+    game.play_game_byturns()

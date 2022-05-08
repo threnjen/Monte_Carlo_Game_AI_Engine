@@ -1,6 +1,7 @@
 from random import choice
 
 from pandas import array
+from games.game_class import Game
 
 
 class Player():
@@ -17,7 +18,7 @@ class Player():
         self.mark = mark
 
 
-class Game():
+class TicTacToe(Game):
     """Tic tac toe game
     """
 
@@ -31,9 +32,8 @@ class Game():
         self.scores = {0: 0, 1: 0}
         self.game_over = False
         self.current_player_num = 0
-        self._state = ""
+        self.board = ""
         self.draw_board()
-        self.name = "tic_tac_toe"
 
         self.win_conditions = {"top_row": [0, 1, 2],
                "left_diag": [0, 4, 8],
@@ -49,14 +49,15 @@ class Game():
     def draw_board(self):
         """Just draw an ASCII board.
         """
-        self._state = f"""\n
+        self.board = f"""\n
         {self.positions[0]}|{self.positions[1]}|{self.positions[2]}       
         _____
         {self.positions[3]}|{self.positions[4]}|{self.positions[5]}
         _____
         {self.positions[6]}|{self.positions[7]}|{self.positions[8]}"""
 
-        #print(self._state)
+        print(self.board)
+
 
     def make_move(self, pos, current_player_num):
         """Makes a move on the board and draws it
@@ -66,12 +67,12 @@ class Game():
             current_player_num (int): Player number, used to lookup the appropriate mark
         """
         self.positions[pos] = self.players[current_player_num].mark
-        self.draw_board()
+        #self.draw_board()
         self.current_player_num = (
             self.current_player_num + 1) % self.player_count
 
 
-    def get_legal_actions(self, rollout):
+    def get_legal_actions(self, policy=False):
         """Gets available moves in a dictionary.
         The bot will only ever need the keys; values should be unknown
 
@@ -141,7 +142,6 @@ class Game():
         while not self.is_game_over():
             pos = int(input("Select a move.  "))
             self.make_move(pos, self.current_player_num)
-            #print(self._state)
 
         for player_num in self.scores.keys():
             print(
