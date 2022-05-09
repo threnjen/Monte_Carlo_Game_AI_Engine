@@ -182,6 +182,3 @@ class MonteCarloEngine():
         if node.parent:  # if this node has a parent,
             # call _backpropogate on the parent, so this will continue until root note which has no parent
             self._backpropogate(scores, node.parent)
-
-
-
