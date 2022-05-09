@@ -7,25 +7,20 @@ import importlib
 import sys
 
 from engine.monte_carlo_engine import MonteCarloEngine
+from games.games_config import GAMES_MAP
 
 
 class GameEngine():
 
     def __init__(self, game, sims=100, players=2, verbose=False):
-        """
-        Initializes game.
-
-        The following hooks are required in the Game __init__ file:
-        game init must accept players argument (int)
-        self._state: is used to display whatever information you want to print to the player (ex. game board in tic tac toe)
-        self.scores: dictionary holds the player scores and should be initialized with the player ID and base score (0 in many games)
-        self.name: a lowercase string with no spaces to define the game in log files
-        """
         self.verbose = verbose
-        # import game module based on argument
+        get_game_name = GAMES_MAP[game]
+        self.name = get_game_name
+
         game_module = importlib.import_module(f'.{game}', package='games')
-        instance = getattr(game_module, 'SimpleArrayGame')
+        instance = getattr(game_module, get_game_name)
         self.game = instance(players)
+
         self.player_count = players
         self.simulations = sims
         self.turn = 0  # Set the initial turn as 0
@@ -35,18 +30,7 @@ class GameEngine():
     
     def get_legal_actions(self, policy=False):
         """
-        Hook #1
         Get currently available actions and active player to take an action from the list
-
-        Requires return of a list with two indices:
-        0: list of legal actions
-        1: active player ID
-
-        Format [[list of legal actions], active player ID]
-
-        The engine does not care about the contents of the list of legal actions, and will return
-        a list item in exactly the same format it is passed. The game logic must manage the correct player turns. The Monte Carlo engine will assign the
-        next legal action to the player passed, with no safety checks.
 
         Returns:
             [list]: List of: list of legal actions and active player ID
@@ -56,10 +40,7 @@ class GameEngine():
 
     def is_game_over(self):
         """
-        Hook #3
         Checks if game has ended
-
-        Requires only True or False
 
         Returns:
             [True/False]: True/False if game is over
@@ -68,14 +49,7 @@ class GameEngine():
 
     def update_game(self, action, player):
         """
-        Hook #2
         Sends action choice and player to game
-
-        After selecting an item from the list of legal actions (see Hook #1),
-        Sends the item back to the game logic. Item is sent back in exactly
-        the same format as received in the list of legal actions.
-
-        Also returns active player ID for action
 
         Args:
             action (list item): selected item from list of legal actions
@@ -85,11 +59,7 @@ class GameEngine():
 
     def game_result(self):
         """
-        Hook #4
         Retrieves game score
-
-        Must be a dictionary in format {playerID: Score}
-        Where playerID matches IDs sent with get_legal_actions
 
         Returns:
             [dict]: dictionary in format playerID: score
@@ -98,6 +68,12 @@ class GameEngine():
 
     
     def draw_board(self):
+        """
+        Requests the game client draw a text representation of the game state
+
+        Returns:
+            draws game state
+        """
 
         return self.game.draw_board()
 
@@ -117,7 +93,7 @@ class GameEngine():
         Will play a single game until game over condition is met
         """
         #if self.verbose:
-            #sys.stdout = open(f'logs/{self.game.name}_{self.player_count}players_{self.simulations}sims_{randint(1,1000000)}.txt', "w")
+            #sys.stdout = open(f'logs/{self.name}_{self.player_count}players_{self.simulations}sims_{randint(1,1000000)}.txt', "w")
         print(f"Players: {self.player_count}, Sims: {self.simulations}")
 
         current_player = self.get_legal_actions(policy=False)[1]  # Get starting player
@@ -140,12 +116,7 @@ class GameEngine():
 
             if self.verbose:
                 try:
-                    print("Entry state")
-                    print(current_node.depth,
-                          current_node.node_action,
-                          current_node.player_owner, current_node)
-                    selected_node = current_node.best_child(
-                        print_weights=True)
+                    print(f'Entry state {current_node.depth}, {current_node.node_action}, {current_node.player_owner}, {current_node}')
                 except:
                     pass
 
@@ -173,7 +144,7 @@ class GameEngine():
         #if self.verbose:
             #sys.stdout.close()
 
-        #self.game_log.to_pickle('logs/'+self.game.name+'_game_log_'+str(randint(1,1000000))+'.pkl')
+        #self.game_log.to_pickle('logs/'+self.name+'_game_log_'+str(randint(1,1000000))+'.pkl')
         
         #first_action_list=[]
 

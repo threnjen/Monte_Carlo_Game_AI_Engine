@@ -5,7 +5,7 @@ from engine.monte_carlo_node import MonteCarloNode
 
 class MonteCarloEngine():
 
-    def __init__(self, node_player, verbose): #, legal_actions=None, player=None
+    def __init__(self, start_player, verbose): #, legal_actions=None, player=None
         """
         Instantiates root monte carlo node
         Assigns starting player to root node
@@ -13,7 +13,7 @@ class MonteCarloEngine():
         Args:
             node_player (int): Current player id
         """          
-        self.root = MonteCarloNode(player=node_player)
+        self.root = MonteCarloNode(player=start_player)
         self.verbose = verbose
 
     def play_turn(self, num_sims, game, node_player, received_node):
@@ -182,6 +182,3 @@ class MonteCarloEngine():
         if node.parent:  # if this node has a parent,
             # call _backpropogate on the parent, so this will continue until root note which has no parent
             self._backpropogate(scores, node.parent)
-
-
-

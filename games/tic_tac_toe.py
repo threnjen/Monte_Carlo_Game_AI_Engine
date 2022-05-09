@@ -34,7 +34,6 @@ class TicTacToe(Game):
         self.current_player_num = 0
         self.board = ""
         self.draw_board()
-        self.name = "tic_tac_toe"
 
         self.win_conditions = {"top_row": [0, 1, 2],
                "left_diag": [0, 4, 8],
