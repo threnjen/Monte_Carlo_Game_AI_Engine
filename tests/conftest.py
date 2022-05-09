@@ -6,7 +6,7 @@ from engine.game_engine import GameEngine
 @pytest.fixture()
 def engine():
     game_name = 'simple_array_game'
-    sims = 1000
+    sims = 10
     players = 3
     verbose = True
 

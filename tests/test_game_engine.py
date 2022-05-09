@@ -1,20 +1,9 @@
-from engine.game_engine import GameEngine
-#import games.azul
-import importlib
 import pytest
 
 class TestGameEngine:
 
     def test_engine(self, engine):
-    
-        game_name = 'simple_array_game'
-        sims = 10
-        players = 1
-        verbose = True
-
-        #self.game = GameEngine(game_name, sims, players, verbose)
-
-        assert engine.simulations==1000
+        assert engine.simulations==10
         assert engine.player_count==3
         assert engine.verbose==True
 
@@ -42,9 +31,3 @@ class TestGameEngine:
         engine.play_game_byturns()
         game_over = engine.is_game_over()
         assert game_over == True
-
-while __name__=='main':
-
-    engine_tester = TestGameEngine()
-    engine_tester.test_engine()
-    engine_tester.test_legal_actions()
