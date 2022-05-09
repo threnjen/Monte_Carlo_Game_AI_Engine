@@ -1,6 +1,7 @@
 import numpy as np
+from games.game_class import Game
 
-class SimpleArrayGame():
+class SimpleArrayGame(Game):
     '''
     Game rules:
     There is an array of 5x5 zeros
@@ -10,9 +11,9 @@ class SimpleArrayGame():
     
     '''
 
-    def __init__(self):
+    def __init__(self, players):
         self._state = np.zeros((5, 5))
-        self.game = "array_test"
+        self.name = "array_test"
 
     def update_game(self, action, player):
         '''
@@ -23,7 +24,7 @@ class SimpleArrayGame():
         self._state[action] = 1
         return self._state
 
-    def get_legal_actions(self):
+    def get_legal_actions(self, policy=False):
         '''
         report on currently available actions after checking board space
         '''
@@ -49,3 +50,7 @@ class SimpleArrayGame():
         finished_array = self._state.sum(axis=0)
         scores[0] = np.argmax(finished_array)
         return scores
+
+    def draw_board(self):
+
+        return self._state

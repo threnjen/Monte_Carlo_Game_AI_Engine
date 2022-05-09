@@ -1,6 +1,7 @@
 from random import choice
 
 from pandas import array
+from games.game_class import Game
 
 
 class Player():
@@ -17,7 +18,7 @@ class Player():
         self.mark = mark
 
 
-class Game():
+class TicTacToe(Game):
     """Tic tac toe game
     """
 

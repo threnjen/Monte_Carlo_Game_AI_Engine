@@ -21,12 +21,12 @@ class GameEngine():
         self.scores: dictionary holds the player scores and should be initialized with the player ID and base score (0 in many games)
         self.name: a lowercase string with no spaces to define the game in log files
         """
+        self.verbose = verbose
         # import game module based on argument
         game_module = importlib.import_module(f'.{game}', package='games')
-        instance = getattr(game_module, 'Game')
+        instance = getattr(game_module, 'SimpleArrayGame')
         self.game = instance(players)
         self.player_count = players
-        self.verbose = verbose
         self.simulations = sims
         self.turn = 0  # Set the initial turn as 0
         self.game_log = pd.DataFrame(columns=[
@@ -97,7 +97,7 @@ class GameEngine():
         return self.game.game_result()
 
     
-    def print_board(self):
+    def draw_board(self):
 
         return self.game.draw_board()
 
@@ -116,13 +116,13 @@ class GameEngine():
         Intializes Monte Carlo engine
         Will play a single game until game over condition is met
         """
-        if self.verbose:
-            sys.stdout = open(f'logs/{self.game.name}_{self.player_count}players_{self.simulations}sims_{randint(1,1000000)}.txt', "w")
+        #if self.verbose:
+            #sys.stdout = open(f'logs/{self.game.name}_{self.player_count}players_{self.simulations}sims_{randint(1,1000000)}.txt', "w")
         print(f"Players: {self.player_count}, Sims: {self.simulations}")
 
         current_player = self.get_legal_actions(policy=False)[1]  # Get starting player
 
-        self.montecarlo = MonteCarloEngine(current_player)  # initialize the monte carlo engine
+        self.montecarlo = MonteCarloEngine(current_player, self.verbose)  # initialize the monte carlo engine
         current_node = self.montecarlo.root  # set first node as monte carlo root
 
         sims_this_turn = self.simulations  # set number of simulations; re-assigned here for decay usage
@@ -136,7 +136,7 @@ class GameEngine():
             current_player = self.get_legal_actions()[1]  # update current player
 
             # Beginning of game reporting:
-            print(f"\n\nTurn {self.turn}\nCurrent board state: {self.print_board()}\nGame gets {sims_this_turn} simulations for this turn. Player {current_player}'s turn.")
+            print(f"\n\nTurn {self.turn}\nCurrent board state: {self.draw_board()}\nGame gets {sims_this_turn} simulations for this turn. Player {current_player}'s turn.")
 
             if self.verbose:
                 try:
@@ -168,12 +168,12 @@ class GameEngine():
             #sims_this_turn = int(np.ceil(self.simulations/(self.turn))) # simulation decay to absolute simulations/turn each round
 
         # Game over report
-        print(f"\n\n\nGame over. Game took {self.turn} turns.\n{self.print_board()}\n{self.game_result()}")
+        print(f"\n\n\nGame over. Game took {self.turn} turns.\n{self.draw_board()}\n{self.game_result()}")
 
-        if self.verbose:
-            sys.stdout.close()
+        #if self.verbose:
+            #sys.stdout.close()
 
-        self.game_log.to_pickle('logs/'+self.game.name+'_game_log_'+str(randint(1,1000000))+'.pkl')
+        #self.game_log.to_pickle('logs/'+self.game.name+'_game_log_'+str(randint(1,1000000))+'.pkl')
         
         #first_action_list=[]
 
