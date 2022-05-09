@@ -5,7 +5,7 @@ from engine.monte_carlo_node import MonteCarloNode
 
 class MonteCarloEngine():
 
-    def __init__(self, node_player): #, legal_actions=None, player=None
+    def __init__(self, node_player, verbose): #, legal_actions=None, player=None
         """
         Instantiates root monte carlo node
         Assigns starting player to root node
@@ -14,8 +14,9 @@ class MonteCarloEngine():
             node_player (int): Current player id
         """          
         self.root = MonteCarloNode(player=node_player)
+        self.verbose = verbose
 
-    def play_turn(self, num_sims, game, node_player, current_node):
+    def play_turn(self, num_sims, game, node_player, received_node):
         """
         Receives a specific game state from which to make a move
 
@@ -36,7 +37,7 @@ class MonteCarloEngine():
         Returns:
             selected_node (object instance): MonteCarloNode object instance
         """        
-        self.current_node = current_node # set current node to received node
+        self.current_node = received_node # set current node to received node
         self.node_player = node_player # set node_player to received player
 
         for i in range(num_sims):  # Run x simulations for this turn
@@ -47,7 +48,7 @@ class MonteCarloEngine():
 
             while not self.game_copy.is_game_over():
                 
-                self.rollout_node = self._selection() # call _selection to find the node to roll out, taking the moves along the way
+                self.rollout_node = self._selection(self.current_node) # call _selection to find the node to roll out, taking the moves along the way
                 print(f"Rollout node selected: {self.rollout_node.depth}, {self.rollout_node.label}, {self.rollout_node}")
 
                 self.scores = self._rollout() # call _rollout to finish simulating the game
@@ -60,11 +61,12 @@ class MonteCarloEngine():
 
         return selected_node # returns the best child node to the main function.
 
-    def _move_node(self):
-        self.current_node = self.current_node.best_child(print_weights=False) # get the best child of the root
-        self.game_copy.update_game(self.current_node.node_action, self.current_player)
+    def _move_node(self, node):
+        node = node.best_child(print_weights=False) # get the best child of the root
+        self.game_copy.update_game(node.node_action, self.current_player)
+        return node
 
-    def _selection(self):
+    def _selection(self, node):
         """
         Selects node to run simulation. Is looking for the furthest terminal node to roll out.
 
@@ -75,42 +77,42 @@ class MonteCarloEngine():
         self.current_player=self.node_player # set temp current player to initial current player
 
         # Evaluate our incoming node.
-        while len(self.current_node.children) > 0 and self.current_node.number_of_visits > 0: 
+        while len(node.children) > 0 and node.number_of_visits > 0: 
             # HAS CHILDREN, IS VISITED, CHECK GAME END AFTER LOOP
-            print("HAS CHILDREN, IS VISITED")
-            self._move_node()
+            print("HAS CHILDREN, IS VISITED, CHECK GAME END AFTER LOOP")
+            node = self._move_node(node)
             if self.game_copy.is_game_over():
-                return self.current_node
+                return node
             self.current_player=self.game_copy.get_legal_actions(policy=False)[1]
             # loop and check again if we hit a leaf; this branch may move more than one node down to find a new expansion point
 
         if len(self.game_copy.get_legal_actions(policy=False)[0])==0:
-            print("NO CHILDREN, IS VISITED, game over")
+            print("NO CHILDREN, IS VISITED, means game is over")
             # NO CHILDREN, IS VISITED, means game is over
-            return self.current_node
+            return node
 
-        elif self.current_node.number_of_visits == 0 and not self.current_node == self.root:
+        elif node.number_of_visits == 0 and not node == self.root:
             print("NO CHILDREN, NOT VISITED, NOT ROOT")
             # NO CHILDREN, NOT VISITED, NOT ROOT 
-            self._expansion()
-            return self.current_node
+            self._expansion(node)
+            return node
 
-        elif len(self.current_node.children) == 0 and self.current_node.number_of_visits > 0 and not self.current_node == self.root:
+        elif len(node.children) == 0 and node.number_of_visits > 0 and not node == self.root:
             print("NO CHILDREN, IS VISITED, NOT ROOT")
             # NO CHILDREN, IS VISITED, NOT ROOT
-            self._expansion()
-            self._move_node()
-            return self.current_node
+            self._expansion(node)
+            node = self._move_node(node)
+            return node
 
-        elif self.current_node.number_of_visits == 0 and self.current_node == self.root:
+        elif node.number_of_visits == 0 and node == self.root:
             # NO CHILDREN, NOT VISITED, IS ROOT
-            self._expansion()
-            self._move_node()
-            return self.current_node
+            self._expansion(node)
+            node = self._move_node(node)
+            return node
 
-        else: return self.current_node
+        else: return node
 
-    def _expansion(self):
+    def _expansion(self, node):
         """
         From the present state we _expansion the nodes to the next possible states
         We take in a node with no children and we will _expansion it to all children
@@ -130,9 +132,9 @@ class MonteCarloEngine():
             actions_to_pop.remove(action) # pops off an untried action
 
             # make the child node for the popped action:
-            child_node = MonteCarloNode(parent=self.current_node, node_action=action, label=f'Action {action}', depth = (self.current_node.depth+1), player=self.current_player) 
+            child_node = MonteCarloNode(parent=node, node_action=action, label=f'Action {action}', depth = (node.depth+1), player=self.current_player) 
 
-            self.current_node.children.append(child_node) # appends this new child node to the current node's list of children            
+            node.children.append(child_node) # appends this new child node to the current node's list of children            
 
 
     def _rollout(self):
@@ -144,8 +146,6 @@ class MonteCarloEngine():
         """        
 
         while not self.game_copy.is_game_over():  # checks the state for game over boolean and loops if it's false
-
-            print("Game is not over!")
 
             actions=self.game_copy.get_legal_actions(policy=False) 
             legal_actions = actions[0] # get legal moves

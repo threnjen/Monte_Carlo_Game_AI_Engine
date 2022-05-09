@@ -4,7 +4,7 @@ import importlib
 
 def test_engine():
     
-    game_name = 'tic_tac_toe'
+    game_name = 'simple_array_game'
     sims = 1000
     players = 3
     verbose = True
@@ -15,14 +15,14 @@ def test_engine():
     assert game.player_count==3
     assert game.verbose==True
 
-def test_legal_actions():
+def test_legal_actions(self):
     pass
 
-def test_game_over():
+def test_game_over(self):
     pass
 
-def test_update_game():
+def test_update_game(self):
     pass
 
-def test_game_result():
+def test_game_result(self):
     pass
