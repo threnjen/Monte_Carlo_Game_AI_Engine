@@ -79,7 +79,6 @@ class MonteCarloEngine():
         # Evaluate our incoming node.
         while len(node.children) > 0 and node.number_of_visits > 0: 
             # HAS CHILDREN, IS VISITED, CHECK GAME END AFTER LOOP
-            print("HAS CHILDREN, IS VISITED, CHECK GAME END AFTER LOOP")
             node = self._move_node(node)
             if self.game_copy.is_game_over():
                 return node
@@ -87,18 +86,15 @@ class MonteCarloEngine():
             # loop and check again if we hit a leaf; this branch may move more than one node down to find a new expansion point
 
         if len(self.game_copy.get_legal_actions(policy=False)[0])==0:
-            print("NO CHILDREN, IS VISITED, means game is over")
             # NO CHILDREN, IS VISITED, means game is over
             return node
 
         elif node.number_of_visits == 0 and not node == self.root:
-            print("NO CHILDREN, NOT VISITED, NOT ROOT")
             # NO CHILDREN, NOT VISITED, NOT ROOT 
             self._expansion(node)
             return node
 
         elif len(node.children) == 0 and node.number_of_visits > 0 and not node == self.root:
-            print("NO CHILDREN, IS VISITED, NOT ROOT")
             # NO CHILDREN, IS VISITED, NOT ROOT
             self._expansion(node)
             node = self._move_node(node)

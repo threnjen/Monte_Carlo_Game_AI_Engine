@@ -107,9 +107,9 @@ class GameEngine():
 
             self.turn_log = {}
             self.turn += 1  # increments the game turn
-            actions = self.get_legal_actions()[0]
-            self.turn_log['Actions'] = actions
-            current_player = self.get_legal_actions()[1]  # update current player
+            actions = self.get_legal_actions()
+            self.turn_log['Actions'] = actions[0]
+            current_player = actions[1]  # update current player
 
             # Beginning of game reporting:
             print(f"\n\nTurn {self.turn}\nCurrent board state: {self.draw_board()}\nGame gets {sims_this_turn} simulations for this turn. Player {current_player}'s turn.")
@@ -120,8 +120,7 @@ class GameEngine():
                 except:
                     pass
 
-            # Run the monte carlo engine for this turn. This accesses the meat of the engine right here!
-            # returns a chosen action to implement and the new active node
+            # Run the monte carlo engine for this turn and receive the chosen action node
             current_node = self.montecarlo.play_turn(
                 sims_this_turn, self.game, current_player,
                 current_node)
