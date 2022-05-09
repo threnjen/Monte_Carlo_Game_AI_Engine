@@ -2,7 +2,7 @@
 from random import choice
 from random import randrange
 from itertools import combinations
-from gui_test import display_stuff
+from .gui_tryout import display_stuff
 from collections import Counter
 
 master_tile_dictionary = {'red': 0,
@@ -253,6 +253,9 @@ class CenterOfTable(FactoryDisplay):
     def reset_first_player(self):
         self.first_player_avail = True
 
+    def get_first_player_avail(self):
+        return self.first_player_avail
+
 
 class Supply():
     tile_prefix = "supply"
@@ -273,6 +276,9 @@ class Supply():
             int: tile count
         """
         return len(self.tile_positions)
+
+    def get_tile_positions(self):
+        return self.tile_positions
 
     def fill_supply(self, tiles: dict):
         """Fills the supply with tiles from a dictionary.
@@ -314,6 +320,9 @@ class Factory(object):
         self.factory_displays = {i: FactoryDisplay()
                                  for i in range(display_count)}
         self.center = CenterOfTable()
+    
+    def populate_display(self, display_num, tile_dict):
+        self.factory_displays[display_num].add_tiles(tile_dict)
 
     def take_from_display(self, display_number: int, chosen_color: str, wild_color: str):
         """Takes a tile from the given display and returns the tiles chosen and returns the tiles
@@ -334,6 +343,9 @@ class Factory(object):
             chosen_color, wild_color)
         self.center.add_tiles(center_tiles)
         return received_tiles, False
+    
+    def get_center_tiles(self, wild_color: str):
+        return self.center.get_available_tiles(wild_color)
 
     def take_from_center(self, chosen_color: str, wild_color: str):
         """Takes tiles from the center object.  Note that wild cannot be
