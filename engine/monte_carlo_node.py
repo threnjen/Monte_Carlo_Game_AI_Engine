@@ -1,3 +1,5 @@
+import numpy as np
+
 class MonteCarloNode():
 
 
@@ -21,9 +23,8 @@ class MonteCarloNode():
         self.label = label # label for the node, is used in GUI reporting
         self.depth = depth # depth of the node
         self.player_owner = player # the player who owns/plays this node layer. Should be same player at any given depth.
-        return
 
-    def best_child(self, c_param=1.414, real_decision = False, print_weights=False):
+    def best_child(self, c_param=1.414, print_weights=False):
         """
         Evaluates all available children for highest scoring child node
         first param is exploitation and second is exploration
@@ -37,36 +38,18 @@ class MonteCarloNode():
         """        
         choices_weights = [] # makes a list to store the score calculations
 
-        if real_decision==True:
-            for c in self.children:
-                try:
+        for c in self.children:
+            try:
                     # get scores of all child nodes
-                    score = (c.total_score / c.number_of_visits) + c_param * (np.sqrt(np.log(self.number_of_visits) / c.number_of_visits))
-                    choices_weights.append(score)
-                except:
+                score = (c.total_score / c.number_of_visits) + c_param * (np.sqrt(np.log(self.number_of_visits) / c.number_of_visits))
+                choices_weights.append(score)
+            except:
                     # if calculation runs into a divide by 0 error because child has never been visted
-                    score=1000
-                    choices_weights.append(1000)
+                score=1000
+                choices_weights.append(1000)
             
-                if print_weights==True:
+            if print_weights==True:
                     # if toggled, will print score for each child
-                    print(c.depth, c.node_action, c.player_owner, score, c)
+                print(c.depth, c.node_action, c.player_owner, score, c)
 
-            return self.children[np.argmax(choices_weights)] # gets index of max score and sends back identity of child
-        
-        if real_decision==False:
-            for c in self.children:
-                try:
-                    # get scores of all child nodes
-                    score = (c.total_score / c.number_of_visits) + c_param * (np.sqrt(np.log(self.number_of_visits) / c.number_of_visits))
-                    choices_weights.append(score)
-                except:
-                    # if calculation runs into a divide by 0 error because child has never been visted
-                    score=1000
-                    choices_weights.append(1000)
-            
-                if print_weights==True:
-                    # if toggled, will print score for each child
-                    print(c.depth, c.node_action, c.player_owner, score, c)
-
-            return self.children[np.argmax(choices_weights)] # gets index of max score and sends back identity of child
+        return self.children[np.argmax(choices_weights)] # gets index of max score and sends back identity of child
