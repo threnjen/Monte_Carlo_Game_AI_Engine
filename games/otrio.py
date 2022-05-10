@@ -1,6 +1,8 @@
 from cgi import test
 import numpy as np
 
+from games.game_class import Game
+
 class Player():
 
 
@@ -14,17 +16,16 @@ class Player():
         self.pieces[1] = [mark,mark,mark]
         self.pieces[2] = [mark,mark,mark]
 
-class Game():
+class Otrio(Game):
 
     def __init__(self, players):
 
         self.board = np.zeros((3,3,3)).astype('int')
         self.game_over = False
-        self._state = ""
+        self.state = ""
         self.draw_board()
         self.scores = {n+1:0 for n in range(players)}
         self.current_player_num = 1
-        self.name = "otrio"
         self.turn = 0
 
         if players >= 2:
@@ -113,7 +114,7 @@ class Game():
         
     def draw_board(self):
 
-        self._state = f"""
+        self.state = f"""
         Level 1\t\t\tLevel 2\t\t\tLevel 3\n
         {self.board[0,0,0]}|{self.board[0,0,1]}|{self.board[0,0,2]}\t\t\t{self.board[1,0,0]}|{self.board[1,0,1]}|{self.board[1,0,2]}\t\t\t{self.board[2,0,0]}|{self.board[2,0,1]}|{self.board[2,0,2]}       
         _____\t\t\t_____\t\t\t_____
@@ -121,6 +122,8 @@ class Game():
         _____\t\t\t_____\t\t\t_____
         {self.board[0,2,0]}|{self.board[0,2,1]}|{self.board[0,2,2]}\t\t\t{self.board[1,2,0]}|{self.board[1,2,1]}|{self.board[1,2,2]}\t\t\t{self.board[2,2,0]}|{self.board[2,2,1]}|{self.board[2,2,2]}
         """
+
+        print(self.state)
 
     def make_move(self, action, current_player_num):
         
