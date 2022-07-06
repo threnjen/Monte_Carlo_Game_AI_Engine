@@ -7,8 +7,8 @@ from engine.game_engine import GameEngine
 def engine():
     game_name = 'simple_array_game'
     sims = 10
-    players = 3
+    player_count = 3
     verbose = True
 
-    engine = GameEngine(game_name, sims, players, verbose)
+    engine = GameEngine(game_name, sims, player_count, verbose)
     return engine

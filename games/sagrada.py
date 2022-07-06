@@ -121,8 +121,8 @@ class Player():
 
 class DiceHolder():
 
-    def __init__(self, players):
-        self.num_round_dice = players*2 + 1
+    def __init__(self, player_count):
+        self.num_round_dice = player_count*2 + 1
         self.master_dice_dictionary = {'red':18, 'yellow':18, 'green':18, 'blue':18, 'purple':18}
 
     def refill_supply(self):
@@ -195,19 +195,19 @@ class Player_Boards():
 class Game():
 
     
-    def __init__(self, players):
+    def __init__(self, player_count):
         random.seed(random.randint(1,1000000))
-        self.num_players = players
+        self.num_player_count = player_count
         self.game_over = False
         self.name = "sagrada"
         self._state = ""
-        self.scores = {n:0 for n in range(players)}
+        self.scores = {n:0 for n in range(player_count)}
         self.current_player_num = 0
         self.round_start_player = 0
         self.round = 1
-        self.game_dice = DiceHolder(self.num_players)
+        self.game_dice = DiceHolder(self.num_player_count)
         self.boards = Player_Boards()
-        self.players = {n:Player(self.boards.get_board_map(), self.boards.get_special_scorer()) for n in range(players)}
+        self.player_count = {n:Player(self.boards.get_board_map(), self.boards.get_special_scorer()) for n in range(player_count)}
         self.flag = 'draw'
         self.new_round()
 
@@ -220,9 +220,9 @@ class Game():
         self.turn_order.append(self.round_start_player)
 
         next_player_num = self.round_start_player
-        for i in range(self.num_players - 1):
-            self.turn_order.append((next_player_num + 1) % self.num_players)
-            next_player_num = (next_player_num + 1) % self.num_players
+        for i in range(self.num_player_count - 1):
+            self.turn_order.append((next_player_num + 1) % self.num_player_count)
+            next_player_num = (next_player_num + 1) % self.num_player_count
         self.turn_order += self.turn_order[::-1]
 
         self.current_player_num = self.turn_order[0]
@@ -232,12 +232,12 @@ class Game():
         Format [[list of legal actions], active player ID]'''
 
         if self.flag == 'draw':
-            self.players[self.current_player_num].draw_player_board()
+            self.player_count[self.current_player_num].draw_player_board()
             self.legal_actions = (self.round_draw, self.current_player_num)
             return self.legal_actions
         
         if self.flag == 'place':
-            self.legal_positions = self.players[self.current_player_num].check_legal_positions(self.die)
+            self.legal_positions = self.player_count[self.current_player_num].check_legal_positions(self.die)
             self.legal_actions = (self.legal_positions, self.current_player_num)
             return self.legal_actions            
     
@@ -249,7 +249,7 @@ class Game():
         if len(self.round_draw) == 1:
             self.round += 1
             self.new_round()
-            self.round_start_player = (self.round_start_player + 1) % self.num_players 
+            self.round_start_player = (self.round_start_player + 1) % self.num_player_count 
 
         if self.round > 10:
             self.game_over = True
@@ -262,8 +262,8 @@ class Game():
             
         else:
             action = self.legal_positions[action]
-            self.players[self.current_player_num].update_board(action)
-            self.current_player_num = self.turn_order[(self.num_players*2) - len(self.round_draw)+1]
+            self.player_count[self.current_player_num].update_board(action)
+            self.current_player_num = self.turn_order[(self.num_player_count*2) - len(self.round_draw)+1]
             self.flag = 'draw'
 
     def is_game_over(self):
@@ -282,9 +282,9 @@ class Game():
     
 class Play():
 
-    def __init__(self, players):
+    def __init__(self, player_count):
 
-        game = Game(players)
+        game = Game(player_count)
 
         while game.game_over == False:
             actions, player = game.get_legal_actions()

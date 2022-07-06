@@ -12,16 +12,16 @@ from games.games_config import GAMES_MAP
 
 class GameEngine():
 
-    def __init__(self, game, sims=100, players=2, verbose=False):
+    def __init__(self, game, sims=100, player_count=2, verbose=False):
         self.verbose = verbose
         get_game_name = GAMES_MAP[game]
         self.name = get_game_name
 
         game_module = importlib.import_module(f'.{game}', package='games')
         instance = getattr(game_module, get_game_name)
-        self.game = instance(players)
+        self.game = instance(player_count)
 
-        self.player_count = players
+        self.player_count = player_count
         self.simulations = sims
         self.turn = 0  # Set the initial turn as 0
         self.game_log = pd.DataFrame(columns=[
@@ -97,8 +97,8 @@ class GameEngine():
         Will play a single game until game over condition is met
         """
         #if self.verbose:
-            #sys.stdout = open(f'logs/{self.name}_{self.player_count}players_{self.simulations}sims_{randint(1,1000000)}.txt', "w")
-        print(f"Players: {self.player_count}, Sims: {self.simulations}")
+            #sys.stdout = open(f'logs/{self.name}_{self.player_count}player_count_{self.simulations}sims_{randint(1,1000000)}.txt', "w")
+        print(f"player_count: {self.player_count}, Sims: {self.simulations}")
 
         actions, self.current_player = self.get_legal_actions()  # Get starting player
 

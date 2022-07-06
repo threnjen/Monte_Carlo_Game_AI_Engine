@@ -140,7 +140,7 @@ class Bag(TileContainer):
 
 
 class FactoryDisplay(TileContainer):
-    """Each factory display stores tiles to be taken on a players turn.  Once tiles are
+    """Each factory display stores tiles to be taken on a player_count turn.  Once tiles are
     taken, the remaining tiles are pushed to the center.
 
     Args:
@@ -158,10 +158,10 @@ class FactoryDisplay(TileContainer):
         # that are over 0
 
     def choose_tiles(self, chosen_color: str, wild_color: str):
-        """We choose a color and take all tiles of that color.  Since players cannot skip,
+        """We choose a color and take all tiles of that color.  Since player_count cannot skip,
         we return empty dictionarys if the color is not available.  This will force the player to
         choose another display or choose another color.  We also pass in the wild color for the
-        round, since players must take exactly one wild tile in addition to their color choice
+        round, since player_count must take exactly one wild tile in addition to their color choice
         if that tile is available.
 
         Args:
@@ -310,7 +310,7 @@ class Factory(object):
 
     def __init__(self, display_count):
         """Builds a factory, which contains a center and a number of displays,
-        depending on the number players.  The display count is determined by the game
+        depending on the number player_count.  The display count is determined by the game
         class.
 
         Args:
@@ -929,7 +929,7 @@ class Game():
         self.player_count = player_count
         self.factory = Factory(Game.factory_req[player_count])
         self.supply = Supply()
-        self.players = {i: Player(
+        self.player_count = {i: Player(
             i) for i in range(self.player_count)}
         self.bag = Bag(
             132, {color: Game.tiles_per_color for color in master_tile_dictionary.keys()})
@@ -952,7 +952,7 @@ class Game():
         """Called once at the beginning of the game.
         """
         self.first_player = randrange(0, self.player_count)
-        self.players[self.first_player].first_player = True
+        self.player_count[self.first_player].first_player = True
 
     def fill_supply(self):
         """Fills the supply with tiles (up to 10).  Called at the beginning
@@ -964,9 +964,9 @@ class Game():
             Game.supply_max - supply_count, self.tower))
 
     def get_legal_actions(self,rollout=False):
-        """Called before every players turn.  Depends on the board state and current player.
+        """Called before every player_count turn.  Depends on the board state and current player.
         This shouldn't alter the game state except at the beginning of a round"""
-        curr_player = self.players[self.current_player_num]
+        curr_player = self.player_count[self.current_player_num]
         if self.phase == 1:
             # Legal actions include taking tiles from the factory displays
             curr_player.legal_moves = self.factory.get_legal_actions(
@@ -1001,7 +1001,7 @@ class Game():
             return list(legal_moves.keys()), self.current_player_num
 
     def move_reserves_to_player_supply(self):
-        for player in self.players.values():
+        for player in self.player_count.values():
             player.change_player_supply(player.player_board.reserved_tiles)
             player.player_board.reserved_tiles = {}
 
@@ -1022,7 +1022,7 @@ class Game():
         self.move_reserves_to_player_supply()
         self.phase = 1
         self.current_player_num = self.first_player
-        for player in self.players.values():
+        for player in self.player_count.values():
             player.done_placing = False
         self.factory.center.reset_first_player()
         self.save_state()
@@ -1035,7 +1035,7 @@ class Game():
             action (var): Player action.
         """
 
-        curr_player = self.players[self.current_player_num]
+        curr_player = self.player_count[self.current_player_num]
         sel_action = curr_player.legal_moves[action]
         if self.phase == 1:
             # If we're in phase one, the action is to take tiles from
@@ -1116,11 +1116,11 @@ class Game():
             curr_player.player_score += points
 
         self.save_state()
-        if all([player.done_placing for player in self.players.values()]):
+        if all([player.done_placing for player in self.player_count.values()]):
             self.current_round += 1
             if self.current_round > self.total_rounds:
                 self.move_reserves_to_player_supply()
-                for player in self.players.values():
+                for player in self.player_count.values():
                     player.player_score += -player.get_tile_count()
                 self.game_over = True
                 print(f"Game result: {print_dict(self.game_result())}")
@@ -1131,10 +1131,10 @@ class Game():
         return self.game_over
 
     def game_result(self):
-        return {player_num: player.player_score for player_num, player in self.players.items()}
+        return {player_num: player.player_score for player_num, player in self.player_count.items()}
 
     def save_state(self):
-        "Called at the end of every players action"
+        "Called at the end of every player_count action"
         self._state = f"Phase: {self.phase}\n"
         self._state += f"Current_player:  {self.current_player_num}\n"
         self._state += f"First player available: {self.factory.center.first_player_avail}\n"
@@ -1146,7 +1146,7 @@ class Game():
         self._state += f"{print_dict(self.factory.center.get_available_tiles(self.wild_color))}\n"
         self._state += "Supply tiles: \n"
         self._state += f"{self.supply.tile_positions}"
-        for player_number, player in self.players.items():
+        for player_number, player in self.player_count.items():
             self._state += f"Player {player_number} score: {player.player_score}\n"
             self._state += f"Player {player_number} tiles:\n"
             self._state += f"{print_dict(player.player_tile_supply)}\n"
@@ -1165,16 +1165,16 @@ class Game():
         supply_dict = Counter(self.supply.tile_positions)
         player_dict = {}
         stars = {}
-        for ind, player in self.players.items():
+        for ind, player in self.player_count.items():
             player_dict[ind] = player.player_tile_supply
             stars[ind] = {}
             for star_ind, star in player.player_board.stars.items():
                 stars[ind].update({star_ind: star.tile_positions})
         score_dict = {player_num: player.player_score for player_num,
-                      player in self.players.items()}
+                      player in self.player_count.items()}
 
         action = display_stuff(factory_dict, supply_dict,
-                               player_dict, stars, self.players[self.current_player_num].legal_moves, score_dict)
+                               player_dict, stars, self.player_count[self.current_player_num].legal_moves, score_dict)
         return action
 
     def play_game(self):
@@ -1184,7 +1184,7 @@ class Game():
             self.get_legal_actions()
             # print(self._state)
 
-            for key, value in self.players[self.current_player_num].legal_moves.items():
+            for key, value in self.player_count[self.current_player_num].legal_moves.items():
                 print(f"{value}:  enter {key}")
             action = self.prep_display()
             # action = int(input("Choose an action"))

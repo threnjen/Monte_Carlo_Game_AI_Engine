@@ -1,16 +1,18 @@
-class Game():
+from abc import ABC, abstractmethod
 
-    def __init__(self, players):
+class BaseGameObject(ABC):
+
+    def __init__(self, player_count):
         """
         Initializes game.
 
         The following hooks are required in the Game __init__ file:
-        game init must accept players argument (int)
+        game init must accept player_count argument (int)
         """
-        self.player_count = players
-        pass
-
-    def get_legal_actins(self, policy=False):
+        self.player_count = player_count
+    
+    @abstractmethod
+    def get_legal_actions(self, policy:bool=False):
         """
         Hook #1
         Get currently available actions and active player to take an action from the list
@@ -30,19 +32,8 @@ class Game():
         """
         pass
 
-    def is_game_over(self):
-        """
-        Hook #3
-        Checks if game has ended
-
-        Requires only True or False
-
-        Returns:
-            [True/False]: True/False if game is over
-        """
-        pass
-
-    def update_game(self, action, player):
+    @abstractmethod
+    def update_game(self):
         """
         Hook #2
         Sends action choice and player to game
@@ -59,6 +50,20 @@ class Game():
         """
         pass
 
+    @abstractmethod
+    def is_game_over(self):
+        """
+        Hook #3
+        Checks if game has ended
+
+        Requires only True or False
+
+        Returns:
+            [True/False]: True/False if game is over
+        """
+        pass
+
+    @abstractmethod
     def game_result(self):
         """
         Hook #4
@@ -72,6 +77,7 @@ class Game():
         """
         pass
 
+    @abstractmethod
     def draw_board(self):
         """
         Hook #5
@@ -81,3 +87,4 @@ class Game():
             draws game state
         """
         pass
+

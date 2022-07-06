@@ -1,7 +1,7 @@
 from random import choice
 
 from pandas import array
-from games.game_class import Game
+from games.base_game_object import BaseGameObject
 
 
 class Player():
@@ -18,17 +18,17 @@ class Player():
         self.mark = mark
 
 
-class TicTacToe(Game):
+class TicTacToe(BaseGameObject):
     """Tic tac toe game
     """
 
-    def __init__(self,players):
+    def __init__(self,player_count):
         """Calling the game doesn't create any unique starting conditions,
-        since there are always two players.
+        since there are always two player_count.
         """
         self.positions = [" "] * 9
         #self.legal_actions = {}
-        self.players = {0: Player("0"), 1: Player("1")}
+        self.player_count = {0: Player("0"), 1: Player("1")}
         self.scores = {0: 0, 1: 0}
         self.game_over = False
         self.current_player_num = 0
@@ -66,7 +66,7 @@ class TicTacToe(Game):
             pos (int): Position on board
             current_player_num (int): Player number, used to lookup the appropriate mark
         """
-        self.positions[pos] = self.players[current_player_num].mark
+        self.positions[pos] = self.player_count[current_player_num].mark
         #self.draw_board()
         self.current_player_num = (
             self.current_player_num + 1) % self.player_count
@@ -104,8 +104,8 @@ class TicTacToe(Game):
 
             condition_state = [self.positions[num] for num in win_condition]           
             #empty = len([i for i in condition_state if i ==' '])
-            #for player in self.players:
-                #print(len([i for i in condition_state if i==self.players[player].mark])==2)
+            #for player in self.player_count:
+                #print(len([i for i in condition_state if i==self.player_count[player].mark])==2)
 
             #print("Win condition being checked: "+str(win_condition))
             #print("Win condition current state: "+str(condition_state))
@@ -121,10 +121,10 @@ class TicTacToe(Game):
             # this counts if all of the slots are the same as the first slot of the condition state, and that the slot is not empty
             if condition_state.count(condition_state[0]) == len(condition_state) and condition_state[0] != " ":
                 open_positions = sum(x == ' ' for x in self.positions)
-                if self.players[0].mark == condition_state[0]:
+                if self.player_count[0].mark == condition_state[0]:
                     self.scores[0] = 10   
                     self.scores[1] = -10# - 10*open_positions
-                elif self.players[1].mark == condition_state[0]:
+                elif self.player_count[1].mark == condition_state[0]:
                     self.scores[1] = 10
                     self.scores[0] = -10# - 10*open_positions
                 return True
@@ -145,7 +145,7 @@ class TicTacToe(Game):
 
         for player_num in self.scores.keys():
             print(
-                f"{self.players[player_num].mark}:  {self.scores[player_num]}")
+                f"{self.player_count[player_num].mark}:  {self.scores[player_num]}")
 
         return self.scores
 

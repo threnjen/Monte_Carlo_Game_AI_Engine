@@ -7,9 +7,9 @@ name = "pypi"
 pandas = "*"
 numpy = "*"
 pysimplegui = "*"
+black = "*"
 
 [dev-packages]
-yapf = "*"
 pytest = "*"
 
 [requires]

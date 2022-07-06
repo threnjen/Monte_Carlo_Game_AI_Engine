@@ -17,9 +17,9 @@ jobs:
           python -m pip install pipenv
           pipenv sync --dev
           pipenv run pip list
-      #- name: Lint with yapf
+      #- name: Lint with black
       #  run: |
-      #    pipenv run yapf -dr tests/*.py
+      #    pipenv run black
       - name: Test with pytest and coverage
         run: |
           pipenv run pytest
