@@ -35,8 +35,8 @@ class GameEngine():
         Returns:
             [list]: List of: list of legal actions and active player ID
         """
-
-        return self.game.get_legal_actions(policy)
+        legal_actions = self.game.get_legal_actions(policy)
+        return legal_actions[0], legal_actions[1]
 
     def is_game_over(self):
         """
@@ -47,7 +47,7 @@ class GameEngine():
         """
         return self.game.is_game_over()
 
-    def update_game(self, action, player):
+    def update_game(self):
         """
         Sends action choice and player to game
 
@@ -55,7 +55,7 @@ class GameEngine():
             action (list item): selected item from list of legal actions
             player (int): player number
         """
-        return self.game.update_game(action, player)
+        return self.game.update_game(self.best_action, self.current_player)
 
     def game_result(self):
         """
@@ -78,13 +78,17 @@ class GameEngine():
         return self.game.draw_board()
 
 
-    def update_turn_log(self, best_action, sims_this_turn, current_player):
+    def _update_game_log(self):
+        self.game_log.append(self.turn_log, ignore_index=True)
+
+
+    def _update_turn_log(self):
         self.turn_log['Turn'] = self.turn
-        self.turn_log['Simulations'] = sims_this_turn
-        self.turn_log['Player'] = current_player
-        self.turn_log['Action'] = str(best_action)
+        self.turn_log['Simulations'] = self.sims_this_turn
+        self.turn_log['Player'] = self.current_player
+        self.turn_log['Action'] = str(self.best_action)
         scores = self.game_result()
-        self.turn_log['Score'] = scores[current_player]
+        self.turn_log['Score'] = scores[self.current_player]
 
     
     def play_game_byturns(self):
@@ -96,45 +100,43 @@ class GameEngine():
             #sys.stdout = open(f'logs/{self.name}_{self.player_count}players_{self.simulations}sims_{randint(1,1000000)}.txt', "w")
         print(f"Players: {self.player_count}, Sims: {self.simulations}")
 
-        current_player = self.get_legal_actions(policy=False)[1]  # Get starting player
+        actions, self.current_player = self.get_legal_actions()  # Get starting player
 
-        self.montecarlo = MonteCarloEngine(current_player, self.verbose)  # initialize the monte carlo engine
-        current_node = self.montecarlo.root  # set first node as monte carlo root
+        self.montecarlo = MonteCarloEngine(self.current_player, self.verbose)  # initialize the monte carlo engine
+        self.current_node = self.montecarlo.root  # set first node as monte carlo root
 
-        sims_this_turn = self.simulations  # set number of simulations; re-assigned here for decay usage
+        self.sims_this_turn = self.simulations  # set number of simulations; re-assigned here for decay usage
 
         while not self.is_game_over():
 
             self.turn_log = {}
             self.turn += 1  # increments the game turn
-            actions = self.get_legal_actions()
-            self.turn_log['Actions'] = actions[0]
-            current_player = actions[1]  # update current player
+            actions, self.current_player = self.get_legal_actions()
+            self.turn_log['Actions'] = actions
 
             # Beginning of game reporting:
-            print(f"\n\nTurn {self.turn}\nCurrent board state: {self.draw_board()}\nGame gets {sims_this_turn} simulations for this turn. Player {current_player}'s turn.")
+            print(f"\n\nTurn {self.turn}\nCurrent board state: {self.draw_board()}\nGame gets {self.sims_this_turn} simulations for this turn. Player {self.current_player}'s turn.")
 
             if self.verbose:
                 try:
-                    print(f'Entry state {current_node.depth}, {current_node.node_action}, {current_node.player_owner}, {current_node}')
+                    print(f'Entry state {self.current_node.depth}, {self.current_node.node_action}, {self.current_node.player_owner}, {self.current_node}')
                 except:
                     pass
 
             # Run the monte carlo engine for this turn and receive the chosen action node
-            current_node = self.montecarlo.play_turn(
-                sims_this_turn, self.game, current_player,
-                current_node)
-            best_action = current_node.node_action  # gets action of the returned node
-            print("Move: " + str(best_action))
+            self.current_node = self.montecarlo.play_turn(
+                self.sims_this_turn, self.game, self.current_player,
+                self.current_node)
+            self.best_action = self.current_node.node_action  # gets action of the returned node
+            print("Move: " + str(self.best_action))
 
-            self.update_game(
-                best_action, current_player)  # updates the true game state with the MC simmed action
-            self.update_turn_log(best_action, sims_this_turn, current_player)
-
-            self.game_log = self.game_log.append(self.turn_log, ignore_index=True)
+            self.update_game()  # updates the true game state with the MC simmed action
+            
+            self._update_turn_log() # log individual turn
+            self._update_game_log() # add turn to game log
 
             # Add simulation decay if desired. Uncomment choices below for two types of simulation decay.
-            sims_this_turn = int(np.ceil(sims_this_turn*.9)) # simulation decay of .9 each round
+            self.sims_this_turn = int(np.ceil(self.sims_this_turn*.9)) # simulation decay of .9 each round
             #sims_this_turn = int(np.ceil(self.simulations/(self.turn))) # simulation decay to absolute simulations/turn each round
 
         # Game over report

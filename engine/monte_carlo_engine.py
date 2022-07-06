@@ -48,13 +48,13 @@ class MonteCarloEngine():
 
             while not self.game_copy.is_game_over():
                 
-                self.rollout_node = self._selection(self.current_node) # call _selection to find the node to roll out, taking the moves along the way
-                print(f"Rollout node selected: {self.rollout_node.depth}, {self.rollout_node.label}, {self.rollout_node}")
+                rollout_node = self._selection(self.current_node) # call _selection to find the node to roll out, taking the moves along the way
+                print(f"Rollout node selected: {rollout_node.depth}, {rollout_node.label}, {rollout_node}")
 
-                self.scores = self._rollout() # call _rollout to finish simulating the game
+                self._rollout() # call _rollout to finish simulating the game and update scores
                 print(self.scores)
 
-                self._backpropogate(self.scores, self.rollout_node) # _backpropogates with the scores starting from the rollout_node
+                self._backpropogate(rollout_node) # _backpropogates with the scores starting from the rollout_node
 
         # Simulations have finished running, time to get the best move and return it to the game engine
         selected_node = self.current_node.best_child(print_weights=True) # Calls BEST_CHILD for the node we started on
@@ -75,6 +75,7 @@ class MonteCarloEngine():
         """        
 
         self.current_player=self.node_player # set temp current player to initial current player
+        actions, self.current_player = self.game_copy.get_legal_actions()
 
         # Evaluate our incoming node.
         while len(node.children) > 0 and node.number_of_visits > 0: 
@@ -82,10 +83,10 @@ class MonteCarloEngine():
             node = self._move_node(node)
             if self.game_copy.is_game_over():
                 return node
-            self.current_player=self.game_copy.get_legal_actions(policy=False)[1]
+            actions, self.current_player = self.game_copy.get_legal_actions()
             # loop and check again if we hit a leaf; this branch may move more than one node down to find a new expansion point
 
-        if len(self.game_copy.get_legal_actions(policy=False)[0])==0:
+        if len(actions)==0:
             # NO CHILDREN, IS VISITED, means game is over
             return node
 
@@ -108,6 +109,18 @@ class MonteCarloEngine():
 
         else: return node
 
+    def _choose_random_action(self, type=None):
+        if type=='expansion':
+            # pops off node actions randomly so that the order of try-stuff isn't as deterministic
+            random_end = len(self.actions_to_pop)
+            action = self.actions_to_pop[np.random.randint(random_end)]
+            self.actions_to_pop.remove(action) # pops off an untried action
+        if type=='rollout':
+            random_end = len(self.legal_actions)
+            action = self.legal_actions[np.random.randint(random_end)] # take a random action from legal moves
+
+        return action
+
     def _expansion(self, node):
         """
         From the present state we _expansion the nodes to the next possible states
@@ -119,16 +132,14 @@ class MonteCarloEngine():
         As we pop items off the list and apply them to the
         """        
         print("Expansion")
-        actions_to_pop=self.game_copy.get_legal_actions(policy=False)[0] # call to get legal moves. Calls GET_LEGAL_ACTIONS in GameLogic
 
-        while len(actions_to_pop) != 0:
+        self.actions_to_pop, self.current_player = self.game_copy.get_legal_actions() # call to get legal moves. Calls GET_LEGAL_ACTIONS in GameLogic
 
-            # pops off node actions randomly so that the order of try-stuff isn't as deterministic
-            action = actions_to_pop[np.random.randint(len(actions_to_pop))]
-            actions_to_pop.remove(action) # pops off an untried action
+        while len(self.actions_to_pop) != 0:
+            popped_action = self._choose_random_action(type='expansion')
 
             # make the child node for the popped action:
-            child_node = MonteCarloNode(parent=node, node_action=action, label=f'Action {action}', depth = (node.depth+1), player=self.current_player) 
+            child_node = MonteCarloNode(parent=node, node_action=popped_action, label=f'Action {popped_action}', depth = (node.depth+1), player=self.current_player) 
 
             node.children.append(child_node) # appends this new child node to the current node's list of children            
 
@@ -143,22 +154,25 @@ class MonteCarloEngine():
 
         while not self.game_copy.is_game_over():  # checks the state for game over boolean and loops if it's false
 
-            actions=self.game_copy.get_legal_actions(policy=False) 
-            legal_actions = actions[0] # get legal moves
-            player = actions[1] # get player
+            self.legal_actions, player = self.game_copy.get_legal_actions()
 
-            action = legal_actions[np.random.randint(len(legal_actions))] # take a random action from legal moves
+            random_action = self._choose_random_action(type='rollout')
             
-            print(f"Rollout: {player} {action}")
+            print(f"Rollout: {player} {random_action}")
 
-            self.game_copy.update_game(action, player) # takes action just pulled at random
+            self.game_copy.update_game(random_action, player) # takes action just pulled at random
         
         print("game is over, rollout ends")
-        scores = self.game_copy.game_result()
-        return scores
+        self.scores = self.game_copy.game_result() # update game scores
 
+    def _update_node(self):
+        """_summary_
+        """
+        owner = self.node.player_owner
+        self.node.number_of_visits += 1  # updates self with number of visits
+        self.node.total_score += self.scores[owner]
 
-    def _backpropogate(self, scores, node):
+    def _backpropogate(self, node):
         """
         Node statistics are updated starting with rollout node and moving up, until the parent node is reached.
 
@@ -168,13 +182,12 @@ class MonteCarloEngine():
             scores (dict): dictionary of scores with player ID as keys
             node (object instance): MonteCarloNode object instance
         """               
-        owner = node.player_owner
-        node.number_of_visits += 1  # updates self with number of visits
-
-        node.total_score += scores[owner]
+        self.node = node
+        
+        self._update_node()
 
         #print("Updated node "+str(node.depth)+str(node.node_action)+" with score of "+str(scores[owner])+', new score is '+str(node.total_score)+'and avg is '+str(node.total_score/node.number_of_visits))
 
-        if node.parent:  # if this node has a parent,
+        if self.node.parent:  # if this node has a parent,
             # call _backpropogate on the parent, so this will continue until root note which has no parent
-            self._backpropogate(scores, node.parent)
+            self._backpropogate(self.node.parent)
