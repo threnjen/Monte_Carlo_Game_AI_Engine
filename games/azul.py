@@ -4,6 +4,7 @@ from random import randrange
 from itertools import combinations
 from .gui_tryout import display_stuff
 from collections import Counter
+
 import typing
 
 MASTER_TILE_DICTIONARY = {
@@ -118,7 +119,6 @@ class Tower(TileContainer):
         return (
             dump_tiles  # returns dump tiles dict to game state to pass to Bag.add_tiles
         )
-
 
 class Bag(TileContainer):
     """The bag is where we draw tiles from.  We can take tiles directly from the bag (to either refill
@@ -992,7 +992,6 @@ class Game:
     """The game class will handle all aspects of the game.  All other objects will
     be instantiated in here.
     """
-
     tiles_per_factory = 4
     tiles_per_color = 22
     total_rounds = 6

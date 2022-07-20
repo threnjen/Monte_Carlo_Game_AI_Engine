@@ -20,7 +20,6 @@ def parseArguments():
 
     return args
 
-
 if __name__ == "__main__":
     """
     game_name = game name (required)
