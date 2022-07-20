@@ -3,16 +3,16 @@ import copy
 
 from engine.monte_carlo_node import MonteCarloNode
 
+class MonteCarloEngine():
 
-class MonteCarloEngine:
-    def __init__(self, start_player, verbose):  # , legal_actions=None, player=None
+    def __init__(self, start_player, verbose): #, legal_actions=None, player=None
         """
         Instantiates root monte carlo node
         Assigns starting player to root node
 
         Args:
             node_player (int): Current player id
-        """
+        """          
         self.root = MonteCarloNode(player=start_player)
         self.verbose = verbose
 

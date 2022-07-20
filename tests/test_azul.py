@@ -123,7 +123,7 @@ def test_get_available_wild(fact_display: azul.FactoryDisplay):
 
 
 def test_choose_tiles_no_wild(fact_display: azul.FactoryDisplay):
-    assert fact_display.choose_tiles('red', 'purple') == ({
+    assert fact_display.take_chosen_tiles('red', 'purple') == ({
         'red': 3
     }, {
         'red': 0,
@@ -137,7 +137,7 @@ def test_choose_tiles_no_wild(fact_display: azul.FactoryDisplay):
 
 
 def test_choose_tiles_wild(fact_display: azul.FactoryDisplay):
-    assert fact_display.choose_tiles('red', 'orange') == ({
+    assert fact_display.take_chosen_tiles('red', 'orange') == ({
         'red': 3,
         'orange': 1
     }, {

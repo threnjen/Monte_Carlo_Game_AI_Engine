@@ -64,6 +64,7 @@ class GameEngine:
         """
         return self.game.game_result()
 
+
     def draw_board(self):
         """
         Requests the game client draw a text representation of the game state
