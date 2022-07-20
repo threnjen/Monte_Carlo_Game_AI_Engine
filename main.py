@@ -1,22 +1,45 @@
-master_tile_dictionary = {'red': 0, "green": 0,
-                          "orange": 0, "yellow": 0, "blue": 0, "purple": 0}
+import sys
+from engine.game_engine import GameEngine
+import argparse
 
 
-class tower(object):
-    __init__(self, tile_count=0):
-        self.tile_count = tile_count
-        self.tile_dictionary = master_tile_dictionary.copy()
+def parseArguments():
+    # Create argument parser
+    parser = argparse.ArgumentParser()
 
-    def add_tiles(self, new_tiles):
+    # Positional mandatory arguments
+    parser.add_argument("game", help="Game name", type=str)
 
-        for key in new_tiles.keys():
-            if key in self.tile_dictionary:
-                self.tile_dictionary[key] += new_tiles[key]
-            else:
-                raise "Error:  invalid tilename passed to tower"
+    # Optional arguments
+    parser.add_argument("-s", help="Number of simulations", type=int, default=100)
+    parser.add_argument("-p", help="Number of player_count", type=int, default=2)
+    parser.add_argument("-v", help="Verbosity", type=bool, default=False)
 
-    def remove_tiles(self):
+    # Parse arguments
+    args = parser.parse_args()
 
-        dump_tiles = self.tile_dictionary.copy()
-        self.tile_dictionary = master_tile_dictionary.copy()
-        return dump_tiles
+    return args
+
+
+if __name__ == "__main__":
+    """
+    game_name = game name (required)
+    -s = # of simulations (default 1000)
+    -p = # of player_count (default 2)
+    -v = verbosity (default False)
+    """
+
+    # Parse the arguments
+    args = parseArguments()
+
+    game_name = args.__dict__["game"]
+    sims = args.__dict__["s"]
+    player_count = args.__dict__["p"]
+    verbose = args.__dict__["v"]
+
+    print(
+        f"Initializing game: {game_name}, # sims: {sims}, # player_count: {player_count}, verbose: {verbose}"
+    )
+
+    game = GameEngine(game_name, sims, player_count, verbose)
+    game.play_game_byturns()
