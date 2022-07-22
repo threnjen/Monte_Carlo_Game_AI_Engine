@@ -1,8 +1,8 @@
 from abc import ABC, abstractmethod
 
-class BaseGameObject(ABC):
 
-    def __init__(self, player_count):
+class BaseGameObject(ABC):
+    def __init__(self, player_count: int):
         """
         Initializes game.
 
@@ -10,39 +10,42 @@ class BaseGameObject(ABC):
         game init must accept player_count argument (int)
         """
         self.player_count = player_count
-    
+
     @abstractmethod
-    def get_legal_actions(self, policy:bool=False):
+    def get_current_player(self) -> int:
         """
         Hook #1
         Get currently available actions and active player to take an action from the list
 
-        Requires return of a list with two indices:
-        0: list of legal actions
-        1: active player ID
-
-        Format [[list of legal actions], active player ID]
-
-        The engine does not care about the contents of the list of legal actions, and will return
-        a list item in exactly the same format it is passed. The game logic must manage the correct player turns. The Monte Carlo engine will assign the
-        next legal action to the player passed, with no safety checks.
-
-        Returns:
-            [list]: List of: list of legal actions and active player ID
+        return active player ID as int
         """
         pass
 
     @abstractmethod
-    def update_game(self):
+    def get_available_actions(self, special_policy: bool = False) -> list:
         """
         Hook #2
+        Get currently available actions to take an action from the list
+
+        Format [list of legal actions]
+
+        The engine does not care about the contents of the list of legal actions, and will return
+        a list item in exactly the same format it is passed. The game logic must manage the correct player turns. The Monte Carlo engine will assign the
+        next legal action to the player passed, with no safety checks.
+        """
+        pass
+
+    @abstractmethod
+    def update_game_with_action(self, action: str, player: int):
+        """
+        Hook #3
         Sends action choice and player to game
 
         After selecting an item from the list of legal actions (see Hook #1),
         Sends the item back to the game logic. Item is sent back in exactly
         the same format as received in the list of legal actions.
 
-        Also returns active player ID for action
+        Also sends active player ID for action
 
         Args:
             action (list item): selected item from list of legal actions
@@ -51,9 +54,9 @@ class BaseGameObject(ABC):
         pass
 
     @abstractmethod
-    def is_game_over(self):
+    def is_game_over(self) -> bool:
         """
-        Hook #3
+        Hook #4
         Checks if game has ended
 
         Requires only True or False
@@ -64,9 +67,9 @@ class BaseGameObject(ABC):
         pass
 
     @abstractmethod
-    def game_result(self):
+    def get_game_scores(self) -> dict:
         """
-        Hook #4
+        Hook #5
         Retrieves game score
 
         Must be a dictionary in format {playerID: Score}
@@ -80,11 +83,10 @@ class BaseGameObject(ABC):
     @abstractmethod
     def draw_board(self):
         """
-        Hook #5
+        Hook #6
         Requests the game client draw a text representation of the game state
 
         Returns:
             draws game state
         """
         pass
-

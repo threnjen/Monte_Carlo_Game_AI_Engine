@@ -20,6 +20,7 @@ def parseArguments():
 
     return args
 
+
 if __name__ == "__main__":
     """
     game_name = game name (required)
@@ -40,5 +41,5 @@ if __name__ == "__main__":
         f"Initializing game: {game_name}, # sims: {sims}, # player_count: {player_count}, verbose: {verbose}"
     )
 
-    game = GameEngine(game_name, sims, player_count, verbose)
-    game.play_game_byturns()
+    game = GameEngine(game_name, player_count, verbose)
+    game.play_game_by_turns(sims)

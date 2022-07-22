@@ -2,29 +2,41 @@ import numpy as np
 import copy
 
 from engine.monte_carlo_node import MonteCarloNode
+from games.base_game_object import BaseGameObject
 
-class MonteCarloEngine():
 
-    def __init__(self, start_player, verbose): #, legal_actions=None, player=None
+class MonteCarloEngine:
+    def __init__(
+        self, start_player: int, verbose: bool
+    ):  # , legal_actions=None, player=None
         """
         Instantiates root monte carlo node
         Assigns starting player to root node
 
         Args:
             node_player (int): Current player id
-        """          
+        """
         self.root = MonteCarloNode(player=start_player)
         self.verbose = verbose
 
-    def play_turn(self, num_sims, game, node_player, received_node):
+    def get_node_action(self, node: MonteCarloNode) -> str:
+        return node.node_action
+
+    def sim_turn_select_best_node(
+        self,
+        num_sims: int,
+        game: BaseGameObject,
+        node_player: int,
+        incoming_node: MonteCarloNode,
+    ) -> MonteCarloNode:
         """
         Receives a specific game state from which to make a move
 
         Runs a given number of simulations, according to the Monte Carlo schema:
-        1. Find next node to rollout (_selection)
-        2. Expands nods as needed (_expansion, from _selection)
-        3. Simulate game to terminus (_rollout)
-        4. Back-update scores starting with rollout node (_backpropogate)
+        1. Find next node to rollout (_selection_rollout_node)
+        2. Expands nods as needed (_expand_new_nodes, from _selection_rollout_node)
+        3. Simulate game to terminus (_rollout_from_selected_node)
+        4. Back-update scores starting with rollout node (_backpropogate_node_scores)
 
         Returns the chosen turn action for the game state it was provided
 
@@ -37,65 +49,53 @@ class MonteCarloEngine():
         Returns:
             selected_node (object instance): MonteCarloNode object instance
         """
-        self.current_node = received_node  # set current node to received node
-        self.node_player = node_player  # set node_player to received player
+        for i in range(num_sims):
 
-        for i in range(num_sims):  # Run x simulations for this turn
+            print(f"\nSimulation {i}")
 
-            print("\nSimulation " + str(i))
-
-            self.game_copy = copy.deepcopy(
-                game
-            )  # COPY THE GAME STATE HERE TO TEST ROLLOUT
+            self.game_copy = self._copy_game_state_for_sim(game)
 
             while not self.game_copy.is_game_over():
 
-                rollout_node = self._selection(
-                    self.current_node
-                )  # call _selection to find the node to roll out, taking the moves along the way
-                print(
-                    f"Rollout node selected: {rollout_node.depth}, {rollout_node.label}, {rollout_node}"
-                )
+                rollout_node = self._selection_rollout_node(incoming_node, node_player)
+                if self.verbose:
+                    print(
+                        f"Rollout node selected: {rollout_node.depth}, {rollout_node.label}, {rollout_node}"
+                    )
 
-                self._rollout()  # call _rollout to finish simulating the game and update scores
-                print(self.scores)
+                self._rollout_from_selected_node()
 
-                self._backpropogate(
-                    rollout_node
-                )  # _backpropogates with the scores starting from the rollout_node
+                if self.verbose:
+                    print(self.scores)
 
-        # Simulations have finished running, time to get the best move and return it to the game engine
-        selected_node = self.current_node.best_child(
-            print_weights=True
-        )  # Calls BEST_CHILD for the node we started on
+                self._backpropogate_node_scores(rollout_node)
 
-        return selected_node  # returns the best child node to the main function.
+        selected_node = self._get_best_move_child_node(incoming_node)
 
-    def _move_node(self, node):
-        node = node.best_child(print_weights=False)  # get the best child of the root
-        self.game_copy.update_game(node.node_action, self.current_player)
-        return node
+        return selected_node
 
-    def _selection(self, node):
+    def _copy_game_state_for_sim(self, game: BaseGameObject) -> BaseGameObject:
+        """copy the game state to test rollout"""
+        return copy.deepcopy(game)
+
+    def _selection_rollout_node(
+        self, node: MonteCarloNode, node_player: int
+    ) -> MonteCarloNode:
         """
         Selects node to run simulation. Is looking for the furthest terminal node to roll out.
 
         Returns:
             current_node (object instance): MonteCarloNode object instance
         """
+        actions = self.game_copy.get_available_actions()
 
-        self.current_player = (
-            self.node_player
-        )  # set temp current player to initial current player
-        actions, self.current_player = self.game_copy.get_legal_actions()
-
-        # Evaluate our incoming node.
         while len(node.children) > 0 and node.number_of_visits > 0:
             # HAS CHILDREN, IS VISITED, CHECK GAME END AFTER LOOP
-            node = self._move_node(node)
+            node = self._move_to_node(node, node_player)
             if self.game_copy.is_game_over():
                 return node
-            actions, self.current_player = self.game_copy.get_legal_actions()
+            actions = self.game_copy.get_available_actions()
+            node_player = self.game_copy.get_current_player()
             # loop and check again if we hit a leaf; this branch may move more than one node down to find a new expansion point
 
         if len(actions) == 0:
@@ -104,7 +104,7 @@ class MonteCarloEngine():
 
         elif node.number_of_visits == 0 and not node == self.root:
             # NO CHILDREN, NOT VISITED, NOT ROOT
-            self._expansion(node)
+            self._expand_new_nodes(node)
             return node
 
         elif (
@@ -113,54 +113,63 @@ class MonteCarloEngine():
             and not node == self.root
         ):
             # NO CHILDREN, IS VISITED, NOT ROOT
-            self._expansion(node)
-            node = self._move_node(node)
+            self._expand_new_nodes(node)
+            node = self._move_to_node(node, node_player)
             return node
 
         elif node.number_of_visits == 0 and node == self.root:
             # NO CHILDREN, NOT VISITED, IS ROOT
-            self._expansion(node)
-            node = self._move_node(node)
+            self._expand_new_nodes(node)
+            node = self._move_to_node(node, node_player)
             return node
 
         else:
             return node
 
-    def _choose_random_action(self, type=None):
+    def _get_best_move_child_node(self, current_node: MonteCarloNode) -> MonteCarloNode:
+        """Calls BEST_CHILD for the node we started on"""
+        best_child_node = current_node.best_child(print_weights=True)
+        return best_child_node
+
+    def _move_to_node(self, node: MonteCarloNode, player: int) -> MonteCarloNode:
+        best_node = self._get_best_move_child_node(node)
+        self.game_copy.update_game_with_action(self.get_node_action(best_node), player)
+        return best_node
+
+    def _choose_random_action(self, potential_actions: list, type=None):
         if type == "expansion":
             # pops off node actions randomly so that the order of try-stuff isn't as deterministic
-            random_end = len(self.actions_to_pop)
-            action = self.actions_to_pop[np.random.randint(random_end)]
-            self.actions_to_pop.remove(action)  # pops off an untried action
+            random_end = len(potential_actions)
+            action = potential_actions[np.random.randint(random_end)]
         if type == "rollout":
-            random_end = len(self.legal_actions)
-            action = self.legal_actions[
+            random_end = len(potential_actions)
+            action = potential_actions[
                 np.random.randint(random_end)
             ]  # take a random action from legal moves
 
         return action
 
-    def _expansion(self, node):
+    def _expand_new_nodes(self, node: MonteCarloNode):
         """
-        From the present state we _expansion the nodes to the next possible states
-        We take in a node with no children and we will _expansion it to all children
+        From the present state we _expand_new_nodes the nodes to the next possible states
+        We take in a node with no children and we will _expand_new_nodes it to all children
 
         For each available action for the current node, add a new state to the tree
 
         Query the game state for all of the legal actions, and store that in a list
         As we pop items off the list and apply them to the
         """
-        print("Expansion")
+        if self.verbose:
+            print("Expansion")
 
-        (
-            self.actions_to_pop,
-            self.current_player,
-        ) = (
-            self.game_copy.get_legal_actions()
-        )  # call to get legal moves. Calls GET_LEGAL_ACTIONS in GameLogic
+        actions_to_pop = self.game_copy.get_available_actions()
+        current_player = self.game_copy.get_current_player()
 
-        while len(self.actions_to_pop) != 0:
-            popped_action = self._choose_random_action(type="expansion")
+        while len(actions_to_pop) != 0:
+            popped_action = self._choose_random_action(
+                potential_actions=actions_to_pop, type="expansion"
+            )
+            actions_to_pop.remove(popped_action)  # pops off an untried action
 
             # make the child node for the popped action:
             child_node = MonteCarloNode(
@@ -168,37 +177,39 @@ class MonteCarloEngine():
                 node_action=popped_action,
                 label=f"Action {popped_action}",
                 depth=(node.depth + 1),
-                player=self.current_player,
+                player=current_player,
             )
 
             node.children.append(
                 child_node
             )  # appends this new child node to the current node's list of children
 
-    def _rollout(self):
+    def _rollout_from_selected_node(self):
         """
-        On _rollout call, the entire game is simulated to terminus and the outcome of the game is returned
+        On _rollout_from_selected_node call, the entire game is simulated to terminus and the outcome of the game is returned
 
         Returns:
             scores (dict): dictionary of scores with player ID as keys
         """
 
-        while (
-            not self.game_copy.is_game_over()
-        ):  # checks the state for game over boolean and loops if it's false
+        while not self.game_copy.is_game_over():
 
-            self.legal_actions, player = self.game_copy.get_legal_actions()
+            legal_actions = self.game_copy.get_available_actions()
+            current_player = self.game_copy.get_current_player()
 
-            random_action = self._choose_random_action(type="rollout")
+            random_action = self._choose_random_action(
+                potential_actions=legal_actions, type="rollout"
+            )
+            if self.verbose:
+                print(f"Rollout: {current_player} {random_action}")
 
-            print(f"Rollout: {player} {random_action}")
-
-            self.game_copy.update_game(
-                random_action, player
+            self.game_copy.update_game_with_action(
+                random_action, current_player
             )  # takes action just pulled at random
 
-        print("game is over, rollout ends")
-        self.scores = self.game_copy.game_result()  # update game scores
+        if self.verbose:
+            print("game is over, rollout ends")
+        self.scores = self.game_copy.get_game_scores()
 
     def _update_node(self):
         """_summary_"""
@@ -206,7 +217,7 @@ class MonteCarloEngine():
         self.node.number_of_visits += 1  # updates self with number of visits
         self.node.total_score += self.scores[owner]
 
-    def _backpropogate(self, node):
+    def _backpropogate_node_scores(self, node: MonteCarloNode):
         """
         Node statistics are updated starting with rollout node and moving up, until the parent node is reached.
 
@@ -220,8 +231,8 @@ class MonteCarloEngine():
 
         self._update_node()
 
-        # print("Updated node "+str(node.depth)+str(node.node_action)+" with score of "+str(scores[owner])+', new score is '+str(node.total_score)+'and avg is '+str(node.total_score/node.number_of_visits))
+        # print("Updated node "+str(node.depth)+str(self.get_node_action(best_node))+" with score of "+str(scores[owner])+', new score is '+str(node.total_score)+'and avg is '+str(node.total_score/node.number_of_visits))
 
         if self.node.parent:  # if this node has a parent,
-            # call _backpropogate on the parent, so this will continue until root note which has no parent
-            self._backpropogate(self.node.parent)
+            # call _backpropogate_node_scores on the parent, so this will continue until root note which has no parent
+            self._backpropogate_node_scores(self.node.parent)
