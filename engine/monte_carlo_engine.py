@@ -3,20 +3,20 @@ import copy
 
 from engine.monte_carlo_node import MonteCarloNode
 
-class MonteCarloEngine():
 
-    def __init__(self, start_player, verbose): #, legal_actions=None, player=None
+class MonteCarloEngine:
+    def __init__(self, start_player, verbose):  # , legal_actions=None, player=None
         """
         Instantiates root monte carlo node
         Assigns starting player to root node
 
         Args:
             node_player (int): Current player id
-        """          
+        """
         self.root = MonteCarloNode(player=start_player)
         self.verbose = verbose
 
-    def play_turn(self, num_sims, game, node_player, received_node):
+    def play_turn(self, num_sims, game, node_player, current_node):
         """
         Receives a specific game state from which to make a move
 
@@ -37,21 +37,16 @@ class MonteCarloEngine():
         Returns:
             selected_node (object instance): MonteCarloNode object instance
         """
-        self.current_node = received_node  # set current node to received node
-        self.node_player = node_player  # set node_player to received player
-
         for i in range(num_sims):  # Run x simulations for this turn
 
             print("\nSimulation " + str(i))
 
-            self.game_copy = copy.deepcopy(
-                game
-            )  # COPY THE GAME STATE HERE TO TEST ROLLOUT
+            self.game_copy = self._copy_game_state()
 
             while not self.game_copy.is_game_over():
 
                 rollout_node = self._selection(
-                    self.current_node
+                    current_node, node_player
                 )  # call _selection to find the node to roll out, taking the moves along the way
                 print(
                     f"Rollout node selected: {rollout_node.depth}, {rollout_node.label}, {rollout_node}"
@@ -65,37 +60,41 @@ class MonteCarloEngine():
                 )  # _backpropogates with the scores starting from the rollout_node
 
         # Simulations have finished running, time to get the best move and return it to the game engine
-        selected_node = self.current_node.best_child(
-            print_weights=True
-        )  # Calls BEST_CHILD for the node we started on
+        selected_node = self._get_best_child(current_node)
 
         return selected_node  # returns the best child node to the main function.
 
-    def _move_node(self, node):
-        node = node.best_child(print_weights=False)  # get the best child of the root
-        self.game_copy.update_game(node.node_action, self.current_player)
-        return node
+    def _copy_game_state(self, game: object) -> object:
+        """copy the game state to test rollout"""
+        return copy.deepcopy(game)
 
-    def _selection(self, node):
+    def _get_best_child(self, current_node):
+        """Calls BEST_CHILD for the node we started on"""
+        best_child = current_node.best_child(print_weights=True)
+        return best_child
+
+    def _move_node(self, node, player):
+        best_node = self._get_best_child(node)
+        self.game_copy.update_game(best_node.node_action, player)
+        return best_node
+
+    def _selection(self, node, node_player):
         """
         Selects node to run simulation. Is looking for the furthest terminal node to roll out.
 
         Returns:
             current_node (object instance): MonteCarloNode object instance
         """
-
-        self.current_player = (
-            self.node_player
-        )  # set temp current player to initial current player
-        actions, self.current_player = self.game_copy.get_legal_actions()
+        actions = self.game_copy.get_available_actions()
 
         # Evaluate our incoming node.
         while len(node.children) > 0 and node.number_of_visits > 0:
             # HAS CHILDREN, IS VISITED, CHECK GAME END AFTER LOOP
-            node = self._move_node(node)
+            node = self._move_node(node, node_player)
             if self.game_copy.is_game_over():
                 return node
-            actions, self.current_player = self.game_copy.get_legal_actions()
+            actions = self.game_copy.get_available_actions()
+            node_player = self.game_copy.get_current_player()
             # loop and check again if we hit a leaf; this branch may move more than one node down to find a new expansion point
 
         if len(actions) == 0:
@@ -114,13 +113,13 @@ class MonteCarloEngine():
         ):
             # NO CHILDREN, IS VISITED, NOT ROOT
             self._expansion(node)
-            node = self._move_node(node)
+            node = self._move_node(node, node_player)
             return node
 
         elif node.number_of_visits == 0 and node == self.root:
             # NO CHILDREN, NOT VISITED, IS ROOT
             self._expansion(node)
-            node = self._move_node(node)
+            node = self._move_node(node, node_player)
             return node
 
         else:
@@ -152,12 +151,8 @@ class MonteCarloEngine():
         """
         print("Expansion")
 
-        (
-            self.actions_to_pop,
-            self.current_player,
-        ) = (
-            self.game_copy.get_legal_actions()
-        )  # call to get legal moves. Calls GET_LEGAL_ACTIONS in GameLogic
+        self.actions_to_pop = self.game_copy.get_available_actions()
+        self.current_player = self.game_copy.get_current_player()
 
         while len(self.actions_to_pop) != 0:
             popped_action = self._choose_random_action(type="expansion")
@@ -187,7 +182,8 @@ class MonteCarloEngine():
             not self.game_copy.is_game_over()
         ):  # checks the state for game over boolean and loops if it's false
 
-            self.legal_actions, player = self.game_copy.get_legal_actions()
+            self.legal_actions = self.game_copy.get_available_actions()
+            player = self.game_copy.get_current_player()
 
             random_action = self._choose_random_action(type="rollout")
 

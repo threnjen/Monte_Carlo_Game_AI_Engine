@@ -17,24 +17,38 @@ class GameEngine:
         self.verbose = verbose
         self.game_name = GAMES_MAP[game]
         game_module = importlib.import_module(f".{game}", package="games")
-        instance = getattr(game_module, self.game_name)
+        game_instance = getattr(game_module, self.game_name)
         self.player_count = player_count
-        self.game = instance(self.player_count)
+        self.game = game_instance(self.player_count)
         self.simulations = sims
         self.turn = 0  # Set the initial turn as 0
         self.game_log = pd.DataFrame(
             columns=["Turn", "Actions", "Player", "Action", "Score", "Simulations"]
         )
+        self.current_player = self.get_current_player()  # Get starting player
+        self.montecarlo = MonteCarloEngine(
+            start_player=self.current_player, verbose=self.verbose
+        )  # initialize the monte carlo engine
 
-    def get_legal_actions(self, policy=False):
+    def get_current_player(self):
         """
-        Get currently available actions and active player to take an action from the list
+        Get active player
 
         Returns:
-            [list]: List of: list of legal actions and active player ID
+            [list]: active player ID
         """
-        legal_actions = self.game.get_legal_actions(policy)
-        return legal_actions[0], legal_actions[1]
+        current_player = self.game.get_current_player()
+        return current_player
+
+    def get_available_actions(self, policy=False) -> list:
+        """
+        Get currently available actions
+
+        Returns:
+            [list]: List of: list of legal actions
+        """
+        legal_actions = self.game.get_current_actions(policy)
+        return legal_actions
 
     def is_game_over(self):
         """
@@ -45,7 +59,7 @@ class GameEngine:
         """
         return self.game.is_game_over()
 
-    def update_game(self):
+    def update_game(self, node_action):
         """
         Sends action choice and player to game
 
@@ -53,7 +67,7 @@ class GameEngine:
             action (list item): selected item from list of legal actions
             player (int): player number
         """
-        return self.game.update_game(self.best_action, self.current_player)
+        return self.game.update_game(node_action, self.current_player)
 
     def game_result(self):
         """
@@ -63,7 +77,6 @@ class GameEngine:
             [dict]: dictionary in format playerID: score
         """
         return self.game.game_result()
-
 
     def draw_board(self):
         """
@@ -86,6 +99,23 @@ class GameEngine:
         scores = self.game_result()
         self.turn_log["Score"] = scores[self.current_player]
 
+    def _set_base_node(self):
+        return self.montecarlo.root
+
+    def _get_current_node(self):
+        current_node = self.montecarlo.play_turn(
+            num_sims=self.sims_this_turn,
+            game=self.game,
+            node_player=self.current_player,
+            received_node=self.current_node,
+        )
+        return current_node
+
+    def _get_node_action(self, current_node):
+        node_action = current_node.node_action  # gets action of the returned node
+        print("Move: " + str(node_action))
+        return node_action
+
     def play_game_byturns(self):
         """
         Intializes Monte Carlo engine
@@ -95,12 +125,7 @@ class GameEngine:
         # sys.stdout = open(f'logs/{self.name}_{self.player_count}player_count_{self.simulations}sims_{randint(1,1000000)}.txt', "w")
         print(f"player_count: {self.player_count}, Sims: {self.simulations}")
 
-        actions, self.current_player = self.get_legal_actions()  # Get starting player
-
-        self.montecarlo = MonteCarloEngine(
-            self.current_player, self.verbose
-        )  # initialize the monte carlo engine
-        self.current_node = self.montecarlo.root  # set first node as monte carlo root
+        self.current_node = self._set_base_node()  # set first node as monte carlo root
 
         self.sims_this_turn = (
             self.simulations
@@ -110,10 +135,10 @@ class GameEngine:
 
             self.turn_log = {}
             self.turn += 1  # increments the game turn
-            actions, self.current_player = self.get_legal_actions()
+            actions = self.get_available_actions()
+            self.player = self.get_current_player()
             self.turn_log["Actions"] = actions
 
-            # Beginning of game reporting:
             print(
                 f"\n\nTurn {self.turn}\nCurrent board state: {self.draw_board()}\nGame gets {self.sims_this_turn} simulations for this turn. Player {self.current_player}'s turn."
             )
@@ -126,19 +151,16 @@ class GameEngine:
                 except:
                     pass
 
-            # Run the monte carlo engine for this turn and receive the chosen action node
-            self.current_node = self.montecarlo.play_turn(
-                num_sims=self.sims_this_turn,
-                game=self.game,
-                node_player=self.current_player,
-                received_node=self.current_node,
-            )
-            self.best_action = (
-                self.current_node.node_action
-            )  # gets action of the returned node
-            print("Move: " + str(self.best_action))
+            current_node = (
+                self._get_current_node()
+            )  # Run the monte carlo engine for this turn and receive the chosen action node
+            node_action = self._get_node_action(
+                current_node
+            )  # check the action of the current node
 
-            self.update_game()  # updates the true game state with the MC simmed action
+            self.update_game(
+                node_action
+            )  # updates the true game state with the MC simmed action
 
             self._update_turn_log()  # log individual turn
             self._update_game_log()  # add turn to game log
@@ -171,14 +193,3 @@ class GameEngine:
         # df = pd.DataFrame(first_action_list)
         # df['pairs'] = df.apply(lambda x: (str(x[0])+", "+str(x[1])), axis=1)
         # df.to_pickle('first_action_list'+str(game_label)+'.pkl')
-
-
-if __name__ == "main":
-
-    game = "Otrio"
-    sims = 1000
-    player_count = 2
-    verbose = True
-
-    game = GameEngine(game, sims, player_count, verbose)
-    game.play_game_byturns()

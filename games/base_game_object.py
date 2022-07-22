@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 
-class BaseGameObject(ABC):
 
+class BaseGameObject(ABC):
     def __init__(self, player_count):
         """
         Initializes game.
@@ -10,9 +10,17 @@ class BaseGameObject(ABC):
         game init must accept player_count argument (int)
         """
         self.player_count = player_count
-    
+
     @abstractmethod
-    def get_legal_actions(self, policy:bool=False):
+    def get_current_player(self):
+        pass
+
+    @abstractmethod
+    def get_available_actions(self, policy: bool = False):
+        pass
+
+    @abstractmethod
+    def get_legal_actions(self, policy: bool = False):
         """
         Hook #1
         Get currently available actions and active player to take an action from the list
@@ -87,4 +95,3 @@ class BaseGameObject(ABC):
             draws game state
         """
         pass
-
