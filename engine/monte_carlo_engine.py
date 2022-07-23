@@ -41,7 +41,7 @@ class MonteCarloEngine:
 
             print("\nSimulation " + str(i))
 
-            self.game_copy = self._copy_game_state()
+            self.game_copy = self._copy_game_state(game)
 
             while not self.game_copy.is_game_over():
 
@@ -78,7 +78,7 @@ class MonteCarloEngine:
         self.game_copy.update_game(best_node.node_action, player)
         return best_node
 
-    def _selection(self, node, node_player):
+    def _selection(self, node: object, node_player) -> object:
         """
         Selects node to run simulation. Is looking for the furthest terminal node to roll out.
 
