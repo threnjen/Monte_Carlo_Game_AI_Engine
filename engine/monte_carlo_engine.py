@@ -16,7 +16,7 @@ class MonteCarloEngine:
         self.root = MonteCarloNode(player=start_player)
         self.verbose = verbose
 
-    def play_turn(self, num_sims, game, node_player, current_node):
+    def play_turn(self, num_sims, game, node_player, received_node):
         """
         Receives a specific game state from which to make a move
 
@@ -46,7 +46,7 @@ class MonteCarloEngine:
             while not self.game_copy.is_game_over():
 
                 rollout_node = self._selection(
-                    current_node, node_player
+                    received_node, node_player
                 )  # call _selection to find the node to roll out, taking the moves along the way
                 print(
                     f"Rollout node selected: {rollout_node.depth}, {rollout_node.label}, {rollout_node}"
@@ -60,7 +60,7 @@ class MonteCarloEngine:
                 )  # _backpropogates with the scores starting from the rollout_node
 
         # Simulations have finished running, time to get the best move and return it to the game engine
-        selected_node = self._get_best_child(current_node)
+        selected_node = self._get_best_child(received_node)
 
         return selected_node  # returns the best child node to the main function.
 

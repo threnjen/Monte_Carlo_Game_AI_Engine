@@ -30,7 +30,7 @@ class ConnectFour(BaseGameObject):
         ]
         self.game_over = False
         self.current_player = 0
-        self._state = ""
+        self.board = ""
         self.name = "Connect_Four"
         self.pieces_placed = 0
         self.allowed_columns = {0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 6}
@@ -124,13 +124,16 @@ class ConnectFour(BaseGameObject):
 
     def save_state(self):
         """Saves the game state for printing"""
-        self._state = ""
+        self.board = ""
         for row in range(self.rows):
-            self._state += (
+            self.board += (
                 "|".join(self.grid[row][column] for column in range(self.columns))
                 + "\n"
             )
-            self._state += "_" * (self.columns * 2 - 1) + "\n"
+            self.board += "_" * (self.columns * 2 - 1) + "\n"
+
+    def draw_board(self):
+        print(self.board)
 
     def game_result(self):
         """Returns the scores
@@ -146,7 +149,7 @@ class ConnectFour(BaseGameObject):
         self.save_state()
         while not self.game_over:
             legal_actions = self.get_available_actions()
-            print(self._state)
+            print(self.board)
             print(legal_actions)
             action = int(input("Choose an action"))
             self.update_game(action, self.current_player)

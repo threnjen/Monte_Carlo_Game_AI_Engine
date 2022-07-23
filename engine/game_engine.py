@@ -47,7 +47,7 @@ class GameEngine:
         Returns:
             [list]: List of: list of legal actions
         """
-        legal_actions = self.game.get_current_actions(policy)
+        legal_actions = self.game.get_available_actions(policy)
         return legal_actions
 
     def is_game_over(self):
@@ -67,7 +67,7 @@ class GameEngine:
             action (list item): selected item from list of legal actions
             player (int): player number
         """
-        return self.game.update_game(node_action, self.current_player)
+        return self.game.update_game(self.node_action, self.current_player)
 
     def game_result(self):
         """
@@ -95,7 +95,7 @@ class GameEngine:
         self.turn_log["Turn"] = self.turn
         self.turn_log["Simulations"] = self.sims_this_turn
         self.turn_log["Player"] = self.current_player
-        self.turn_log["Action"] = str(self.best_action)
+        self.turn_log["Action"] = str(self.node_action)
         scores = self.game_result()
         self.turn_log["Score"] = scores[self.current_player]
 
@@ -154,13 +154,11 @@ class GameEngine:
             current_node = (
                 self._get_current_node()
             )  # Run the monte carlo engine for this turn and receive the chosen action node
-            node_action = self._get_node_action(
+            self.node_action = self._get_node_action(
                 current_node
             )  # check the action of the current node
 
-            self.update_game(
-                node_action
-            )  # updates the true game state with the MC simmed action
+            self.update_game()  # updates the true game state with the MC simmed action
 
             self._update_turn_log()  # log individual turn
             self._update_game_log()  # add turn to game log
