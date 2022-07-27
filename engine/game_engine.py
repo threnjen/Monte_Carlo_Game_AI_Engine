@@ -59,7 +59,7 @@ class GameEngine:
         """
         return self.game.is_game_over()
 
-    def update_game(self, node_action):
+    def update_game(self):
         """
         Sends action choice and player to game
 
@@ -140,7 +140,7 @@ class GameEngine:
             self.turn_log["Actions"] = actions
 
             print(
-                f"\n\nTurn {self.turn}\nCurrent board state: {self.draw_board()}\nGame gets {self.sims_this_turn} simulations for this turn. Player {self.current_player}'s turn."
+                f"\n\nTurn {self.turn}\nGame gets {self.sims_this_turn} simulations for this turn. Player {self.current_player}'s turn."
             )
 
             if self.verbose:
