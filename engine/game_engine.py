@@ -111,8 +111,8 @@ class GameEngine:
         )
         return current_node
 
-    def _get_node_action(self, current_node):
-        node_action = current_node.node_action  # gets action of the returned node
+    def _get_node_action(self):
+        node_action = self.current_node.node_action  # gets action of the returned node
         print("Move: " + str(node_action))
         return node_action
 
@@ -151,11 +151,11 @@ class GameEngine:
                 except:
                     pass
 
-            current_node = (
+            self.current_node = (
                 self._get_current_node()
             )  # Run the monte carlo engine for this turn and receive the chosen action node
-            self.node_action = self._get_node_action(
-                current_node
+            self.node_action = (
+                self._get_node_action()
             )  # check the action of the current node
 
             self.update_game()  # updates the true game state with the MC simmed action
@@ -178,7 +178,7 @@ class GameEngine:
         # sys.stdout.close()
 
         self.game_log.to_pickle(
-            "logs/" + self.name + "_game_log_" + str(randint(1, 1000000)) + ".pkl"
+            "logs/" + self.game_name + "_game_log_" + str(randint(1, 1000000)) + ".pkl"
         )
 
         # first_action_list=[]

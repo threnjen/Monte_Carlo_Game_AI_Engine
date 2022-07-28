@@ -20,13 +20,13 @@ class Player:
 class TicTacToe(BaseGameObject):
     """Tic tac toe game"""
 
-    def __init__(self, player_count):
+    def __init__(self, player_count=2):
         """Calling the game doesn't create any unique starting conditions,
         since there are always two player_count.
         """
         self.positions = [" "] * 9
         # self.legal_actions = {}
-        self.player_count = {0: Player("0"), 1: Player("1")}
+        self.player_marks = {0: Player("0"), 1: Player("1")}
         self.scores = {0: 0, 1: 0}
         self.game_over = False
         self.current_player_num = 0
@@ -59,7 +59,7 @@ class TicTacToe(BaseGameObject):
 
     def make_move(self, pos: int, current_player_num: int):
         """Makes a move on the board and draws it"""
-        self.positions[pos] = self.player_count[current_player_num].mark
+        self.positions[pos] = self.player_marks[current_player_num].mark
         self.draw_board()
         self.current_player_num = (self.current_player_num + 1) % self.player_count
 
@@ -86,7 +86,7 @@ class TicTacToe(BaseGameObject):
         Returns:
             bool: Over or not
         """
-        avail_actions = self.get_available_actions()[0]
+        avail_actions = self.get_available_actions()
 
         for win_condition in self.win_conditions.values():
 
@@ -97,10 +97,10 @@ class TicTacToe(BaseGameObject):
                 and condition_state[0] != " "
             ):
                 open_positions = sum(x == " " for x in self.positions)
-                if self.player_count[0].mark == condition_state[0]:
+                if self.player_marks[0].mark == condition_state[0]:
                     self.scores[0] = 10
                     self.scores[1] = -10  # - 10*open_positions
-                elif self.player_count[1].mark == condition_state[0]:
+                elif self.player_marks[1].mark == condition_state[0]:
                     self.scores[1] = 10
                     self.scores[0] = -10  # - 10*open_positions
                 return True
