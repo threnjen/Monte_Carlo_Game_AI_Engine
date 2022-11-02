@@ -120,6 +120,7 @@ class Tower(TileContainer):
             dump_tiles  # returns dump tiles dict to game state to pass to Bag.add_tiles
         )
 
+
 class Bag(TileContainer):
     """The bag is where we draw tiles from.  We can take tiles directly from the bag (to either refill
     the supply or to fill the factory displays).
@@ -559,7 +560,7 @@ class Star:
                 return points
         return 6
 
-    def check_contiguous(self, position: int) -> int :
+    def check_contiguous(self, position: int) -> int:
         """Checks both left and right contiguous from a given position.
         This is used to determine points when placing a tile.  Note this is
         really annoying because star positions are 1-6, not 0-5 (see the
@@ -911,7 +912,7 @@ class Player:
     max_tile_reserve = 4
     player_colors = ["brown", "white", "black", "gray"]
 
-    def __init__(self, player_ind: int, first_player: bool=False):
+    def __init__(self, player_ind: int, first_player: bool = False):
         """Player, which is a surprisingly simple object so far.  The idea is that most actions
         will be controled outside of the player, since we can't pass objects in.
 
@@ -931,7 +932,7 @@ class Player:
 
     # I'm not sure it's valuable to have the player turn occur here rather than the game, but
     # I could see it being useful for passing control around.
-    def change_player_supply(self, added_tiles: dict, method: str="add"):
+    def change_player_supply(self, added_tiles: dict, method: str = "add"):
         """Alters the amount of tiles in the player supply.
 
         Args:
@@ -944,7 +945,9 @@ class Player:
             elif method == "remove":
                 self.player_tile_supply[color] -= added_tiles[color]
 
-    def choose_tiles_to_reserve(self, tiles_to_choose: int=4, act_count: int=0) -> typing.Dict:
+    def choose_tiles_to_reserve(
+        self, tiles_to_choose: int = 4, act_count: int = 0
+    ) -> typing.Dict:
         """We can only reserve four tiles, so this picks them.
 
         Args:
@@ -992,6 +995,7 @@ class Game:
     """The game class will handle all aspects of the game.  All other objects will
     be instantiated in here.
     """
+
     tiles_per_factory = 4
     tiles_per_color = 22
     total_rounds = 6
@@ -1044,7 +1048,7 @@ class Game:
             self.bag.randomly_choose_tiles(Game.supply_max - supply_count, self.tower)
         )
 
-    def get_legal_actions(self, rollout: bool=False):
+    def get_legal_actions(self, rollout: bool = False):
         """Called before every player_count turn.  Depends on the board state and current player.
         This shouldn't alter the game state except at the beginning of a round"""
         curr_player = self.player_count[self.current_player_num]
@@ -1111,7 +1115,7 @@ class Game:
         self.factory.center.reset_first_player()
         self.save_state()
 
-    def update_game(self, action, player_num: int=-1):
+    def update_game_with_action(self, action, player_num: int = -1):
         """Updates the game with a player action.  Note that an action can be
         multiple types depending on the action.  This is probably really bad.
 
@@ -1209,14 +1213,14 @@ class Game:
                 for player in self.player_count.values():
                     player.player_score += -player.get_tile_count()
                 self.game_over = True
-                print(f"Game result: {print_dict(self.game_result())}")
+                print(f"Game result: {print_dict(self.get_game_scores())}")
             else:
                 self.start_round()
 
-    def is_game_over(self)-> bool:
+    def is_game_over(self) -> bool:
         return self.game_over
 
-    def game_result(self) -> typing.Dict[int, int]:
+    def get_game_scores(self) -> typing.Dict[int, int]:
         return {
             player_num: player.player_score
             for player_num, player in self.player_count.items()
@@ -1292,7 +1296,7 @@ class Game:
                 print(f"{value}:  enter {key}")
             action = self.prep_display()
             # action = int(input("Choose an action"))
-            self.update_game(action)
+            self.update_game_with_action(action)
 
 
 # %%

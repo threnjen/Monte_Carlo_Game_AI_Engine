@@ -1,7 +1,7 @@
 from cgi import test
 import numpy as np
 
-from games.game_class import Game
+from games.base_game_object import BaseGameObject
 
 
 class Player:
@@ -16,7 +16,7 @@ class Player:
         self.pieces[2] = [mark, mark, mark]
 
 
-class Otrio(Game):
+class Otrio(BaseGameObject):
     def __init__(self, player_count):
 
         self.board = np.zeros((3, 3, 3)).astype("int")
@@ -84,18 +84,23 @@ class Otrio(Game):
         else:
             self.current_player_num += 1
 
-    def get_legal_actions(self, policy=False):
+    def get_current_player(self):
+        return self.current_player_num
+
+    def get_available_actions(self, special_policy=False):
 
         current_player = self.current_player_num
         # print("Current player: "+str(current_player))
         invalid_player_levels = [
-            k for k, v in self.player_count[current_player].pieces.items() if len(v) == 0
+            k
+            for k, v in self.player_count[current_player].pieces.items()
+            if len(v) == 0
         ]
 
         legal_actions = np.argwhere(self.board == 0).tolist()
         legal_actions = [x for x in legal_actions if x[0] not in invalid_player_levels]
 
-        if policy == True:
+        if special_policy == True:
             for potential_kill_move in legal_actions:
 
                 for single_win_condition in self.win_position_ref[
@@ -109,7 +114,7 @@ class Otrio(Game):
                         # print("killing move for this player "+str(current_player))
                         # print(test_win_contents, potential_kill_move)
                         legal_actions = [potential_kill_move]
-                        return [legal_actions, self.current_player_num]
+                        return legal_actions
                     else:
                         pass
 
@@ -133,18 +138,18 @@ class Otrio(Game):
                                 # print("killing move for next player after "+str(current_player))
                                 # print(test_win_contents, potential_kill_move)
                                 legal_actions = [potential_kill_move]
-                                return [legal_actions, self.current_player_num]
+                                return legal_actions
                             else:
                                 # print("killing move for other player besides "+str(current_player))
                                 # print(test_win_contents, potential_kill_move)
-                                return [legal_actions, self.current_player_num]
+                                return legal_actions
 
                     else:
                         pass
 
-        return [legal_actions, self.current_player_num]
+        return legal_actions
 
-    def update_game(self, action, player):
+    def update_game_with_action(self, action, player):
 
         self._make_move(action, player)
 
@@ -157,7 +162,7 @@ class Otrio(Game):
         else:
             return self.game_over
 
-    def game_result(self):
+    def get_game_scores(self):
 
         return self.scores
 

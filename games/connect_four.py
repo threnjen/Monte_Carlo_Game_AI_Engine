@@ -18,7 +18,7 @@ class ConnectFour(BaseGameObject):
     win_cnt = 4
     win_points = 1
 
-    def __init__(self, player_count:int=2):
+    def __init__(self, player_count: int = 2):
         """player_count is unused but is generally required for other games, so we add it here.
 
         Args:
@@ -30,11 +30,12 @@ class ConnectFour(BaseGameObject):
         ]
         self.game_over = False
         self.current_player = 0
-        self.legal_actions = {}
-        self._state = ""
+        self.board = ""
         self.name = "Connect_Four"
         self.pieces_placed = 0
         self.allowed_columns = {0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 6}
+        self.set_win_dict()
+        self.set_arr_dict()
 
     def test_array(self, test_arr):
         """Simple helper function to determine if an array contains
@@ -54,7 +55,107 @@ class ConnectFour(BaseGameObject):
         Returns:
             bool: Whether the game is over.
         """
-        win_dict = {
+
+        # Row win
+
+        pot_wins = self.arr_dict[latest_piece]
+        for winkey in pot_wins:
+            if winkey in self.win_dict.keys():
+                win_arr = self.win_dict[winkey]
+                test_arr = [self.grid[item[0]][item[1]] for item in win_arr]
+                if all([item != " " for item in test_arr]):
+                    if self.test_array(test_arr):
+                        self.game_over = True
+                        self.player_count[self.current_player].score = self.win_points
+                        return True
+                    else:
+                        self.win_dict.pop(winkey)
+
+        legal_actions = self.get_available_actions()
+        if len(legal_actions) == 0:
+            return True
+
+        return False
+
+    def get_available_actions(self, special_policy=False) -> list:
+        """Checks which of the columns can have a piece added.
+
+        Returns:
+            list: dictionary of legal actions
+            int:  current player number
+        """
+
+        legal_actions = {}
+        act_cnt = 0
+        temp_dict = self.allowed_columns.copy()
+        for column in temp_dict.keys():
+            if not all([self.grid[i][column] != " " for i in range(self.rows)]):
+                legal_actions[act_cnt] = column
+                act_cnt += 1
+            else:
+                self.allowed_columns.pop(column)
+
+        if not legal_actions:
+            self.game_over = True
+        legal_actions = legal_actions
+        return list(legal_actions.keys())
+
+    def get_current_player(self) -> int:
+        return self.current_player
+
+    def update_game_with_action(self, action, player_num):
+        """Processes selected action
+
+        Args:
+            action (int): lookup index for the selected actions.  Ranges 0-6.
+        """
+        legal_actions = self.get_available_actions()
+        sel_action = legal_actions[action]
+        for row in range(self.rows):
+            latest_row = self.rows - row - 1
+            if self.grid[latest_row][sel_action] == " ":
+                self.grid[latest_row][sel_action] = self.player_count[player_num].mark
+                break
+        self.pieces_placed += 1
+        if self.pieces_placed > 2 * (self.win_cnt - 1):
+            self.check_game_over(f"{latest_row}{sel_action}")
+        self.current_player = (self.current_player + 1) % self.player_count
+        self.save_state()
+
+    def save_state(self):
+        """Saves the game state for printing"""
+        self.board = ""
+        for row in range(self.rows):
+            self.board += (
+                "|".join(self.grid[row][column] for column in range(self.columns))
+                + "\n"
+            )
+            self.board += "_" * (self.columns * 2 - 1) + "\n"
+
+    def draw_board(self):
+        print(self.board)
+
+    def get_game_scores(self):
+        """Returns the scores
+
+        Returns:
+            dict: player number: score
+        """
+        return {
+            player_num: player.score for player_num, player in self.player_count.items()
+        }
+
+    def play_game(self):
+        self.save_state()
+        while not self.game_over:
+            legal_actions = self.get_available_actions()
+            print(self.board)
+            print(legal_actions)
+            action = int(input("Choose an action"))
+            self.update_game_with_action(action, self.current_player)
+
+    def set_win_dict(self):
+        self.win_dict = {
             "00row": [[0, 0], [0, 1], [0, 2], [0, 3]],
             "01row": [[0, 1], [0, 2], [0, 3], [0, 4]],
             "02row": [[0, 2], [0, 3], [0, 4], [0, 5]],
@@ -126,7 +227,8 @@ class ConnectFour(BaseGameObject):
             "53diag ": [[5, 3], [4, 4], [3, 5], [2, 6]],
         }
 
-        arr_dict = {
+    def set_arr_dict(self):
+        self.arr_dict = {
             "00": ["00row", "00col", "00diag"],
             "01": ["00row", "01row", "01col", "01diag"],
             "02": ["00row", "01row", "02row", "02col", "02diag"],
@@ -340,98 +442,3 @@ class ConnectFour(BaseGameObject):
             "55": ["52row", "53row", "25col", "22diag"],
             "56": ["53row", "26col", "23diag"],
         }
-
-        # Row win
-
-        pot_wins = arr_dict[latest_piece]
-        for winkey in pot_wins:
-            if winkey in win_dict.keys():
-                win_arr = win_dict[winkey]
-                test_arr = [self.grid[item[0]][item[1]] for item in win_arr]
-                if all([item != " " for item in test_arr]):
-                    if self.test_array(test_arr):
-                        self.game_over = True
-                        self.player_count[self.current_player].score = self.win_points
-                        return True
-                    else:
-                        win_dict.pop(winkey)
-
-        if not self.get_legal_actions()[0]:
-            return True
-
-        return False
-
-    def get_legal_actions(self):
-        """Checks which of the columns can have a piece added.
-
-        Returns:
-            list: dictionary of legal actions
-            int:  current player number
-        """
-
-        legal_actions = {}
-        act_cnt = 0
-        temp_dict = self.allowed_columns.copy()
-        for column in temp_dict.keys():
-            if not all([self.grid[i][column] != " " for i in range(self.rows)]):
-                legal_actions[act_cnt] = column
-                act_cnt += 1
-            else:
-                self.allowed_columns.pop(column)
-
-        if not legal_actions:
-            self.game_over = True
-        self.legal_actions = legal_actions
-        return list(legal_actions.keys()), self.current_player
-
-    def update_game(self, action, player_num):
-        """Processes selected action
-
-        Args:
-            action (int): lookup index for the selected actions.  Ranges 0-6.
-        """
-        sel_action = self.legal_actions[action]
-        for row in range(self.rows):
-            latest_row = self.rows - row - 1
-            if self.grid[latest_row][sel_action] == " ":
-                self.grid[latest_row][sel_action] = self.player_count[player_num].mark
-                break
-        self.pieces_placed += 1
-        if self.pieces_placed > 2 * (self.win_cnt - 1):
-            self.check_game_over(f"{latest_row}{sel_action}")
-        self.current_player = (self.current_player + 1) % self.player_count
-        self.save_state()
-
-    def save_state(self):
-        """Saves the game state for printing"""
-        self._state = ""
-        for row in range(self.rows):
-            self._state += (
-                "|".join(self.grid[row][column] for column in range(self.columns))
-                + "\n"
-            )
-            self._state += "_" * (self.columns * 2 - 1) + "\n"
-
-    def game_result(self):
-        """Returns the scores
-
-        Returns:
-            dict: player number: score
-        """
-        return {
-            player_num: player.score for player_num, player in self.player_count.items()
-        }
-
-    def play_game(self):
-        self.save_state()
-        while not self.game_over:
-            self.get_legal_actions()
-            print(self._state)
-            print(self.legal_actions)
-            action = int(input("Choose an action"))
-            self.update_game(action, self.current_player)
-
-
-test = Game(2)
-
-test.play_game()
