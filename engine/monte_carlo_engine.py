@@ -50,8 +50,8 @@ class MonteCarloEngine:
             selected_node (object instance): MonteCarloNode object instance
         """
         for i in range(num_sims):
-
-            print(f"\nSimulation {i}")
+            if self.verbose:
+                print(f"\nSimulation {i}")
 
             self.game_copy = self._copy_game_state_for_sim(game)
 
@@ -159,8 +159,6 @@ class MonteCarloEngine:
         Query the game state for all of the legal actions, and store that in a list
         As we pop items off the list and apply them to the
         """
-        if self.verbose:
-            print("Expansion")
 
         actions_to_pop = self.game_copy.get_available_actions()
         current_player = self.game_copy.get_current_player()
@@ -194,7 +192,7 @@ class MonteCarloEngine:
 
         while not self.game_copy.is_game_over():
 
-            legal_actions = self.game_copy.get_available_actions()
+            legal_actions = self.game_copy.get_available_actions(special_policy=True)
             current_player = self.game_copy.get_current_player()
 
             random_action = self._choose_random_action(
@@ -213,9 +211,8 @@ class MonteCarloEngine:
 
     def _update_node(self):
         """_summary_"""
-        owner = self.node.player_owner
         self.node.number_of_visits += 1  # updates self with number of visits
-        self.node.total_score += self.scores[owner]
+        self.node.total_score += self.scores[self.node.player_owner]
 
     def _backpropogate_node_scores(self, node: MonteCarloNode):
         """

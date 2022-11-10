@@ -22,7 +22,7 @@ class Otrio(BaseGameObject):
         self.board = np.zeros((3, 3, 3)).astype("int")
         self.game_over = False
         self.state = ""
-        self.draw_board()
+        # self.draw_board()
         self.scores = {n + 1: 0 for n in range(player_count)}
         self.current_player_num = 1
         self.turn = 0
@@ -46,14 +46,14 @@ class Otrio(BaseGameObject):
         position = tuple(action)
         player_marker = self.player_count[current_player_num].pieces[action[0]].pop()
         self.board[position] = player_marker
-        self.draw_board()
+        # self.draw_board()
 
         # call game over conditions here
 
         remove_conditions = []
         lookup_index = str(action)
 
-        for single_win_condition in self.win_position_ref[lookup_index]:
+        for single_win_condition in self.win_conditions[lookup_index]:
 
             test_indices = [tuple(x) for x in single_win_condition]
             test_win_contents = [self.board[i] for i in test_indices]
@@ -77,7 +77,7 @@ class Otrio(BaseGameObject):
 
         remove_conditions = list(set(remove_conditions))
         for item in remove_conditions:
-            del self.win_position_ref[item]
+            del self.win_conditions[item]
 
         if self.current_player_num == max(self.scores.keys()):
             self.current_player_num = 1
@@ -100,10 +100,12 @@ class Otrio(BaseGameObject):
         legal_actions = np.argwhere(self.board == 0).tolist()
         legal_actions = [x for x in legal_actions if x[0] not in invalid_player_levels]
 
-        if special_policy == True:
+        if special_policy:
             for potential_kill_move in legal_actions:
+                print(potential_kill_move)
+                continue
 
-                for single_win_condition in self.win_position_ref[
+                for single_win_condition in self.win_conditions[
                     str(potential_kill_move)
                 ]:
 
@@ -111,16 +113,14 @@ class Otrio(BaseGameObject):
                     test_win_contents = [self.board[i] for i in test_indices]
 
                     if test_win_contents.count(current_player) == 2:
-                        # print("killing move for this player "+str(current_player))
-                        # print(test_win_contents, potential_kill_move)
-                        legal_actions = [potential_kill_move]
-                        return legal_actions
-                    else:
-                        pass
+                        print("killing move for this player " + str(current_player))
+                        print(test_win_contents, potential_kill_move)
+                        return [potential_kill_move]
 
             for potential_kill_move in legal_actions:
+                continue
 
-                for single_win_condition in self.win_position_ref[
+                for single_win_condition in self.win_conditions[
                     str(potential_kill_move)
                 ]:
 
@@ -155,7 +155,7 @@ class Otrio(BaseGameObject):
 
     def is_game_over(self):
 
-        avail_actions = self.get_legal_actions()[0]
+        avail_actions = self.get_available_actions()
         if len(avail_actions) == 0:
             self.game_over = True
             return self.game_over
@@ -192,7 +192,7 @@ class Otrio(BaseGameObject):
         return self.scores
 
     def _create_win_position_ref(self):
-        self.win_position_ref = {
+        self.win_conditions = {
             "[0, 0, 0]": [
                 [[0, 0, 0], [0, 0, 1], [0, 0, 2]],
                 [[0, 0, 0], [0, 1, 0], [0, 2, 0]],

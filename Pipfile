@@ -7,10 +7,12 @@ name = "pypi"
 pandas = "*"
 numpy = "*"
 pysimplegui = "*"
-black = "*"
 
 [dev-packages]
 pytest = "*"
+icecream = "*"
+black = "*"
+ipykernel = "*"
 
 [requires]
 python_version = "3.10"

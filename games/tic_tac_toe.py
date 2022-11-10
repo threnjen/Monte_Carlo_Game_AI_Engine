@@ -4,19 +4,6 @@ from pandas import array
 from games.base_game_object import BaseGameObject
 
 
-class Player:
-    """Player class.  Not much here"""
-
-    def __init__(self, mark, isbot=False):
-        """Player class
-
-        Args:
-            mark (str): X or O
-            isbot (bool, optional): Whether this is a bot. Defaults to False.
-        """
-        self.mark = mark
-
-
 class TicTacToe(BaseGameObject):
     """Tic tac toe game"""
 
@@ -26,12 +13,11 @@ class TicTacToe(BaseGameObject):
         """
         self.positions = [" "] * 9
         # self.legal_actions = {}
-        self.player_marks = {0: Player("0"), 1: Player("1")}
+        self.player_marks = {0: "X", 1: "O"}
         self.scores = {0: 0, 1: 0}
         self.game_over = False
         self.current_player_num = 0
         self.board = ""
-        self.draw_board()
 
         self.win_conditions = {
             "top_row": [0, 1, 2],
@@ -59,26 +45,52 @@ class TicTacToe(BaseGameObject):
 
     def make_move(self, pos: int, current_player_num: int):
         """Makes a move on the board and draws it"""
-        self.positions[pos] = self.player_marks[current_player_num].mark
-        self.draw_board()
+        self.positions[pos] = self.player_marks[current_player_num]
+        # self.draw_board()
         self.current_player_num = (self.current_player_num + 1) % self.player_count
 
     def get_current_player(self) -> int:
         return self.current_player_num
 
-    def get_available_actions(self, special_policy=False) -> list:
+    def get_available_actions(self, special_policy: bool = False) -> list:
         """Gets available moves in a dictionary.
         The bot will only ever need the keys; values should be unknown
         """
-        legal_actions = []
-        for pos in range(len(self.positions)):
-            # print(self.positions)
-            if self.positions[pos] == " ":
-                legal_actions.append(pos)
+        legal_actions = [
+            pos for pos in range(len(self.positions)) if self.positions[pos] == " "
+        ]
+        # print(f"Original legal actions: {legal_actions}")
+
+        if special_policy:
+            special_policy_actions = []
+            current_player = self.get_current_player()
+            for win_condition in self.win_conditions.values():
+                condition_state = self.get_condition_state(win_condition)
+
+                if (
+                    " " in condition_state
+                    and condition_state.count(self.player_marks[current_player]) == 2
+                ):
+                    win_condition = [
+                        x for x in win_condition if self.positions[x] == " "
+                    ]
+                    special_policy_actions += win_condition
+
+            special_policy_actions = list(set(special_policy_actions))
+            if len(special_policy_actions) > 0:
+
+                # print(
+                #    f"Available win positions for {self.player_marks[current_player]}, Special policy legal actions: {special_policy_actions}"
+                # )
+                return special_policy_actions
+
         return legal_actions
 
     def update_game_with_action(self, action, player):
         self.make_move(action, player)
+
+    def get_condition_state(self, win_condition):
+        return [self.positions[num] for num in win_condition]
 
     def is_game_over(self):
         """Checks for the eight win conditions, and whether there are moves left.
@@ -86,24 +98,24 @@ class TicTacToe(BaseGameObject):
         Returns:
             bool: Over or not
         """
-        avail_actions = self.get_available_actions()
 
         for win_condition in self.win_conditions.values():
-
-            condition_state = [self.positions[num] for num in win_condition]
+            condition_state = self.get_condition_state(win_condition)
 
             if (
                 condition_state.count(condition_state[0]) == len(condition_state)
                 and condition_state[0] != " "
             ):
                 open_positions = sum(x == " " for x in self.positions)
-                if self.player_marks[0].mark == condition_state[0]:
+                if self.player_marks[0] == condition_state[0]:
                     self.scores[0] = 10
                     self.scores[1] = -10  # - 10*open_positions
-                elif self.player_marks[1].mark == condition_state[0]:
+                elif self.player_marks[1] == condition_state[0]:
                     self.scores[1] = 10
                     self.scores[0] = -10  # - 10*open_positions
                 return True
+
+        avail_actions = self.get_available_actions()
 
         if len(avail_actions) == 0:
 
@@ -120,6 +132,6 @@ class TicTacToe(BaseGameObject):
             self.make_move(pos, self.current_player_num)
 
         for player_num in self.scores.keys():
-            print(f"{self.player_count[player_num].mark}:  {self.scores[player_num]}")
+            print(f"{self.player_count[player_num]}:  {self.scores[player_num]}")
 
         return self.scores
