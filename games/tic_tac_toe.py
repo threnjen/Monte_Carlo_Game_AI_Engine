@@ -108,16 +108,18 @@ class TicTacToe(BaseGameObject):
             ):
                 open_positions = sum(x == " " for x in self.positions)
                 if self.player_marks[0] == condition_state[0]:
-                    self.scores[0] = 10
-                    self.scores[1] = -10  # - 10*open_positions
+                    self.scores[0] = 1
+                    self.scores[1] = -1  # - 10*open_positions
                 elif self.player_marks[1] == condition_state[0]:
-                    self.scores[1] = 10
-                    self.scores[0] = -10  # - 10*open_positions
+                    self.scores[1] = 1
+                    self.scores[0] = -1  # - 10*open_positions
                 return True
 
         avail_actions = self.get_available_actions()
 
         if len(avail_actions) == 0:
+            self.scores[1] = 0
+            self.scores[0] = 0
 
             return True
         else:
