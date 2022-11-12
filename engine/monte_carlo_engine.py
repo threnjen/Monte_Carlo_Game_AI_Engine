@@ -70,7 +70,7 @@ class MonteCarloEngine:
 
                 self._backpropogate_node_scores(rollout_node)
 
-        selected_node = self._get_best_move_child_node(incoming_node)
+        selected_node = self._get_best_move_child_node(incoming_node, real_move=True)
 
         return selected_node
 
@@ -126,9 +126,13 @@ class MonteCarloEngine:
         else:
             return node
 
-    def _get_best_move_child_node(self, current_node: MonteCarloNode) -> MonteCarloNode:
+    def _get_best_move_child_node(
+        self, current_node: MonteCarloNode, real_move=False
+    ) -> MonteCarloNode:
         """Calls BEST_CHILD for the node we started on"""
-        best_child_node = current_node.best_child(print_weights=True)
+        best_child_node = current_node.best_child(
+            real_move=real_move, print_weights=True
+        )
         return best_child_node
 
     def _move_to_node(self, node: MonteCarloNode, player: int) -> MonteCarloNode:

@@ -25,7 +25,7 @@ class MonteCarloNode:
         self.depth = depth  # depth of the node
         self.player_owner = player  # the player who owns/plays this node layer. Should be same player at any given depth.
 
-    def best_child(self, c_param=1.414, print_weights=False):
+    def best_child(self, c_param=1.414, real_move=False, print_weights=False):
         """
         Evaluates all available children for highest scoring child node
         first param is exploitation and second is exploration
@@ -42,9 +42,12 @@ class MonteCarloNode:
         for c in self.children:
             try:
                 # get scores of all child nodes
-                score = (c.total_score / c.number_of_visits) + c_param * (
-                    np.sqrt(np.log(self.number_of_visits) / c.number_of_visits)
-                )
+                if real_move:
+                    score = c.number_of_visits
+                else:
+                    score = (c.total_score / c.number_of_visits) + c_param * (
+                        np.sqrt(np.log(self.number_of_visits) / c.number_of_visits)
+                    )
                 choices_weights.append(score)
             except:
                 # if calculation runs into a divide by 0 error because child has never been visted

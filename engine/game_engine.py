@@ -178,8 +178,8 @@ class GameEngine:
                         np.ceil(sims / (self.turn))
                     )  # simulation decay to absolute simulations/turn each round
 
-        # if self.verbose:
-        self.draw_board()
+        if self.verbose:
+            self.draw_board()
 
 
 class GameMultiprocessor:
