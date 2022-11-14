@@ -1,7 +1,10 @@
 import sys
-from engine.game_engine import GameEngine, GameMultiprocessor
+from engine.game_engine import GameEngine
 import argparse
 from icecream import install
+import sys
+from datetime import datetime
+
 
 install()
 
@@ -55,6 +58,7 @@ if __name__ == "__main__":
         f"Initializing game: {game_name}, # sims: {sims}, # player_count: {player_count}, verbose: {verbose}, num_games: {num_games}, decay: {decay}"
     )
 
-    GameMultiprocessor(
-        game_name, sims, player_count, verbose, num_games, decay
-    ).playout_simulations()
+    timestamp = datetime.now().strftime("%m%d%Y_%H%M%S")
+    sys.stdout = open(f"logs/{game_name}_{sims}_{timestamp}.log", "w")
+
+    GameEngine(game_name, sims, player_count, verbose, decay).play_game_by_turns(sims)
