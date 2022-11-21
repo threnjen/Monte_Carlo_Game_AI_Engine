@@ -45,14 +45,21 @@ if __name__ == "__main__":
     """
 
     # Parse the arguments
-    args = parseArguments()
+    # args = parseArguments()
 
-    game_name = args.__dict__["game"]
-    sims = args.__dict__["s"]
-    player_count = args.__dict__["p"]
-    verbose = args.__dict__["v"]
-    num_games = args.__dict__["g"]
-    decay = args.__dict__["d"]
+    # game_name = args.__dict__["game"]
+    # sims = args.__dict__["s"]
+    # player_count = args.__dict__["p"]
+    # verbose = args.__dict__["v"]
+    # num_games = args.__dict__["g"]
+    # decay = args.__dict__["d"]
+
+    game_name = 'tic_tac_toe'
+    sims = 500
+    player_count = 2
+    verbose = True
+    num_games = 1
+    decay = None
 
     print(
         f"Initializing game: {game_name}, # sims: {sims}, # player_count: {player_count}, verbose: {verbose}, num_games: {num_games}, decay: {decay}"

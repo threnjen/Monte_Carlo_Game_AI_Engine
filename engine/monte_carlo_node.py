@@ -1,9 +1,10 @@
+from __future__ import annotations
 import numpy as np
 
 
 class MonteCarloNode:
     def __init__(
-        self, parent=None, node_action=None, label="Root Node", depth=0, player=None
+        self, parent: MonteCarloNode =None, node_action=None, label="Root Node", depth=0, player=None
     ):  # , legal_actions=None
         """
         Initializes monte carlo node
@@ -18,14 +19,29 @@ class MonteCarloNode:
 
         self.parent = parent  # the node that spawned this node. Root is None.
         self.node_action = node_action  # the action being taken at this node
-        self.children = []  # the storage for the children of this node
+        self.children: list[MonteCarloNode] = []  # the storage for the children of this node
         self.number_of_visits = 0  # number of times current node is visited
         self.total_score = 0  # total score for this node ONLY for its owner
         self.label = label  # label for the node, is used in GUI reporting
         self.depth = depth  # depth of the node
         self.player_owner = player  # the player who owns/plays this node layer. Should be same player at any given depth.
 
-    def best_child(self, explore_param=1.414, real_move=False):
+    def get_children(self) -> list[MonteCarloNode]:
+        return self.children
+
+    def get_action(self):
+        return self.node_action
+
+    def get_parents(self):
+        return self.parent
+
+    def get_ancestors(self) -> set[MonteCarloNode]:
+        ancestor_list: list[MonteCarloNode] = [self]
+        if self.parent is not None:
+            ancestor_list += self.parent.get_ancestors()
+        return set(ancestor_list)
+
+    def best_child(self, explore_param=1.414, real_move=False) -> MonteCarloNode:
         """
         Evaluates all available children for highest scoring child node
         first param is exploitation and second is exploration
@@ -38,7 +54,7 @@ class MonteCarloNode:
         """
         choices_weights = []  # makes a list to store the score calculations
         explore_param = 5
-        for child in self.children:
+        for child in self.get_children():
             try:
                 # get scores of all child nodes
                 if real_move:
@@ -55,6 +71,6 @@ class MonteCarloNode:
                 score = 1000
                 choices_weights.append(1000)
 
-        return self.children[
+        return self.get_children()[
             np.argmax(choices_weights)
         ]  # gets index of max score and sends back identity of child

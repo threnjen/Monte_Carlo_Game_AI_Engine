@@ -127,18 +127,18 @@ class GameEngine:
                 f"\nTurn {self.turn}\nGame gets {sims_this_turn} simulations for this turn. Player {current_player}'s turn."
             )
 
-            current_node, deep_game_log = self.montecarlo.sim_turn_select_best_node(
+            current_node, chosen_action, deep_game_log = self.montecarlo.sim_turn_select_best_node(
                 num_sims=sims_this_turn,
                 game=self.game,
                 node_player=current_player,
-                incoming_node=current_node,
+                parent=current_node,
             )
 
             self.deep_game_log += deep_game_log
 
-            self.update_game_with_action(current_node.node_action, current_player)
+            self.update_game_with_action(chosen_action, current_player)
             self._update_turn_log(
-                current_node.node_action, current_player, sims_this_turn
+                chosen_action, current_player, sims_this_turn
             )
 
             sims = self.update_sims(sims)
