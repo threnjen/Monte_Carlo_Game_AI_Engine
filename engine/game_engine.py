@@ -20,7 +20,7 @@ from itertools import repeat
 class GameEngine:
     def __init__(
         self,
-        game,
+        game_name,
         sims=100,
         player_count: int = 2,
         verbose: bool = False,
@@ -28,18 +28,19 @@ class GameEngine:
     ):
         self.number_of_sims = sims
         self.verbose = verbose
-        self.game_name = GAMES_MAP[game]
+        self.game_name = GAMES_MAP[game_name]
         self.player_count = player_count
-        self.game = self.load_game_engine(game)
+        self.game = self.load_game_engine(game_name)
         self.turn = 0  # Set the initial turn as 0
         self.decay = decay
         self.game_log = []
         self.montecarlo = MonteCarloEngine(
             start_player=self.get_current_player(), verbose=self.verbose
         )  # initialize the monte carlo engine
+        self.deep_game_log = []
 
-    def load_game_engine(self, game: str) -> BaseGameObject:
-        game_module = importlib.import_module(f".{game}", package="games")
+    def load_game_engine(self, game_name: str) -> BaseGameObject:
+        game_module = importlib.import_module(f".{game_name}", package="games")
         game_instance = getattr(game_module, self.game_name)
         return game_instance(self.player_count)
 
@@ -99,7 +100,7 @@ class GameEngine:
         """
         return self.game.draw_board()
 
-    def _update_game_log(self, action_to_record, current_player, sims_this_turn):
+    def _update_turn_log(self, action_to_record, current_player, sims_this_turn):
         self.turn_log["Turn"] = self.turn
         # self.turn_log["Simulations"] = sims_this_turn
         self.turn_log["Player"] = current_player
@@ -108,32 +109,11 @@ class GameEngine:
         # self.turn_log["Score"] = scores[current_player]
         self.game_log.append(self.turn_log)
 
-    def _get_best_move_node(
-        self, sims_this_turn: int, current_player: int, incoming_node: MonteCarloNode
-    ) -> MonteCarloNode:
-        return self.montecarlo.sim_turn_select_best_node(
-            num_sims=sims_this_turn,
-            game=self.game,
-            node_player=current_player,
-            incoming_node=incoming_node,
-        )
-
-    def _get_best_node_action(self, current_node: MonteCarloNode) -> str:
-        node_action = self.montecarlo.get_node_action(
-            current_node
-        )  # gets action of the returned node
-        if self.verbose:
-            print("Move: " + str(node_action))
-        return node_action
-
     def play_game_by_turns(self, sims) -> None:
         """
         Intializes Monte Carlo engine
         Will play a single game until game over condition is met
         """
-
-        if self.verbose:
-            print(f"player_count: {self.player_count}, Sims: {sims}")
 
         current_node = self.montecarlo.root  # set first node as monte carlo root
 
@@ -143,43 +123,51 @@ class GameEngine:
             self.turn += 1  # increments the game turn
             current_player = self.get_current_player()
 
-            if self.verbose:
-                print(
-                    f"\nTurn {self.turn}\nGame gets {sims_this_turn} simulations for this turn. Player {current_player}'s turn."
-                )
+            print(
+                f"\nTurn {self.turn}\nGame gets {sims_this_turn} simulations for this turn. Player {current_player}'s turn."
+            )
 
-            if self.verbose:
-                try:
-                    print(
-                        f"Entry state {current_node.depth}, {self.montecarlo.get_node_action()}, {current_node.player_owner}, {current_node}"
-                    )
-                except:
-                    pass
-
-            current_node = self._get_best_move_node(
-                sims_this_turn=sims_this_turn,
-                current_player=current_player,
+            current_node, deep_game_log = self.montecarlo.sim_turn_select_best_node(
+                num_sims=sims_this_turn,
+                game=self.game,
+                node_player=current_player,
                 incoming_node=current_node,
             )
 
-            action_to_record = self._get_best_node_action(current_node)
-            self.update_game_with_action(action_to_record, current_player)
-            self._update_game_log(action_to_record, current_player, sims_this_turn)
+            self.deep_game_log += deep_game_log
 
-            if self.decay:
-                if self.decay == "halving":
-                    sims = int(
-                        np.ceil(sims / 2)
-                    )  # simulation decay halves # sims each round
-                if self.decay == "90th":
-                    sims = int(np.ceil(sims * 0.9))  # simulation decay of .9 each round
-                if self.decay == "div_by_turn":
-                    sims = int(
-                        np.ceil(sims / (self.turn))
-                    )  # simulation decay to absolute simulations/turn each round
+            self.update_game_with_action(current_node.node_action, current_player)
+            self._update_turn_log(
+                current_node.node_action, current_player, sims_this_turn
+            )
 
-        if self.verbose:
+            sims = self.update_sims(sims)
+
             self.draw_board()
+
+        print(self.get_game_scores())
+        game_log = pd.DataFrame(self.deep_game_log)
+
+        timestamp = datetime.now().strftime("%m%d%Y_%H%M%S")
+        game_log.to_csv(
+            f"logs/{self.game_name}_deep_log_{self.number_of_sims}_sims_games_{timestamp}.csv",
+            index=False,
+        )
+
+    def update_sims(self, sims):
+        sims = sims
+        if self.decay:
+            if self.decay == "halving":
+                return int(
+                    np.ceil(sims / 2)
+                )  # simulation decay halves # sims each round
+            if self.decay == "90th":
+                return int(np.ceil(sims * 0.9))  # simulation decay of .9 each round
+            if self.decay == "div_by_turn":
+                return int(
+                    np.ceil(self.number_of_sims / (self.turn))
+                )  # simulation decay to absolute simulations/turn each round
+        return sims
 
 
 class GameMultiprocessor:
@@ -232,7 +220,7 @@ class GameMultiprocessor:
         master_game_log[f"game_time"] = time_per_game
 
         master_game_log.to_csv(
-            f"logs/{self.game_name}_log_{self.sims}_sims_{self.num_games}_games_{self.decay}_{self.timestamp}.csv",
+            f"logs/{self.game_name}_turn_log_{self.sims}_sims_{self.num_games}_games_{self.decay}_{self.timestamp}.csv",
             index=False,
         )
 
@@ -248,7 +236,7 @@ class GameMultiprocessor:
         for games in range(values, end):
             block_games[str(games)] = {}
             game = GameEngine(
-                game=self.game_name,
+                game_name=self.game_name,
                 sims=self.sims,
                 player_count=self.player_count,
                 verbose=self.verbose,
@@ -259,5 +247,4 @@ class GameMultiprocessor:
             block_games[str(games)]["scores"] = game.get_game_scores()
             block_games[str(games)]["turn_log"] = game.game_log
 
-        # print(f"Processes file block: {end} of {self.end}")
         return block_games

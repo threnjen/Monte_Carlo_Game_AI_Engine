@@ -58,8 +58,8 @@ class ConnectFour(BaseGameObject):
 
         # Row win
 
-        pot_wins = self.arr_dict[latest_piece]
-        for winkey in pot_wins:
+        potential_wins = self.arr_dict[latest_piece]
+        for winkey in potential_wins:
             if winkey in self.win_dict.keys():
                 win_arr = self.win_dict[winkey]
                 test_arr = [self.grid[item[0]][item[1]] for item in win_arr]
@@ -85,20 +85,18 @@ class ConnectFour(BaseGameObject):
             int:  current player number
         """
 
-        legal_actions = {}
-        act_cnt = 0
-        temp_dict = self.allowed_columns.copy()
-        for column in temp_dict.keys():
+        legal_actions = []
+        potential_columns = list(self.allowed_columns.keys())
+        for column in potential_columns:
             if not all([self.grid[i][column] != " " for i in range(self.rows)]):
-                legal_actions[act_cnt] = column
-                act_cnt += 1
+                legal_actions.append(column)
             else:
                 self.allowed_columns.pop(column)
-
         if not legal_actions:
             self.game_over = True
-        legal_actions = legal_actions
-        return list(legal_actions.keys())
+            return legal_actions
+
+        return legal_actions
 
     def get_current_player(self) -> int:
         return self.current_player
@@ -109,17 +107,15 @@ class ConnectFour(BaseGameObject):
         Args:
             action (int): lookup index for the selected actions.  Ranges 0-6.
         """
-        legal_actions = self.get_available_actions()
-        sel_action = legal_actions[action]
         for row in range(self.rows):
             latest_row = self.rows - row - 1
-            if self.grid[latest_row][sel_action] == " ":
-                self.grid[latest_row][sel_action] = self.player_count[player_num].mark
+            if self.grid[latest_row][action] == " ":
+                self.grid[latest_row][action] = self.player_count[player_num].mark
                 break
         self.pieces_placed += 1
         if self.pieces_placed > 2 * (self.win_cnt - 1):
-            self.check_game_over(f"{latest_row}{sel_action}")
-        self.current_player = (self.current_player + 1) % self.player_count
+            self.check_game_over(f"{latest_row}{action}")
+        self.current_player = (self.current_player + 1) % len(self.player_count)
         self.save_state()
 
     def save_state(self):
