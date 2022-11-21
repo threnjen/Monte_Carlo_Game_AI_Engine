@@ -48,8 +48,8 @@ class MonteCarloEngine:
         num_sims: int,
         game: BaseGameObject,
         node_player: int,
-        incoming_node: MonteCarloNode,
-    ) -> MonteCarloNode:
+        parent: MonteCarloNode,
+    ) -> tuple[MonteCarloNode, list[str]]:
         """
         Receives a specific game state from which to make a move
 
@@ -72,23 +72,23 @@ class MonteCarloEngine:
         """
         self.turn_player = node_player
 
-        def weighted_score(incoming_node: MonteCarloNode, child: MonteCarloNode):
+        def weighted_score(parent: MonteCarloNode, child: MonteCarloNode):
             try:
                 score = (child.total_score / child.number_of_visits) + 1.414 * (
                     np.sqrt(
-                        np.log(incoming_node.number_of_visits) / child.number_of_visits
+                        np.log(parent.number_of_visits) / child.number_of_visits
                     )
                 )
                 return round(score, 5)
             except:
                 return 1000
 
-        def explore_term(incoming_node: MonteCarloNode, child: MonteCarloNode):
+        def explore_term(parent: MonteCarloNode, child: MonteCarloNode):
             try:
                 return round(
                     1.414
                     * np.sqrt(
-                        np.log(incoming_node.number_of_visits) / child.number_of_visits
+                        np.log(parent.number_of_visits) / child.number_of_visits
                     ),
                     5,
                 )
@@ -98,7 +98,7 @@ class MonteCarloEngine:
         deep_game_log = []
 
         print(
-            f"Incoming node: {id(incoming_node)} Visits: {incoming_node.number_of_visits} Score: {incoming_node.total_score} "
+            f"Incoming node: {id(parent)} Visits: {parent.number_of_visits} Score: {parent.total_score} "
         )
         nodes = [
             {
@@ -106,22 +106,22 @@ class MonteCarloEngine:
                     child.number_of_visits,
                     child.total_score,
                     round(child.total_score / child.number_of_visits, 4),
-                    weighted_score(incoming_node, child),
-                    explore_term(incoming_node, child),
+                    weighted_score(parent, child),
+                    explore_term(parent, child),
                 ]
             }
-            for child in incoming_node.children
+            for child in parent.get_children()
         ]
         print(f"{nodes}\n")
 
         for i in range(num_sims):
 
-            self.update_action_log_start(incoming_node, i, node_player)
-            self.update_action_log_node(incoming_node, "Starting")
+            self.update_action_log_start(parent, i, node_player)
+            self.update_action_log_node(parent, "Starting")
 
             self.game_copy = self._copy_game_state_for_sim(game)
 
-            rollout_node = self._select_rollout_node(incoming_node, node_player)
+            rollout_node = self._select_rollout_node(parent, node_player)
 
             self.update_action_log_node(rollout_node, "Rollout")
 
@@ -137,7 +137,7 @@ class MonteCarloEngine:
             deep_game_log.append(self.turn_action_log)
             del self.turn_action_log
 
-        selected_node = incoming_node.best_child(real_move=True)
+        selected_child = parent.best_child(real_move=True)
 
         nodes = [
             {
@@ -145,20 +145,20 @@ class MonteCarloEngine:
                     child.number_of_visits,
                     child.total_score,
                     round(child.total_score / child.number_of_visits, 4),
-                    weighted_score(incoming_node, child),
-                    explore_term(incoming_node, child),
+                    weighted_score(parent, child),
+                    explore_term(parent, child),
                 ]
             }
-            for child in incoming_node.children
+            for child in parent.get_children()
         ]
         print("End node scores after simulations")
         print(nodes)
         print(
-            f"Chosen Node: {id(selected_node)} Visits: {selected_node.number_of_visits} Score: {selected_node.total_score} "
+            f"Chosen Node: {id(selected_child)} Visits: {selected_child.number_of_visits} Score: {selected_child.total_score} "
         )
-        print(f"Action taken: {node_player}, {selected_node.node_action}")
+        print(f"Action taken: {node_player}, {selected_child.get_action()}")
 
-        return selected_node, deep_game_log
+        return selected_child, selected_child.get_action(), deep_game_log
 
     def _copy_game_state_for_sim(self, game: BaseGameObject) -> BaseGameObject:
         """copy the game state to test rollout"""
@@ -211,11 +211,11 @@ class MonteCarloEngine:
             return node
 
     def _move_to_best_child_node(
-        self, node: MonteCarloNode, player: int
+        self, parent: MonteCarloNode, player: int
     ) -> MonteCarloNode:
-        best_node = node.best_child()
-        self.game_copy.update_game_with_action(best_node.node_action, player)
-        return best_node
+        best_child = parent.best_child()
+        self.game_copy.update_game_with_action(best_child.node_action, player)
+        return best_child
 
     def _choose_random_action(self, potential_actions: list, type=None):
         if type == "expansion":
@@ -230,7 +230,7 @@ class MonteCarloEngine:
 
         return action
 
-    def _expand_new_nodes(self, node: MonteCarloNode):
+    def _expand_new_nodes(self, parent_node: MonteCarloNode):
         """
         From the present state we _expand_new_nodes the nodes to the next possible states
         We take in a node with no children and we will _expand_new_nodes it to all children
@@ -244,25 +244,20 @@ class MonteCarloEngine:
         actions_to_pop = self.game_copy.get_available_actions()
         current_player = self.game_copy.get_current_player()
 
-        while len(actions_to_pop) != 0:
-            popped_action = self._choose_random_action(
-                potential_actions=actions_to_pop, type="expansion"
-            )
-            actions_to_pop.remove(popped_action)  # pops off an untried action
-
+        for action in actions_to_pop:
             # make the child node for the popped action:
             child_node = MonteCarloNode(
-                parent=node,
-                node_action=popped_action,
-                label=f"Action {popped_action}",
-                depth=(node.depth + 1),
+                parent=parent_node,
+                node_action=action,
+                label=f"Action {action}",
+                depth=(parent_node.depth + 1),
                 player=current_player,
             )
 
-            node.children.append(
+            parent_node.children.append(
                 child_node
             )  # appends this new child node to the current node's list of children
-        return node
+        return parent_node
 
     def _rollout_from_selected_node(self):
         """
@@ -287,7 +282,7 @@ class MonteCarloEngine:
             )  # takes action just pulled at random
             rollout += 1
 
-    def _backpropogate_node_scores(self, node: MonteCarloNode):
+    def _backpropogate_node_scores(self, child_node: MonteCarloNode):
         """
         Node statistics are updated starting with rollout node and moving up, until the parent node is reached.
 
@@ -299,10 +294,6 @@ class MonteCarloEngine:
         """
 
         # if self.turn_action_log == node.player_owner:
-        node.number_of_visits += 1  # updates self with number of visits
-
-        node.total_score += self.scores[node.player_owner]
-
-        if node.parent:  # if this node has a parent,
-            # call _backpropogate_node_scores on the parent, so this will continue until root note which has no parent
-            self._backpropogate_node_scores(node.parent)
+        for ancestor in child_node.get_ancestors():
+            ancestor.number_of_visits += 1
+            ancestor.total_score += self.scores[ancestor.player_owner]
