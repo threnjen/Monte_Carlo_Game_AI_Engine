@@ -1,10 +1,9 @@
 from __future__ import annotations
 import numpy as np
 
-
-class MonteCarloNode:
+class MonteCarloNode():
     def __init__(
-        self, parent: MonteCarloNode =None, node_action=None, label="Root Node", depth=0, player=None
+        self, parent: MonteCarloNode =None, node_action=None, label="Root Node", depth=0, player=None, game_state: tuple = None, game_image: str = None
     ):  # , legal_actions=None
         """
         Initializes monte carlo node
@@ -25,6 +24,14 @@ class MonteCarloNode:
         self.label = label  # label for the node, is used in GUI reporting
         self.depth = depth  # depth of the node
         self.player_owner = player  # the player who owns/plays this node layer. Should be same player at any given depth.
+        self.game_state = game_state
+        self.game_image = game_image
+
+    def get_game_state(self) -> tuple:
+        return self.game_state
+
+    def get_game_image(self) -> str:
+        return self.game_image
 
     def get_children(self) -> list[MonteCarloNode]:
         return self.children
