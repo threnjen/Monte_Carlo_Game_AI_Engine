@@ -1,7 +1,8 @@
 import networkx as nx
-import matplotlib.pyplot as plt
+import pylab as plt
+
+# from networkx.drawing.nx_agraph import write_dot, graphviz_layout
 import networkx as nx
-from networkx.drawing.nx_pydot import graphviz_layout
 from engine.monte_carlo_node import MonteCarloNode
 import numpy as np
 
@@ -12,8 +13,7 @@ ACTION_ID = "action_id"
 
 class MonteCarloTree(nx.DiGraph):
     def draw_graph(self):
-        pos = graphviz_layout(self, prog="dot")
-        nx.draw(self, pos=pos, with_labels=True)
+        nx.draw(self, with_labels=False, arrows=True)
         plt.show()
 
     def add_mc_node(self, new_node: MonteCarloNode):
@@ -29,7 +29,7 @@ class MonteCarloTree(nx.DiGraph):
     def add_child_node(
         self, parent_node: MonteCarloNode, child_node: MonteCarloNode, action
     ):
-        if child_node not in self:
+        if child_node.get_game_state() not in self:
             self.add_mc_node(child_node)
         self.add_edge(
             parent_node.get_game_state(),
@@ -59,7 +59,6 @@ class MonteCarloTree(nx.DiGraph):
         self, parent_node: MonteCarloNode, explore_param=1.414, real_move=False
     ) -> MonteCarloNode:
         choices_weights = []  # makes a list to store the score calculations
-        explore_param = 5
         for child in self.get_children(parent_node):
             try:
                 # get scores of all child nodes
@@ -88,3 +87,4 @@ class MonteCarloTree(nx.DiGraph):
         return self[parent_node.get_game_state()][child_node.get_game_state()][
             "node_action"
         ]
+

@@ -146,6 +146,7 @@ class GameEngine:
             print(self.draw_board())
 
         print(self.get_game_scores())
+        # self.montecarlo.tree.draw_graph()
         game_log = pd.DataFrame(self.deep_game_log)
 
         timestamp = datetime.now().strftime("%m%d%Y_%H%M%S")

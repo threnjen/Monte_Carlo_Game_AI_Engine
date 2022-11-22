@@ -55,7 +55,7 @@ if __name__ == "__main__":
     # decay = args.__dict__["d"]
 
     game_name = 'tic_tac_toe'
-    sims = 100
+    sims = 1000
     player_count = 2
     verbose = True
     num_games = 1

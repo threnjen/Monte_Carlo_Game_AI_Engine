@@ -9,6 +9,9 @@ numpy = "*"
 pysimplegui = "*"
 networkx = "*"
 matplotlib = "*"
+pydot = "*"
+graphviz = "*"
+scipy = "*"
 
 [dev-packages]
 pytest = "*"
