@@ -56,7 +56,7 @@ class MonteCarloTree(nx.DiGraph):
         ]
 
     def get_best_child(
-        self, parent_node: MonteCarloNode, real_move=False
+        self, parent_node: MonteCarloNode, explore_param=1.414, real_move=False
     ) -> MonteCarloNode:
         choices_weights = []  # makes a list to store the score calculations
         explore_param = 5
