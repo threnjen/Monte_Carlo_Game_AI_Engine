@@ -143,7 +143,7 @@ class GameEngine:
 
             sims = self.update_sims(sims)
 
-            self.draw_board()
+            print(self.draw_board())
 
         print(self.get_game_scores())
         game_log = pd.DataFrame(self.deep_game_log)

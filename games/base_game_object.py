@@ -90,3 +90,13 @@ class BaseGameObject(ABC):
             draws game state
         """
         pass
+
+    @abstractmethod
+    def get_game_state(self) -> tuple:
+        """Hook #7
+        Requests the game client to return a tuple representing a completely unique game state.
+
+        Returns:
+            tuple: Game state.  Tuple must contain strings and integers (it will be hashed later)
+        """
+        pass

@@ -3,7 +3,7 @@ import numpy as np
 
 class MonteCarloNode():
     def __init__(
-        self, parent: MonteCarloNode =None, node_action=None, label="Root Node", depth=0, player=None, game_state: tuple = None, game_image: str = None
+        self, label="Root Node", depth=0, player=None, game_state: tuple = None, game_image: str = None
     ):  # , legal_actions=None
         """
         Initializes monte carlo node
@@ -16,68 +16,34 @@ class MonteCarloNode():
             player (int, optional): Player ID of node owner. Defaults to None.
         """
 
-        self.parent = parent  # the node that spawned this node. Root is None.
-        self.node_action = node_action  # the action being taken at this node
-        self.children: list[MonteCarloNode] = []  # the storage for the children of this node
-        self.number_of_visits = 0  # number of times current node is visited
-        self.total_score = 0  # total score for this node ONLY for its owner
-        self.label = label  # label for the node, is used in GUI reporting
-        self.depth = depth  # depth of the node
-        self.player_owner = player  # the player who owns/plays this node layer. Should be same player at any given depth.
-        self.game_state = game_state
-        self.game_image = game_image
+        self._number_of_visits = 0  # number of times current node is visited
+        self._total_score = 0  # total score for this node ONLY for its owner
+        self._label = label  # label for the node, is used in GUI reporting
+        self._depth = depth  # depth of the node
+        self._player_owner = player  # the player who owns/plays this node layer. Should be same player at any given depth.
+        self._game_state = game_state
+        self._game_image = game_image
+
+    def add_to_visits(self, visits_to_add: int):
+        self._number_of_visits += visits_to_add
+
+    def get_node_owner(self):
+        return self._player_owner
+
+    def add_to_score(self, points_to_add: float):
+        self._total_score += points_to_add
+
+    def get_total_score(self) -> float:
+        return self._total_score
+
+    def get_depth(self) -> int:
+        return self._depth
+
+    def get_visit_count(self) -> int:
+        return self._number_of_visits
 
     def get_game_state(self) -> tuple:
-        return self.game_state
+        return self._game_state
 
     def get_game_image(self) -> str:
-        return self.game_image
-
-    def get_children(self) -> list[MonteCarloNode]:
-        return self.children
-
-    def get_action(self):
-        return self.node_action
-
-    def get_parents(self):
-        return self.parent
-
-    def get_ancestors(self) -> set[MonteCarloNode]:
-        ancestor_list: list[MonteCarloNode] = [self]
-        if self.parent is not None:
-            ancestor_list += self.parent.get_ancestors()
-        return set(ancestor_list)
-
-    def best_child(self, explore_param=1.414, real_move=False) -> MonteCarloNode:
-        """
-        Evaluates all available children for highest scoring child node
-        first param is exploitation and second is exploration
-
-        Args:
-            explore_param (int, optional): Exploration term. Defaults to root 2.
-
-        Returns:
-            child node (object instance): MonteCarloNode object instance
-        """
-        choices_weights = []  # makes a list to store the score calculations
-        explore_param = 5
-        for child in self.get_children():
-            try:
-                # get scores of all child nodes
-                if real_move:
-                    score = child.total_score / child.number_of_visits
-                else:
-                    score = (
-                        child.total_score / child.number_of_visits
-                    ) + explore_param * (
-                        np.sqrt(np.log(self.number_of_visits) / child.number_of_visits)
-                    )
-                choices_weights.append(score)
-            except:
-                # if calculation runs into a divide by 0 error because child has never been visted
-                score = 1000
-                choices_weights.append(1000)
-
-        return self.get_children()[
-            np.argmax(choices_weights)
-        ]  # gets index of max score and sends back identity of child
+        return self._game_image
