@@ -63,7 +63,7 @@ class MonteCarloTree(nx.DiGraph):
             try:
                 # get scores of all child nodes
                 if real_move:
-                    score = child.get_total_score() / child.get_visit_count()
+                    score = child.get_visit_count()
                 else:
                     score = (
                         child.get_total_score() / child.get_visit_count()
@@ -76,9 +76,10 @@ class MonteCarloTree(nx.DiGraph):
                 choices_weights.append(score)
             except:
                 # if calculation runs into a divide by 0 error because child has never been visted
-                score = 1000
-                choices_weights.append(1000)
-
+                score = 1e6
+                choices_weights.append(1e6)
+        if max(choices_weights) > 1e6:
+            pass
         return self.get_children(parent_node)[np.argmax(choices_weights)]
 
     def get_action(
