@@ -33,7 +33,22 @@ class TicTacToe(BaseGameObject):
         self.player_count = 2
 
     def get_game_state(self) -> tuple:
-        return (*self.positions, *self.scores, self.game_over, self.current_player_num)
+        return (
+            tuple(self.positions),
+            tuple(self.scores.values()),
+            (self.game_over),
+            (self.current_player_num),
+        )
+
+    def update_game_state(self, game_state: tuple):
+        (
+            self.positions,
+            temp_scores,
+            self.game_over,
+            self.current_player_num,
+        ) = game_state
+        self.positions = list(self.positions)
+        self.scores.update(zip(self.scores.keys(), temp_scores))
 
     def draw_board(self):
         """Just draw an ASCII board."""
@@ -44,7 +59,7 @@ class TicTacToe(BaseGameObject):
         _____
         {self.positions[6]}|{self.positions[7]}|{self.positions[8]}"""
 
-        return(self.board)
+        return self.board
 
     def make_move(self, pos: int, current_player_num: int):
         """Makes a move on the board and draws it"""

@@ -21,6 +21,7 @@ class MonteCarloEngine:
         self.root = MonteCarloNode(player=start_player, game_state="Root", game_image="Root")
         self.tree.add_mc_node(self.root)
         self.verbose = verbose
+        self.game: BaseGameObject = None
 
     def update_action_log_start(
         self, node: MonteCarloNode, sim_num: int, node_player: str
@@ -79,6 +80,7 @@ class MonteCarloEngine:
             selected_node (object instance): MonteCarloNode object instance
         """
         self.turn_player = node_player
+        self.game = game
 
         def weighted_score(parent: MonteCarloNode, child: MonteCarloNode):
             try:
@@ -119,13 +121,13 @@ class MonteCarloEngine:
             for child in self.tree.get_children(parent)
         ]
         print(f"{nodes}\n")
-
+        original_game_state = self.game.get_game_state()
         for i in range(num_sims):
 
             self.update_action_log_start(parent, i, node_player)
             self.update_action_log_node(parent, "Starting")
 
-            self.game_copy = self._copy_game_state_for_sim(game)
+            self.game.update_game_state(original_game_state)
 
             rollout_node = self._select_rollout_node(parent, node_player)
 
@@ -133,10 +135,10 @@ class MonteCarloEngine:
 
             self._rollout_from_selected_node()
 
-            self.scores = self.game_copy.get_game_scores()
+            self.scores = self.game.get_game_scores()
             self.update_action_log_end()
 
-            self._backpropogate_node_scores(rollout_node)
+            self._backpropogate_node_scores(parent, rollout_node)
 
             self.update_action_log_node(rollout_node, "Rollout After", all=False)
 
@@ -144,7 +146,7 @@ class MonteCarloEngine:
             del self.turn_action_log
 
         selected_child = self.tree.get_best_child(parent, real_move=True)
-
+        self.game.update_game_state(original_game_state)
         nodes = [
             {
                 id(child): [
@@ -183,12 +185,12 @@ class MonteCarloEngine:
         while len(self.tree.get_children(node)) > 0 and node.get_visit_count() > 0:
             # HAS CHILDREN, IS VISITED, CHECK GAME END AFTER LOOP
             node = self._move_to_best_child_node(node, node_player)
-            if self.game_copy.is_game_over():
+            if self.game.is_game_over():
                 return node
-            node_player = self.game_copy.get_current_player()
+            node_player = self.game.get_current_player()
             # loop and check again if we hit a leaf; this branch may move more than one node down to find a new expansion point
 
-        if len(self.game_copy.get_available_actions()) == 0:
+        if len(self.game.get_available_actions()) == 0:
             # NO CHILDREN, IS VISITED, means game is over
             return node
 
@@ -220,7 +222,7 @@ class MonteCarloEngine:
         self, parent: MonteCarloNode, player: int
     ) -> MonteCarloNode:
         best_child = self.tree.get_best_child(parent)
-        self.game_copy.update_game_with_action(self.tree.get_action(parent, best_child), player)
+        self.game.update_game_with_action(self.tree.get_action(parent, best_child), player)
         return best_child
 
     def _choose_random_action(self, potential_actions: list, type=None):
@@ -247,20 +249,19 @@ class MonteCarloEngine:
         As we pop items off the list and apply them to the
         """
 
-        actions_to_pop = self.game_copy.get_available_actions()
-        current_player = self.game_copy.get_current_player()
-
+        actions_to_pop = self.game.get_available_actions()
+        current_player = self.game.get_current_player()
+        game_state_before_action = self.game.get_game_state()
         for action in actions_to_pop:
             # make the child node for the popped action:
-            hypothetical_game = self._copy_game_state_for_sim(self.game_copy)
-            hypothetical_game.update_game_with_action(action, current_player)
-            hypothetical_game_state = hypothetical_game.get_game_state()
+            self.game.update_game_state(game_state_before_action)
+            self.game.update_game_with_action(action, current_player)
             child_node = MonteCarloNode(
-                label=hypothetical_game_state,
+                label=self.game.get_game_state(),
                 depth=(parent_node.get_depth() + 1),
                 player=current_player,
-                game_state=hypothetical_game_state,
-                game_image=hypothetical_game.draw_board()
+                game_state=self.game.get_game_state(),
+                game_image=self.game.draw_board()
             )
 
             self.tree.add_child_node(parent_node, child_node, action)
@@ -275,21 +276,21 @@ class MonteCarloEngine:
         """
 
         rollout = 1
-        while not self.game_copy.is_game_over():
+        while not self.game.is_game_over():
 
-            legal_actions = self.game_copy.get_available_actions(special_policy=True)
-            current_player = self.game_copy.get_current_player()
+            legal_actions = self.game.get_available_actions(special_policy=True)
+            current_player = self.game.get_current_player()
 
             random_action = self._choose_random_action(
                 potential_actions=legal_actions, type="rollout"
             )
 
-            self.game_copy.update_game_with_action(
+            self.game.update_game_with_action(
                 random_action, current_player
             )  # takes action just pulled at random
             rollout += 1
 
-    def _backpropogate_node_scores(self, child_node: MonteCarloNode):
+    def _backpropogate_node_scores(self, starting_node: MonteCarloNode, ending_node: MonteCarloNode):
         """
         Node statistics are updated starting with rollout node and moving up, until the parent node is reached.
 
@@ -300,8 +301,7 @@ class MonteCarloEngine:
             node (object instance): MonteCarloNode object instance
         """
 
-        ancestors = self.tree.get_ancestors(child_node)
-        ancestors.append(child_node)
+        ancestors = self.tree.get_nodes_path(starting_node, ending_node)
         for ancestor in ancestors:
             ancestor.add_to_visits(1)
             ancestor.add_to_score(self.scores[ancestor.get_node_owner()])

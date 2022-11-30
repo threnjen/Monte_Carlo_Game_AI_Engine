@@ -88,3 +88,7 @@ class MonteCarloTree(nx.DiGraph):
             "node_action"
         ]
 
+    def get_nodes_path(self, parent: MonteCarloNode, child: MonteCarloNode) -> list[MonteCarloNode]:
+        shortest_path = nx.shortest_path(self, parent.get_game_state(), child.get_game_state())
+        return [self.nodes[node][MC_NODE] for node in shortest_path]
+

@@ -100,3 +100,10 @@ class BaseGameObject(ABC):
             tuple: Game state.  Tuple must contain strings and integers (it will be hashed later)
         """
         pass
+
+    @abstractmethod
+    def update_game_state(self, game_state: tuple):
+        """Hook #8
+        Gives the game a game state, allowing a partially played game to be created.
+        tuple must be in the same format as the one returned in get_game_state
+        """
