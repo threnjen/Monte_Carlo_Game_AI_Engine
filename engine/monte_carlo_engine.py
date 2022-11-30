@@ -129,8 +129,8 @@ class MonteCarloEngine:
 
             self.game.update_game_state(original_game_state)
 
-            rollout_node = self._select_rollout_node(parent, node_player)
-
+            rollout_node_path = self._select_rollout_node(parent, node_player)
+            rollout_node = rollout_node_path[-1]
             self.update_action_log_node(rollout_node, "Rollout")
 
             self._rollout_from_selected_node()
@@ -138,7 +138,7 @@ class MonteCarloEngine:
             self.scores = self.game.get_game_scores()
             self.update_action_log_end()
 
-            self._backpropogate_node_scores(parent, rollout_node)
+            self._backpropogate_node_scores(rollout_node_path)
 
             self.update_action_log_node(rollout_node, "Rollout After", all=False)
 
@@ -174,30 +174,31 @@ class MonteCarloEngine:
 
     def _select_rollout_node(
         self, node: MonteCarloNode, node_player: int
-    ) -> MonteCarloNode:
+    ) -> list[MonteCarloNode]:
         """
         Selects node to run simulation. Is looking for the furthest terminal node to roll out.
 
         Returns:
             current_node (object instance): MonteCarloNode object instance
         """
-
+        node_path = [node]
         while len(self.tree.get_children(node)) > 0 and node.get_visit_count() > 0:
             # HAS CHILDREN, IS VISITED, CHECK GAME END AFTER LOOP
             node = self._move_to_best_child_node(node, node_player)
+            node_path.append(node)
             if self.game.is_game_over():
-                return node
+                return node_path
             node_player = self.game.get_current_player()
             # loop and check again if we hit a leaf; this branch may move more than one node down to find a new expansion point
 
         if len(self.game.get_available_actions()) == 0:
             # NO CHILDREN, IS VISITED, means game is over
-            return node
+            return node_path
 
         elif node.get_visit_count() == 0 and not node == self.root:
             # NO CHILDREN, NOT VISITED, NOT ROOT
             node = self._expand_new_nodes(node)
-            return node
+            return node_path
 
         elif (
             len(self.tree.get_children(node)) == 0
@@ -207,16 +208,16 @@ class MonteCarloEngine:
             # NO CHILDREN, IS VISITED, NOT ROOT
             node = self._expand_new_nodes(node)
             node = self._move_to_best_child_node(node, node_player)
-            return node
+            return node_path + [node]
 
         elif node.get_visit_count() == 0 and node == self.root:
             # NO CHILDREN, NOT VISITED, IS ROOT
             node = self._expand_new_nodes(node)
             node = self._move_to_best_child_node(node, node_player)
-            return node
+            return node_path + [node]
 
         else:
-            return node
+            return node_path
 
     def _move_to_best_child_node(
         self, parent: MonteCarloNode, player: int
@@ -290,7 +291,7 @@ class MonteCarloEngine:
             )  # takes action just pulled at random
             rollout += 1
 
-    def _backpropogate_node_scores(self, starting_node: MonteCarloNode, ending_node: MonteCarloNode):
+    def _backpropogate_node_scores(self, rollout_node_path: list[MonteCarloNode]):
         """
         Node statistics are updated starting with rollout node and moving up, until the parent node is reached.
 
@@ -301,7 +302,6 @@ class MonteCarloEngine:
             node (object instance): MonteCarloNode object instance
         """
 
-        ancestors = self.tree.get_nodes_path(starting_node, ending_node)
-        for ancestor in ancestors:
-            ancestor.add_to_visits(1)
-            ancestor.add_to_score(self.scores[ancestor.get_node_owner()])
+        for node  in rollout_node_path:
+            node.add_to_visits(1)
+            node.add_to_score(self.scores[node.get_node_owner()])
