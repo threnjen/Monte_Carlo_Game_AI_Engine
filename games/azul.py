@@ -5,7 +5,6 @@ from itertools import combinations
 from .gui_tryout import display_stuff
 from collections import Counter
 
-import typing
 
 MASTER_TILE_DICTIONARY = {
     "red": 0,
@@ -17,7 +16,7 @@ MASTER_TILE_DICTIONARY = {
 }
 
 
-def print_dict(print_dictionary: typing.Dict[str, int]) -> str:
+def print_dict(print_dictionary: dict[str, int]) -> str:
     """Prints a dictionary.  Only really used for debugging.
 
     Args:
@@ -39,7 +38,7 @@ class TileContainer:
     def __init__(
         self,
         tile_count: int = 0,
-        tile_dictionary: typing.Dict[str, int] = MASTER_TILE_DICTIONARY,
+        tile_dictionary: dict[str, int] = MASTER_TILE_DICTIONARY,
     ):
         """The default object here is the tower.  For other objects, this can either be initialized
         with the bag keyword and defaults, or initialized with the correct parameters.
@@ -57,14 +56,14 @@ class TileContainer:
         self.tile_dictionary = tile_dictionary.copy()
 
     def add_dictionaries_elementwise(
-        self, dictionary_1: typing.Dict[str, int], dictionary_2: typing.Dict[str, int]
-    ) -> typing.Dict[str, int]:
+        self, dictionary_1: dict[str, int], dictionary_2: dict[str, int]
+    ) -> dict[str, int]:
         return {
             key: dictionary_1.get(key, 0) + dictionary_2.get(key, 0)
-            for key in set(dictionary_1) and set(dictionary_2)
+            for key in set(dictionary_1) or set(dictionary_2)
         }
 
-    def get_available_tiles(self) -> typing.Dict[str, int]:
+    def get_available_tiles(self) -> dict[str, int]:
         """Gets tiles in the container as a dictionary
 
         Returns:
@@ -77,8 +76,8 @@ class TileContainer:
         }  # returns dictionary of tiles in the container
         # that are over 0
 
-    def add_tiles(self, new_tiles: typing.Dict[str, int]):
-        """Adds tiles to the container, checking to make sure the keys are present.
+    def add_tiles(self, new_tiles: dict[str, int]):
+        """
 
         Args:
             new_tiles (dictionary): tiles to add
@@ -89,7 +88,7 @@ class TileContainer:
         self.tile_dictionary = self.add_dictionaries_elementwise(
             self.tile_dictionary, new_tiles
         )
-        self.tile_count += [sum(cnt) for cnt in zip(*new_tiles.itervalues())]
+        self.tile_count += sum(new_tiles.values())
 
 
 class Tower(TileContainer):
@@ -100,7 +99,7 @@ class Tower(TileContainer):
         tile_container (tile_container): parent class
     """
 
-    def dump_all_tiles(self) -> typing.Dict[str, int]:
+    def dump_all_tiles(self) -> dict[str, int]:
         """This dumps tiles from the tower if possible.  Tiles only get dumped when drawing from the bag.
         If no tiles exist in the tower, this will return an empty dictionary, which will cause the
         caller to skip remaining attempts to draw from the bag.
@@ -129,9 +128,7 @@ class Bag(TileContainer):
         Tile_Container (Tile_Container): Parent class
     """
 
-    def randomly_choose_tiles(
-        self, take_count: int, tower: Tower
-    ) -> typing.Dict[str, int]:
+    def randomly_choose_tiles(self, take_count: int, tower: Tower) -> dict[str, int]:
         """This allows us to take tiles from the bag. If there are insufficient tiles
         in the bag to take, it will return the dictionary of tiles chosen so far and the remaining
         take count.  The intent is for the player (or game) to then refill the bag from
@@ -173,7 +170,7 @@ class FactoryDisplay(TileContainer):
         Tile_Container (Tile_Container): Parent class
     """
 
-    def get_available_tiles(self, wild_color: str) -> typing.Dict[str, int]:
+    def get_available_tiles(self, wild_color: str) -> dict[str, int]:
         tile_count = sum([cnt for cnt in self.tile_dictionary.values()])
         if self.tile_dictionary[wild_color] == tile_count and tile_count > 0:
             return {wild_color: tile_count}
@@ -188,7 +185,7 @@ class FactoryDisplay(TileContainer):
 
     def take_chosen_tiles(
         self, chosen_color: str, wild_color: str
-    ) -> typing.Tuple(typing.Dict[str, int], typing.Dict[str, int]):
+    ) -> tuple[dict[str, int]]:
         """We choose a color and take all tiles of that color.  Since player_count cannot skip,
         we return empty dictionarys if the color is not available.  This will force the player to
         choose another display or choose another color.  We also pass in the wild color for the
@@ -247,7 +244,7 @@ class CenterOfTable(FactoryDisplay):
     def __init__(
         self,
         tile_count=0,
-        tile_dictionary: typing.Dict[str, int] = MASTER_TILE_DICTIONARY,
+        tile_dictionary: dict[str, int] = MASTER_TILE_DICTIONARY,
     ):
         """Same as factory display, but now takes an optional first_player_avail argument.
         I don't see a case where this would be false on init, but we'll keep it general for now.
@@ -266,7 +263,7 @@ class CenterOfTable(FactoryDisplay):
 
     def take_center_tiles(
         self, chosen_color: str, wild_color: str
-    ) -> typing.Tuple(typing.Dict[str, int], bool):
+    ) -> tuple:
         """Same as choose_tiles from the FactoryDisplay class, except it returns
         the first player marker if available.
         Args:
@@ -315,7 +312,7 @@ class Supply:
     def get_tile_positions(self):
         return self.tile_positions
 
-    def fill_supply(self, tiles: typing.Dict[str, int]):
+    def fill_supply(self, tiles: dict[str, int]):
         """Fills the supply with tiles from a dictionary.
         This is called after the get_tile_count method, so there isn't a risk of overfilling.
 
@@ -326,7 +323,7 @@ class Supply:
             for tile in range(cnt):
                 self.tile_positions.append(color)
 
-    def get_legal_actions(self) -> typing.Dict[int, str]:
+    def get_legal_actions(self) -> dict[int, str]:
         """Gets the possible tiles we can pull
 
         Returns:
@@ -360,12 +357,12 @@ class Factory:
         self.factory_displays = {i: FactoryDisplay() for i in range(display_count)}
         self.center = CenterOfTable()
 
-    def populate_display(self, display_num: int, tile_dict: typing.Dict[str, int]):
+    def populate_display(self, display_num: int, tile_dict: dict[str, int]):
         self.factory_displays[display_num].add_tiles(tile_dict)
 
     def take_from_display(
         self, display_number: int, chosen_color: str, wild_color: str
-    ) -> typing.Tuple(typing.Dict[str, int], bool):
+    ) -> tuple:
         """Takes a tile from the given display and returns the tiles chosen and returns the tiles
         from that display (including a wild, unless the wild was the chosen color).  It puts the
         remaining tiles in the center location.  Note that wild cannot be
@@ -386,7 +383,7 @@ class Factory:
         self.center.add_tiles(center_tiles)
         return received_tiles, False
 
-    def get_center_tiles(self, wild_color: str) -> typing.Dict[str, int]:
+    def get_center_tiles(self, wild_color: str) -> dict[str, int]:
         return self.center.get_available_tiles(wild_color)
 
     def take_from_center(self, chosen_color: str, wild_color: str):
@@ -403,7 +400,7 @@ class Factory:
         """
         return self.center.take_center_tiles(chosen_color, wild_color)
 
-    def get_legal_actions(self, wild_color: str) -> typing.Dict:
+    def get_legal_actions(self, wild_color: str) -> dict:
         """Gets available options in all factory displays and
         in the center.
 
@@ -427,7 +424,7 @@ class Factory:
 
         return tile_choices
 
-    def take_tiles(self, action: typing.List[int], wild_color: str):
+    def take_tiles(self, action: list[int], wild_color: str):
         """Takes tiles based on the action.  The action is derived from the
         get_available_tile_choices function, so can always be decoded.
 
@@ -577,7 +574,7 @@ class Star:
             points = self.check_right_contiguous(position, points)
         return points
 
-    def get_open_positions(self) -> typing.Dict[int, bool]:
+    def get_open_positions(self) -> dict[int, bool]:
         """Gets open positions.  Note positions are stored as index: False
         until they are occupied (in other words, the tile_positions dictionary
         tracks positions that are currently filled with a tile, not open.)
@@ -794,7 +791,7 @@ class PlayerBoard:
 
         return i, avail_actions
 
-    def add_tile_to_star(self, action) -> typing.Tuple(int, int):
+    def add_tile_to_star(self, action) -> tuple[int]:
         """Adds a tile to star, checks for bonuses and points, and returns both.
 
         Args:
@@ -947,7 +944,7 @@ class Player:
 
     def choose_tiles_to_reserve(
         self, tiles_to_choose: int = 4, act_count: int = 0
-    ) -> typing.Dict:
+    ) -> dict:
         """We can only reserve four tiles, so this picks them.
 
         Args:
@@ -1220,7 +1217,7 @@ class Game:
     def is_game_over(self) -> bool:
         return self.game_over
 
-    def get_game_scores(self) -> typing.Dict[int, int]:
+    def get_game_scores(self) -> dict[int, int]:
         return {
             player_num: player.player_score
             for player_num, player in self.player_count.items()

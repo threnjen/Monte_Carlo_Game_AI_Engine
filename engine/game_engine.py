@@ -62,7 +62,7 @@ class GameEngine:
             [list]: List of: list of legal actions
         """
         legal_actions = self.game.get_available_actions(special_policy)
-        return legal_actions
+        return legal_actions, self.get_current_player()
 
     def update_game_with_action(
         self, action_to_record: str, current_player: int
@@ -109,7 +109,7 @@ class GameEngine:
         # self.turn_log["Score"] = scores[current_player]
         self.game_log.append(self.turn_log)
 
-    def play_game_by_turns(self, sims) -> None:
+    def play_game_by_turns(self, sims: int) -> None:
         """
         Intializes Monte Carlo engine
         Will play a single game until game over condition is met

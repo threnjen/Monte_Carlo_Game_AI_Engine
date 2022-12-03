@@ -109,7 +109,7 @@ def test_tower_avail(tower_w_tiles: azul.Tower, tile_dictionary_rybp_avail:azul.
     assert tower_w_tiles.get_available_tiles() == tile_dictionary_rybp_avail
 
 
-def test_add_tiles(tower_w_tiles:azul.Tower, tile_dictionary_ro: dict, tile_dictionary_both: dict):
+def test_add_tiles(tower_w_tiles: azul.Tower, tile_dictionary_ro: dict, tile_dictionary_both: dict):
     tower_w_tiles.add_tiles(tile_dictionary_ro)
     assert tower_w_tiles.get_available_tiles() == tile_dictionary_both
 
