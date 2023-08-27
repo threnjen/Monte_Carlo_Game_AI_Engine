@@ -107,7 +107,7 @@ class GameEngine:
         """
 
         current_node = self.montecarlo.root  # set first node as monte carlo root
-
+        start = time.time()
         while not self.is_game_over():
             sims_this_turn = sims
             self.turn_log = {}
@@ -133,7 +133,8 @@ class GameEngine:
             sims = self.update_sims(sims)
 
             self.draw_board()
-
+        end = time.time()
+        print(f"Total time: {end-start}")
         print(self.get_game_scores())
         game_log = pd.DataFrame(self.deep_game_log)
 
