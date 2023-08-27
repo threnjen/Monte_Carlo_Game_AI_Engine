@@ -104,7 +104,6 @@ class MonteCarloEngine:
         self.game_copy.save_game_state()
 
         for i in range(num_sims):
-            print(f"Simulation {i+1}")
             self.update_action_log_start(parent, i, node_player)
             self.update_action_log_node(parent, "Starting")
 
