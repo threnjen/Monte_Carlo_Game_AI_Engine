@@ -1,5 +1,6 @@
 import sys
-from engine.game_engine import GameEngine, GameMultiprocessor
+from engine.game_multiprocessor import GameMultiprocessor
+from engine.game_engine import GameEngine
 import argparse
 from icecream import install
 
@@ -55,6 +56,8 @@ if __name__ == "__main__":
         f"Initializing game: {game_name}, # sims: {sims}, # player_count: {player_count}, verbose: {verbose}, num_games: {num_games}, decay: {decay}"
     )
 
-    GameMultiprocessor(
-        game_name, sims, player_count, verbose, num_games, decay
-    ).playout_simulations()
+    # GameMultiprocessor(
+    #     game_name, sims, player_count, verbose, num_games, decay
+    # ).playout_simulations()
+
+    GameEngine(game_name, sims, player_count, verbose, num_games, decay).play_game_by_turns(sims)
