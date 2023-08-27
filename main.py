@@ -1,5 +1,6 @@
 import sys
-from engine.game_engine import GameEngine, GameMultiprocessor
+from engine.game_multiprocessor import GameMultiprocessor
+from engine.game_engine import GameEngine
 import argparse
 from icecream import install
 
