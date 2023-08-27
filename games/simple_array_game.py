@@ -34,7 +34,7 @@ class SimpleArrayGame(BaseGameObject):
 
         for x in self.positions:
             column_sums[x[1]] += self.board[x[0]][x[1]]
-            if column_sums[x[1]] == 1:
+            if column_sums[x[1]] == 5:
                 return True
         return False
 
@@ -56,14 +56,21 @@ class SimpleArrayGame(BaseGameObject):
         return scores
 
     def draw_board(self):
-        print(self.board)
+        for x in self.board:
+            print(x)
+        # print(self.board)
 
     def save_game_state(self):
-        print("Saving game state.")
+        print("Saving game state:")
         self.save_game = {}
         # self.save_game["board"] = deepcopy(self.board)
         self.save_game["board"] = [[cell for cell in row] for row in self.board]
+        for x in self.save_game["board"]:
+            print(x)
 
     def load_save_game_state(self):
         # self.board = deepcopy(self.save_game["board"])
         self.board = [[cell for cell in row] for row in self.save_game["board"]]
+        # print("Load save game state:")
+        # for x in self.board:
+        #     print(x)
