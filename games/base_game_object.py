@@ -90,3 +90,19 @@ class BaseGameObject(ABC):
             draws game state
         """
         pass
+
+    @abstractmethod
+    def save_game_state(self):
+        """
+        Hook #7
+        Saves the vital elements of the game to re-populate on load.
+
+        The engine does not care about the format of the save state, and will specifically use it to populate copies of the game.
+        The game logic must manage the usage of the save state.
+        """
+        pass
+
+    @abstractmethod
+    def load_save_game_state(self):
+        """load the saved game state."""
+        pass

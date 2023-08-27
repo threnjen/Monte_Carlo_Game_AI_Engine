@@ -1,4 +1,5 @@
 import numpy as np
+from copy import copy, deepcopy
 from games.base_game_object import BaseGameObject
 
 
@@ -38,3 +39,11 @@ class SimpleArrayGame(BaseGameObject):
 
     def draw_board(self):
         print(self.board)
+
+    def save_game_state(self):
+        print("Saving game state.")
+        self.save_game = {}
+        self.save_game["board"] = deepcopy(self.board)
+
+    def load_save_game_state(self):
+        self.board = deepcopy(self.save_game["board"])
