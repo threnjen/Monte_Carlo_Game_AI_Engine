@@ -8,12 +8,12 @@ class TicTacToe(BaseGameObject):
         """Calling the game doesn't create any unique starting conditions,
         since there are always two player_count.
         """
+        super().__init__()
         self.positions = [" "] * 9
         self.player_marks = {0: "X", 1: "O"}
         self.scores = {0: 0, 1: 0}
         self.game_over = False
         self.current_player_num = 0
-        self.board = ""
 
         self.win_conditions = {
             "top_row": [0, 1, 2],
@@ -26,18 +26,16 @@ class TicTacToe(BaseGameObject):
             "right_col": [2, 5, 8],
         }
 
-        self.player_count = 2
-
     def draw_board(self):
         """Just draw an ASCII board."""
-        self.board = f"""\n
+        print(
+            f"""\n
         {self.positions[0]}|{self.positions[1]}|{self.positions[2]}       
         _____
         {self.positions[3]}|{self.positions[4]}|{self.positions[5]}
         _____
         {self.positions[6]}|{self.positions[7]}|{self.positions[8]}"""
-
-        print(self.board)
+        )
 
     def make_move(self, pos: int, current_player_num: int):
         """Makes a move on the board and draws it"""
@@ -125,12 +123,14 @@ class TicTacToe(BaseGameObject):
 
     def save_game_state(self):
         print("Saving game state:")
-        self.save_game = {}
-        self.save_game["positions"] = [x for x in self.positions]
+
+        self.save_game["positions"] = []
+        self.save_game["positions"].extend(self.positions)
         self.save_game["scores"] = {x: y for x, y in self.scores.items()}
         self.save_game["current_player_num"] = self.current_player_num
 
     def load_save_game_state(self):
-        self.positions = [x for x in self.save_game["positions"]]
+        self.positions = []
+        self.positions.extend(self.save_game["positions"])
         self.scores = {x: y for x, y in self.save_game["scores"].items()}
         self.current_player_num = self.save_game["current_player_num"]

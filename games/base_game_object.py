@@ -9,6 +9,7 @@ class BaseGameObject(ABC):
         The following hooks are required in the Game __init__ file:
         game init must accept player_count argument (int)
         """
+        self.save_game = {}
         self.player_count = player_count
 
     @abstractmethod
@@ -97,12 +98,16 @@ class BaseGameObject(ABC):
         Hook #7
         Saves the vital elements of the game to re-populate on load.
 
-        The engine does not care about the format of the save state, and will specifically use it to populate copies of the game.
-        The game logic must manage the usage of the save state.
+        The engine does not care about the format of the save state..
+        The game logic must manage the usage of the save state and load state.
+        Save your mutable game state objects here in the self.save_game dictionary
+        Be sure to use DEEP COPIES, as efficiently as possible
         """
         pass
 
     @abstractmethod
     def load_save_game_state(self):
-        """load the saved game state."""
+        """load the saved game state.
+        Be sure to use DEEP COPIES on load, as efficiently as possible
+        """
         pass

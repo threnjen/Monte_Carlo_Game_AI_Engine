@@ -16,6 +16,7 @@ class SimpleArrayGame(BaseGameObject):
     """
 
     def __init__(self, player_count):
+        super().__init__()
         self.board = np.zeros((5, 5))
         self.name = "array_test"
 
@@ -42,7 +43,6 @@ class SimpleArrayGame(BaseGameObject):
 
     def save_game_state(self):
         print("Saving game state:")
-        self.save_game = {}
         self.save_game["board"] = self.board.copy()
 
     def load_save_game_state(self):

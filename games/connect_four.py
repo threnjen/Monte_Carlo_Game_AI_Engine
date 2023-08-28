@@ -19,15 +19,9 @@ class ConnectFour(BaseGameObject):
     win_points = 1
 
     def __init__(self, player_count: int = 2):
-        """player_count is unused but is generally required for other games, so we add it here.
-
-        Args:
-            player_count (int): Play0er count.  Defaults to 2.
-        """
+        super().__init__()
         self.player_count = {0: Player("0"), 1: Player("1")}
-        self.grid = [
-            [" " for column in range(self.columns)] for row in range(self.rows)
-        ]
+        self.grid = [[" " for column in range(self.columns)] for row in range(self.rows)]
         self.game_over = False
         self.current_player = 0
         self.board = ""
@@ -122,10 +116,7 @@ class ConnectFour(BaseGameObject):
         """Saves the game state for printing"""
         self.board = ""
         for row in range(self.rows):
-            self.board += (
-                "|".join(self.grid[row][column] for column in range(self.columns))
-                + "\n"
-            )
+            self.board += "|".join(self.grid[row][column] for column in range(self.columns)) + "\n"
             self.board += "_" * (self.columns * 2 - 1) + "\n"
 
     def draw_board(self):
@@ -137,9 +128,7 @@ class ConnectFour(BaseGameObject):
         Returns:
             dict: player number: score
         """
-        return {
-            player_num: player.score for player_num, player in self.player_count.items()
-        }
+        return {player_num: player.score for player_num, player in self.player_count.items()}
 
     def play_game(self):
         self.save_state()

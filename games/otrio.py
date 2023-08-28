@@ -6,7 +6,6 @@ from games.base_game_object import BaseGameObject
 
 class Player:
     def __init__(self, mark, id):
-
         self.mark = mark
         self.id = id
 
@@ -18,6 +17,7 @@ class Player:
 
 class Otrio(BaseGameObject):
     def __init__(self, player_count):
+        super().__init__()
 
         self.board = np.zeros((3, 3, 3)).astype("int")
         self.game_over = False
@@ -40,12 +40,9 @@ class Otrio(BaseGameObject):
         return player_count_dict
 
     def _make_move(self, action, current_player_num):
-
         self.turn += 1
         position = tuple(action)
-        self.board[position] = (
-            self.player_count[current_player_num].pieces[action[0]].pop()
-        )
+        self.board[position] = self.player_count[current_player_num].pieces[action[0]].pop()
 
         remove_conditions = []
         lookup_index = str(action)
@@ -84,30 +81,21 @@ class Otrio(BaseGameObject):
                 self.win_conditions[lookup_index].remove(item)
 
         self.current_player_num = (
-            1
-            if self.current_player_num == max(self.scores.keys())
-            else self.current_player_num + 1
+            1 if self.current_player_num == max(self.scores.keys()) else self.current_player_num + 1
         )
 
     def get_current_player(self):
         return self.current_player_num
 
     def get_available_actions(self, special_policy=False):
-
         current_player = self.current_player_num
-        invalid_player_levels = [
-            k
-            for k, v in self.player_count[current_player].pieces.items()
-            if len(v) == 0
-        ]
+        invalid_player_levels = [k for k, v in self.player_count[current_player].pieces.items() if len(v) == 0]
 
         legal_actions = np.argwhere(self.board == 0).tolist()
         legal_actions = [x for x in legal_actions if x[0] not in invalid_player_levels]
 
         if special_policy:
-
             for potential_win_current_player in legal_actions:
-
                 potential_win_current_action = self.check_player_kill_moves(
                     potential_win_current_player, current_player
                 )
@@ -115,15 +103,9 @@ class Otrio(BaseGameObject):
                     return potential_win_current_action
 
             for potential_win_next_player in legal_actions:
-                next_player = (
-                    1
-                    if current_player == max(self.scores.keys())
-                    else current_player + 1
-                )
+                next_player = 1 if current_player == max(self.scores.keys()) else current_player + 1
 
-                potential_win_next_action = self.check_player_kill_moves(
-                    potential_win_next_player, next_player
-                )
+                potential_win_next_action = self.check_player_kill_moves(potential_win_next_player, next_player)
                 if potential_win_next_action:
                     return potential_win_next_action
 
@@ -131,7 +113,6 @@ class Otrio(BaseGameObject):
 
     def check_player_kill_moves(self, move, player):
         for current_win_condition in self.win_conditions[str(move)]:
-
             test_indices = [tuple(x) for x in current_win_condition]
             check_current_marks = [self.board[i] for i in test_indices]
 
@@ -143,7 +124,6 @@ class Otrio(BaseGameObject):
             return []
 
     def update_game_with_action(self, action, player):
-
         self._make_move(action, player)
 
     def is_game_over(self):
@@ -157,11 +137,9 @@ class Otrio(BaseGameObject):
             return self.game_over
 
     def get_game_scores(self):
-
         return self.scores
 
     def draw_board(self):
-
         self.board_draw = f"""
         Level 1\t\t\tLevel 2\t\t\tLevel 3\n
         {self.board[0,0,0]}|{self.board[0,0,1]}|{self.board[0,0,2]}\t\t\t{self.board[1,0,0]}|{self.board[1,0,1]}|{self.board[1,0,2]}\t\t\t{self.board[2,0,0]}|{self.board[2,0,1]}|{self.board[2,0,2]}       
@@ -174,9 +152,7 @@ class Otrio(BaseGameObject):
         print(self.board_draw)
 
     def play_game(self):
-
         while not self.is_game_over():
-
             pos = int(input("Select a move.  "))
             self._make_move(pos, self.current_player_num)
 
