@@ -1,6 +1,3 @@
-from random import choice
-
-from pandas import array
 from games.base_game_object import BaseGameObject
 
 
