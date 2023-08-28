@@ -12,7 +12,6 @@ class TicTacToe(BaseGameObject):
         since there are always two player_count.
         """
         self.positions = [" "] * 9
-        # self.legal_actions = {}
         self.player_marks = {0: "X", 1: "O"}
         self.scores = {0: 0, 1: 0}
         self.game_over = False
@@ -56,9 +55,7 @@ class TicTacToe(BaseGameObject):
         """Gets available moves in a dictionary.
         The bot will only ever need the keys; values should be unknown
         """
-        legal_actions = [
-            pos for pos in range(len(self.positions)) if self.positions[pos] == " "
-        ]
+        legal_actions = [pos for pos in range(len(self.positions)) if self.positions[pos] == " "]
         # print(f"Original legal actions: {legal_actions}")
 
         if special_policy:
@@ -67,18 +64,12 @@ class TicTacToe(BaseGameObject):
             for win_condition in self.win_conditions.values():
                 condition_state = self.get_condition_state(win_condition)
 
-                if (
-                    " " in condition_state
-                    and condition_state.count(self.player_marks[current_player]) == 2
-                ):
-                    win_condition = [
-                        x for x in win_condition if self.positions[x] == " "
-                    ]
+                if " " in condition_state and condition_state.count(self.player_marks[current_player]) == 2:
+                    win_condition = [x for x in win_condition if self.positions[x] == " "]
                     special_policy_actions += win_condition
 
             special_policy_actions = list(set(special_policy_actions))
             if len(special_policy_actions) > 0:
-
                 # print(
                 #    f"Available win positions for {self.player_marks[current_player]}, Special policy legal actions: {special_policy_actions}"
                 # )
@@ -102,10 +93,7 @@ class TicTacToe(BaseGameObject):
         for win_condition in self.win_conditions.values():
             condition_state = self.get_condition_state(win_condition)
 
-            if (
-                condition_state.count(condition_state[0]) == len(condition_state)
-                and condition_state[0] != " "
-            ):
+            if condition_state.count(condition_state[0]) == len(condition_state) and condition_state[0] != " ":
                 open_positions = sum(x == " " for x in self.positions)
                 if self.player_marks[0] == condition_state[0]:
                     self.scores[0] = 1
@@ -137,3 +125,15 @@ class TicTacToe(BaseGameObject):
             print(f"{self.player_count[player_num]}:  {self.scores[player_num]}")
 
         return self.scores
+
+    def save_game_state(self):
+        print("Saving game state:")
+        self.save_game = {}
+        self.save_game["positions"] = [x for x in self.positions]
+        self.save_game["scores"] = {x: y for x, y in self.scores.items()}
+        self.save_game["current_player_num"] = self.current_player_num
+
+    def load_save_game_state(self):
+        self.positions = [x for x in self.save_game["positions"]]
+        self.scores = {x: y for x, y in self.save_game["scores"].items()}
+        self.current_player_num = self.save_game["current_player_num"]

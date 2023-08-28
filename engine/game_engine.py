@@ -16,9 +16,7 @@ from games.base_game_object import BaseGameObject
 
 
 class GameEngine:
-    def __init__(
-        self, game_name, sims=100, player_count: int = 2, verbose: bool = False, num_games: int = 0, decay: str = None
-    ):
+    def __init__(self, game_name, sims=100, player_count: int = 2, verbose: bool = False, decay: str = None):
         self.number_of_sims = sims
         self.verbose = verbose
         self.game_name = GAMES_MAP[game_name]
