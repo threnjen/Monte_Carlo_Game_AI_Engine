@@ -88,19 +88,19 @@ class MonteCarloEngine:
         deep_game_log = []
 
         print(f"Incoming node: {id(parent)} Visits: {parent.number_of_visits} Score: {parent.total_score} ")
-        nodes = [
-            {
-                id(child): [
-                    child.number_of_visits,
-                    child.total_score,
-                    round(child.total_score / child.number_of_visits, 4),
-                    weighted_score(parent, child),
-                    explore_term(parent, child),
-                ]
-            }
-            for child in parent.get_children()
-        ]
-        print(f"{nodes}\n")
+        # nodes = [
+        #     {
+        #         id(child): [
+        #             child.number_of_visits,
+        #             child.total_score,
+        #             round(child.total_score / child.number_of_visits, 4),
+        #             weighted_score(parent, child),
+        #             explore_term(parent, child),
+        #         ]
+        #     }
+        #     for child in parent.get_children()
+        # ]
+        # print(f"{nodes}\n")
         self.game_copy.save_game_state()
 
         for i in range(num_sims):
@@ -129,20 +129,20 @@ class MonteCarloEngine:
 
         selected_child = parent.best_child(real_move=True)
 
-        nodes = [
-            {
-                id(child): [
-                    child.number_of_visits,
-                    child.total_score,
-                    round(child.total_score / child.number_of_visits, 4),
-                    weighted_score(parent, child),
-                    explore_term(parent, child),
-                ]
-            }
-            for child in parent.get_children()
-        ]
-        print("End node scores after simulations")
-        print(nodes)
+        # nodes = [
+        #     {
+        #         id(child): [
+        #             child.number_of_visits,
+        #             child.total_score,
+        #             round(child.total_score / child.number_of_visits, 4),
+        #             weighted_score(parent, child),
+        #             explore_term(parent, child),
+        #         ]
+        #     }
+        #     for child in parent.get_children()
+        # ]
+        # print("End node scores after simulations")
+        # print(nodes)
         print(
             f"Chosen Node: {id(selected_child)} Visits: {selected_child.number_of_visits} Score: {selected_child.total_score} "
         )
@@ -199,14 +199,10 @@ class MonteCarloEngine:
         self.game_copy.update_game_with_action(best_child.node_action, player)
         return best_child
 
-    def _choose_random_action(self, potential_actions: list, type=None):
-        if type == "expansion":
-            # pops off node actions randomly so that the order of try-stuff isn't as deterministic
-            random_end = len(potential_actions)
-            action = potential_actions[np.random.randint(random_end)]
-        if type == "rollout":
-            random_end = len(potential_actions)
-            action = potential_actions[np.random.randint(random_end)]  # take a random action from legal moves
+    def _choose_random_action(self, potential_actions: list):
+        # pops off node actions randomly so that the order of try-stuff isn't as deterministic
+        random_end = len(potential_actions)
+        action = potential_actions[np.random.randint(random_end)]
 
         return action
 
@@ -252,7 +248,7 @@ class MonteCarloEngine:
             legal_actions = self.game_copy.get_available_actions(special_policy=True)
             current_player = self.game_copy.get_current_player()
 
-            random_action = self._choose_random_action(potential_actions=legal_actions, type="rollout")
+            random_action = self._choose_random_action(potential_actions=legal_actions)
 
             self.game_copy.update_game_with_action(random_action, current_player)  # takes action just pulled at random
             rollout += 1

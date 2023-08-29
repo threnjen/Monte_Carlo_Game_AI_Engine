@@ -8,43 +8,22 @@ class TicTacToe(BaseGameObject):
         """Calling the game doesn't create any unique starting conditions,
         since there are always two player_count.
         """
-        super().__init__()
+        super().__init__(player_count)
         self.positions = [" "] * 9
         self.player_marks = {0: "X", 1: "O"}
-        self.scores = {0: 0, 1: 0}
-        self.game_over = False
-        self.current_player_num = 0
-
-        self.win_conditions = {
-            "top_row": [0, 1, 2],
-            "left_diag": [0, 4, 8],
-            "mid_row": [3, 4, 5],
-            "bot_row": [6, 7, 8],
-            "right_diag": [6, 4, 2],
-            "left_col": [0, 3, 6],
-            "mid_col": [1, 4, 7],
-            "right_col": [2, 5, 8],
-        }
+        self.win_conditions = self.set_win_conditions()
 
     def draw_board(self):
         """Just draw an ASCII board."""
-        print(
-            f"""\n
-        {self.positions[0]}|{self.positions[1]}|{self.positions[2]}       
-        _____
-        {self.positions[3]}|{self.positions[4]}|{self.positions[5]}
-        _____
-        {self.positions[6]}|{self.positions[7]}|{self.positions[8]}"""
-        )
+        board_rows = [f"{self.positions[i]}|{self.positions[i+1]}|{self.positions[i+2]}" for i in range(0, 9, 3)]
+        board = "\n_____\n".join(board_rows)
+        print(board)
 
-    def make_move(self, pos: int, current_player_num: int):
+    def make_move(self, pos: int, current_player: int):
         """Makes a move on the board and draws it"""
-        self.positions[pos] = self.player_marks[current_player_num]
+        self.positions[pos] = self.player_marks[current_player]
         # self.draw_board()
-        self.current_player_num = (self.current_player_num + 1) % self.player_count
-
-    def get_current_player(self) -> int:
-        return self.current_player_num
+        self.current_player = (self.current_player + 1) % self.player_count
 
     def get_available_actions(self, special_policy: bool = False) -> list:
         """Gets available moves in a dictionary.
@@ -108,13 +87,10 @@ class TicTacToe(BaseGameObject):
         else:
             return False
 
-    def get_game_scores(self):
-        return self.scores
-
     def play_game(self):
         while not self.is_game_over():
             pos = int(input("Select a move.  "))
-            self.make_move(pos, self.current_player_num)
+            self.make_move(pos, self.current_player)
 
         for player_num in self.scores.keys():
             print(f"{self.player_count[player_num]}:  {self.scores[player_num]}")
@@ -127,10 +103,22 @@ class TicTacToe(BaseGameObject):
         self.save_game["positions"] = []
         self.save_game["positions"].extend(self.positions)
         self.save_game["scores"] = {x: y for x, y in self.scores.items()}
-        self.save_game["current_player_num"] = self.current_player_num
+        self.save_game["current_player"] = self.current_player
 
     def load_save_game_state(self):
         self.positions = []
         self.positions.extend(self.save_game["positions"])
         self.scores = {x: y for x, y in self.save_game["scores"].items()}
-        self.current_player_num = self.save_game["current_player_num"]
+        self.current_player = self.save_game["current_player"]
+
+    def set_win_conditions(self):
+        return {
+            "top_row": [0, 1, 2],
+            "left_diag": [0, 4, 8],
+            "mid_row": [3, 4, 5],
+            "bot_row": [6, 7, 8],
+            "right_diag": [6, 4, 2],
+            "left_col": [0, 3, 6],
+            "mid_col": [1, 4, 7],
+            "right_col": [2, 5, 8],
+        }

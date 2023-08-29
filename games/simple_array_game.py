@@ -16,7 +16,7 @@ class SimpleArrayGame(BaseGameObject):
     """
 
     def __init__(self, player_count):
-        super().__init__()
+        super().__init__(player_count)
         self.board = np.zeros((5, 5))
         self.name = "array_test"
 
