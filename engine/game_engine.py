@@ -106,7 +106,9 @@ class GameEngine:
 
         current_node = self.montecarlo.root  # set first node as monte carlo root
         start = time.time()
+
         while not self.is_game_over():
+            print("\n\n")
             sims_this_turn = sims
             self.turn_log = {}
             self.turn += 1  # increments the game turn
@@ -131,6 +133,7 @@ class GameEngine:
             sims = self.update_sims(sims)
 
             self.draw_board()
+        
         end = time.time()
         print(f"Total time: {end-start}")
         print(self.get_game_scores())

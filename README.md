@@ -17,18 +17,18 @@ The goal of the Monte Carlo AI Engine is one of portability and reusability. Usi
 
 For use with the Monte Carlo AI Engine, a game logic requires six lightweight hooks:
 
-> Hook #1 *get_current_player* Has no arguments. It must return an integer for the current player number. Game will use this integer when receiving actions for this player, so it must be both sent and received in the same format in which the game logic utilizes it.
-
-> Hook #2 *get_available_actions* must return a list in the format [list of legal actions]. The engine does not care about the contents of the list of legal actions, and use the list item in exactly the same format as it is presented.
+> Hook #1 *get_available_actions* must return a list in the format [list of legal actions]. The engine does not care about the contents of the list of legal actions, and uses the list item in exactly the same format as it is presented.
 get_available_actions must accept a boolean argument of special_policy, but use of this parameter in the game logic is optional.
 
-> Hook #3 *update_game_with_action* accepts two arguments. The first is a list item from the get_available_actions list, and the second is a player integer. It must use these arguments to record a move for the game for the correct player.
+> Hook #2 *update_game_with_action* accepts two arguments. The first is a list item from the get_available_actions list, and the second is a player integer. It must use these arguments to record a move for the game for the correct player.
 
-> Hook #4 *is_game_over* returns a True/False boolean for if the game is over.
+> Hook #3 *is_game_over* returns a True/False boolean for if the game is over.
 
-> Hook #5 *get_game_scores* gets the game score and returns a dictionary in the format of {playerID : score}. The playerID in the scores must match the ID used for Hooks #1 and #2.
+> Hook #4 *draw_board* the game engine must draw the board state in a minimal GUI representation
 
-> Hook #6 *draw_board* the game engine must draw the board state in a minimal GUI representation
+> Hook #5 *save_game_state* In this method, save the minimum required elements to preserve the game's current state, using the most time-efficient deep copy. *The load/save state will fail if the saves of any iterable are not a deep copy*
+
+> Hook #6 *load_save_game_state* In this method, load the game's saved state, using the most time-efficient deep copy. *The load/save state will fail if the saves of any iterable are not a deep copy*
 
 The game logic must manage the correct player turns and the game flow, so that it is always prepared to send a list of available actions along with the correct player to take those actions. The engine has no checks on the accuracy of the player ID or the actions presented.
 

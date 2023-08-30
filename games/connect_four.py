@@ -1,81 +1,17 @@
 from games.base_game_object import BaseGameObject
 
 
-class Player:
-    """No functions, just storage."""
-
-    def __init__(self, mark):
-        self.mark = mark
-        self.score = 0
-
-
 class ConnectFour(BaseGameObject):
     """Basic game of connect four."""
 
-    player_count = 2
-    rows = 6
-    columns = 7
-    win_cnt = 4
-    win_points = 1
-
     def __init__(self, player_count: int = 2):
-        """player_count is unused but is generally required for other games, so we add it here.
-
-        Args:
-            player_count (int): Play0er count.  Defaults to 2.
-        """
-        self.player_count = {0: Player("0"), 1: Player("1")}
-        self.grid = [
-            [" " for column in range(self.columns)] for row in range(self.rows)
-        ]
-        self.game_over = False
-        self.current_player = 0
-        self.board = ""
-        self.name = "Connect_Four"
-        self.pieces_placed = 0
-        self.allowed_columns = {0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 6}
-        self.set_win_dict()
-        self.set_arr_dict()
-
-    def test_array(self, test_arr):
-        """Simple helper function to determine if an array contains
-        four x's or o's
-
-        Args:
-            test (list): list on the grid
-        """
-        return (test_arr.count(test_arr[0]) == len(test_arr)) & (test_arr[0] != " ")
-
-    def is_game_over(self):
-        return self.game_over
-
-    def check_game_over(self, latest_piece):
-        """Tests for four types of wins:  row, column, and both diagonals.
-        Also tests for a draw.
-        Returns:
-            bool: Whether the game is over.
-        """
-
-        # Row win
-
-        potential_wins = self.arr_dict[latest_piece]
-        for winkey in potential_wins:
-            if winkey in self.win_dict.keys():
-                win_arr = self.win_dict[winkey]
-                test_arr = [self.grid[item[0]][item[1]] for item in win_arr]
-                if all([item != " " for item in test_arr]):
-                    if self.test_array(test_arr):
-                        self.game_over = True
-                        self.player_count[self.current_player].score = self.win_points
-                        return True
-                    else:
-                        self.win_dict.pop(winkey)
-
-        legal_actions = self.get_available_actions()
-        if len(legal_actions) == 0:
-            return True
-
-        return False
+        super().__init__(player_count)
+        self.player_marks = {0: "X", 1: "O"}
+        self.num_columns = 7
+        self.positions = [" "] * 42
+        self.win_points = 1
+        self.win_conditions = self.set_win_dict()
+        self.open_columns = [0, 1, 2, 3, 4, 5, 6]
 
     def get_available_actions(self, special_policy=False) -> list:
         """Checks which of the columns can have a piece added.
@@ -85,356 +21,191 @@ class ConnectFour(BaseGameObject):
             int:  current player number
         """
 
-        legal_actions = []
-        potential_columns = list(self.allowed_columns.keys())
-        for column in potential_columns:
-            if not all([self.grid[i][column] != " " for i in range(self.rows)]):
-                legal_actions.append(column)
-            else:
-                self.allowed_columns.pop(column)
-        if not legal_actions:
-            self.game_over = True
-            return legal_actions
+        legal_actions = [
+            column
+            for column in self.open_columns
+            if any(self.positions[i] == " " for i in range(column, 42, self.num_columns))
+        ]
 
+        if special_policy:  # CURRENTLY NOT WORKING
+            special_policy_actions = []
+            current_player = self.get_current_player()
+            for win_condition in self.win_conditions.values():
+                condition_state = self.get_condition_state(win_condition)
+
+                if " " in condition_state and condition_state.count(self.player_marks[current_player]) == 3:
+                    win_condition = [x for x in win_condition if self.positions[x] == " "][0]
+                    win_condition = win_condition % 7
+                    special_policy_actions.append(win_condition)
+
+                next_player = (self.current_player + 1) % self.player_count
+                if " " in condition_state and condition_state.count(self.player_marks[next_player]) == 3:
+                    win_condition = [x for x in win_condition if self.positions[x] == " "][0]
+                    win_condition = win_condition % 7
+                    special_policy_actions.append(win_condition)
+
+            special_policy_actions = list(set(special_policy_actions))
+            if len(special_policy_actions) > 0:
+                # print(
+                #     f"Available win positions for {self.player_marks[current_player]}, Special policy legal actions: {special_policy_actions}"
+                # )
+                return special_policy_actions
         return legal_actions
 
-    def get_current_player(self) -> int:
-        return self.current_player
-
-    def update_game_with_action(self, action, player_num):
+    def update_game_with_action(self, action, player):
         """Processes selected action
 
         Args:
             action (int): lookup index for the selected actions.  Ranges 0-6.
         """
-        for row in range(self.rows):
-            latest_row = self.rows - row - 1
-            if self.grid[latest_row][action] == " ":
-                self.grid[latest_row][action] = self.player_count[player_num].mark
-                break
-        self.pieces_placed += 1
-        if self.pieces_placed > 2 * (self.win_cnt - 1):
-            self.check_game_over(f"{latest_row}{action}")
-        self.current_player = (self.current_player + 1) % len(self.player_count)
-        self.save_state()
+        self.make_move(action, player)
 
-    def save_state(self):
-        """Saves the game state for printing"""
-        self.board = ""
-        for row in range(self.rows):
-            self.board += (
-                "|".join(self.grid[row][column] for column in range(self.columns))
-                + "\n"
-            )
-            self.board += "_" * (self.columns * 2 - 1) + "\n"
+    def is_game_over(self):
+        """Tests for four types of wins:  row, column, and both diagonals.
+        Also tests for a draw.
+        Returns:
+            bool: Whether the game is over.
+        """
+
+        # Row win
+
+        for win_condition in self.win_conditions.values():
+            condition_state = self.get_condition_state(win_condition)
+
+            if all(item == self.player_marks[0] for item in condition_state):
+                self.scores[0] = 1
+                self.scores[1] = -1
+                return True
+            if all(item == self.player_marks[1] for item in condition_state):
+                self.scores[1] = 1
+                self.scores[0] = -1
+                return True
+
+        avail_actions = self.get_available_actions()
+
+        if len(avail_actions) == 0:
+            self.scores[1] = 0
+            self.scores[0] = 0
+
+            return True
+        else:
+            return False
 
     def draw_board(self):
-        print(self.board)
-
-    def get_game_scores(self):
-        """Returns the scores
-
-        Returns:
-            dict: player number: score
-        """
-        return {
-            player_num: player.score for player_num, player in self.player_count.items()
-        }
+        board_rows = [
+            f"{self.positions[i]}|{self.positions[i+1]}|{self.positions[i+2]}|{self.positions[i+3]}|{self.positions[i+4]}|{self.positions[i+5]}|{self.positions[i+6]}"
+            for i in range(0, 42, self.num_columns)
+        ]
+        board = "\n_____________\n".join(board_rows)
+        print(board)
 
     def play_game(self):
-        self.save_state()
-        while not self.game_over:
-            legal_actions = self.get_available_actions()
-            print(self.board)
-            print(legal_actions)
-            action = int(input("Choose an action"))
-            self.update_game_with_action(action, self.current_player)
+        while not self.is_game_over():
+            pos = int(input("Select a move.  "))
+            self.make_move(pos, self.current_player)
+
+        for player_num in self.scores.keys():
+            print(f"{self.player_count[player_num]}:  {self.scores[player_num]}")
+
+        return self.scores
+
+    def save_game_state(self):
+        # self.save_game["positions"] = [x for x in self.positions]
+        self.save_game["positions"] = []
+        self.save_game["positions"].extend(self.positions)
+        self.save_game["scores"] = {x: y for x, y in self.scores.items()}
+        self.save_game["current_player"] = self.current_player
+
+    def load_save_game_state(self):
+        # self.positions = [x for x in self.save_game["positions"]]
+        self.positions = []
+        self.positions.extend(self.save_game["positions"])
+        self.scores = {x: y for x, y in self.save_game["scores"].items()}
+        self.current_player = self.save_game["current_player"]
+
+    def get_condition_state(self, win_condition):
+        return [self.positions[num] for num in win_condition]
+
+    def make_move(self, pos: int, current_player: int):
+        """Makes a move on the board and draws it"""
+        max_position = 42 - (self.num_columns - pos)
+
+        while self.positions[max_position] != " ":
+            max_position -= self.num_columns
+
+        self.positions[max_position] = self.player_marks[current_player]
+
+        self.current_player = (self.current_player + 1) % self.player_count
 
     def set_win_dict(self):
-        self.win_dict = {
-            "00row": [[0, 0], [0, 1], [0, 2], [0, 3]],
-            "01row": [[0, 1], [0, 2], [0, 3], [0, 4]],
-            "02row": [[0, 2], [0, 3], [0, 4], [0, 5]],
-            "03row": [[0, 3], [0, 4], [0, 5], [0, 6]],
-            "10row": [[1, 0], [1, 1], [1, 2], [1, 3]],
-            "11row": [[1, 1], [1, 2], [1, 3], [1, 4]],
-            "12row": [[1, 2], [1, 3], [1, 4], [1, 5]],
-            "13row": [[1, 3], [1, 4], [1, 5], [1, 6]],
-            "20row": [[2, 0], [2, 1], [2, 2], [2, 3]],
-            "21row": [[2, 1], [2, 2], [2, 3], [2, 4]],
-            "22row": [[2, 2], [2, 3], [2, 4], [2, 5]],
-            "23row": [[2, 3], [2, 4], [2, 5], [2, 6]],
-            "30row": [[3, 0], [3, 1], [3, 2], [3, 3]],
-            "31row": [[3, 1], [3, 2], [3, 3], [3, 4]],
-            "32row": [[3, 2], [3, 3], [3, 4], [3, 5]],
-            "33row": [[3, 3], [3, 4], [3, 5], [3, 6]],
-            "40row": [[4, 0], [4, 1], [4, 2], [4, 3]],
-            "41row": [[4, 1], [4, 2], [4, 3], [4, 4]],
-            "42row": [[4, 2], [4, 3], [4, 4], [4, 5]],
-            "43row": [[4, 3], [4, 4], [4, 5], [4, 6]],
-            "50row": [[5, 0], [5, 1], [5, 2], [5, 3]],
-            "51row": [[5, 1], [5, 2], [5, 3], [5, 4]],
-            "52row": [[5, 2], [5, 3], [5, 4], [5, 5]],
-            "53row": [[5, 3], [5, 4], [5, 5], [5, 6]],
-            "00col": [[0, 0], [1, 0], [2, 0], [3, 0]],
-            "10col": [[1, 0], [2, 0], [3, 0], [4, 0]],
-            "20col": [[2, 0], [3, 0], [4, 0], [5, 0]],
-            "01col": [[0, 1], [1, 1], [2, 1], [3, 1]],
-            "11col": [[1, 1], [2, 1], [3, 1], [4, 1]],
-            "21col": [[2, 1], [3, 1], [4, 1], [5, 1]],
-            "02col": [[0, 2], [1, 2], [2, 2], [3, 2]],
-            "12col": [[1, 2], [2, 2], [3, 2], [4, 2]],
-            "22col": [[2, 2], [3, 2], [4, 2], [5, 2]],
-            "03col": [[0, 3], [1, 3], [2, 3], [3, 3]],
-            "13col": [[1, 3], [2, 3], [3, 3], [4, 3]],
-            "23col": [[2, 3], [3, 3], [4, 3], [5, 3]],
-            "04col": [[0, 4], [1, 4], [2, 4], [3, 4]],
-            "14col": [[1, 4], [2, 4], [3, 4], [4, 4]],
-            "24col": [[2, 4], [3, 4], [4, 4], [5, 4]],
-            "05col": [[0, 5], [1, 5], [2, 5], [3, 5]],
-            "15col": [[1, 5], [2, 5], [3, 5], [4, 5]],
-            "25col": [[2, 5], [3, 5], [4, 5], [5, 5]],
-            "06col": [[0, 6], [1, 6], [2, 6], [3, 6]],
-            "16col": [[1, 6], [2, 6], [3, 6], [4, 6]],
-            "26col": [[2, 6], [3, 6], [4, 6], [5, 6]],
-            "00diag": [[0, 0], [1, 1], [2, 2], [3, 3]],
-            "10diag": [[1, 0], [2, 1], [3, 2], [4, 3]],
-            "20diag": [[2, 0], [3, 1], [4, 2], [5, 3]],
-            "30diag": [[3, 0], [2, 1], [1, 2], [0, 3]],
-            "40diag": [[4, 0], [3, 1], [2, 2], [1, 3]],
-            "50diag": [[5, 0], [4, 1], [3, 2], [2, 3]],
-            "01diag": [[0, 1], [1, 2], [2, 3], [3, 4]],
-            "11diag": [[1, 1], [2, 2], [3, 3], [4, 4]],
-            "21diag": [[2, 1], [3, 2], [4, 3], [5, 4]],
-            "31diag": [[3, 1], [2, 2], [1, 3], [0, 4]],
-            "41diag": [[4, 1], [3, 2], [2, 3], [1, 4]],
-            "51diag": [[5, 1], [4, 2], [3, 3], [2, 4]],
-            "02diag": [[0, 2], [1, 3], [2, 4], [3, 5]],
-            "12diag": [[1, 2], [2, 3], [3, 4], [4, 5]],
-            "22diag": [[2, 2], [3, 3], [4, 4], [5, 5]],
-            "32diag": [[3, 2], [2, 3], [1, 4], [0, 5]],
-            "42diag": [[4, 2], [3, 3], [2, 4], [1, 5]],
-            "52diag": [[5, 2], [4, 3], [3, 4], [2, 5]],
-            "03diag": [[0, 3], [1, 4], [2, 5], [3, 6]],
-            "13diag": [[1, 3], [2, 4], [3, 5], [4, 6]],
-            "23diag": [[2, 3], [3, 4], [4, 5], [5, 6]],
-            "33diag": [[3, 3], [2, 4], [1, 5], [0, 6]],
-            "43diag": [[4, 3], [3, 4], [2, 5], [1, 6]],
-            "53diag ": [[5, 3], [4, 4], [3, 5], [2, 6]],
-        }
-
-    def set_arr_dict(self):
-        self.arr_dict = {
-            "00": ["00row", "00col", "00diag"],
-            "01": ["00row", "01row", "01col", "01diag"],
-            "02": ["00row", "01row", "02row", "02col", "02diag"],
-            "03": ["00row", "01row", "02row", "03row", "03col", "30diag", "30diag"],
-            "04": ["01row", "02row", "03row", "04col", "31diag"],
-            "05": ["02row", "03row", "05col", "32diag"],
-            "06": ["03row", "06col", "33diag"],
-            "10": ["10row", "00col", "10col", "10diag"],
-            "11": ["10row", "11row", "01col", "11col", "00diag", "11diag"],
-            "12": [
-                "10row",
-                "11row",
-                "12row",
-                "02col",
-                "12col",
-                "30diag",
-                "30diag",
-                "12diag",
-            ],
-            "13": [
-                "10row",
-                "11row",
-                "12row",
-                "13row",
-                "03col",
-                "13col",
-                "13col",
-                "31diag",
-                "02diag",
-                "13diag",
-            ],
-            "14": [
-                "11row",
-                "12row",
-                "13row",
-                "04col",
-                "14col",
-                "41diag",
-                "41diag",
-                "03diag",
-            ],
-            "15": ["12row", "13row", "05col", "15col", "42diag", "33diag"],
-            "16": ["13row", "06col", "16col", "43diag"],
-            "20": ["20row", "00col", "10col", "20col", "20diag"],
-            "21": [
-                "20row",
-                "21row",
-                "01col",
-                "11col",
-                "21col",
-                "10diag",
-                "10diag",
-                "21diag",
-            ],
-            "22": [
-                "20row",
-                "21row",
-                "22row",
-                "02col",
-                "12col",
-                "22col",
-                "22col",
-                "40diag",
-                "11diag",
-                "31diag",
-                "22diag",
-            ],
-            "23": [
-                "20row",
-                "21row",
-                "22row",
-                "23row",
-                "03col",
-                "13col",
-                "13col",
-                "50diag",
-                "01diag",
-                "41diag",
-                "12diag",
-                "32diag",
-                "23diag",
-            ],
-            "24": [
-                "21row",
-                "22row",
-                "23row",
-                "04col",
-                "14col",
-                "24col",
-                "24col",
-                "02diag",
-                "42diag",
-                "13diag",
-                "33diag",
-            ],
-            "25": [
-                "22row",
-                "23row",
-                "05col",
-                "15col",
-                "25col",
-                "52diag",
-                "52diag",
-                "43diag",
-            ],
-            "26": ["23row", "06col", "16col", "26col", "53diag"],
-            "30": ["30row", "00col", "10col", "20col", "30diag"],
-            "31": [
-                "30row",
-                "31row",
-                "01col",
-                "11col",
-                "21col",
-                "20diag",
-                "20diag",
-                "31diag",
-            ],
-            "32": [
-                "30row",
-                "31row",
-                "32row",
-                "02col",
-                "12col",
-                "22col",
-                "22col",
-                "50diag",
-                "21diag",
-                "41diag",
-                "32diag",
-            ],
-            "33": [
-                "30row",
-                "31row",
-                "32row",
-                "33row",
-                "03col",
-                "13col",
-                "13col",
-                "00diag",
-                "11diag",
-                "51diag",
-                "22diag",
-                "42diag",
-                "33diag",
-            ],
-            "34": [
-                "31row",
-                "32row",
-                "33row",
-                "04col",
-                "14col",
-                "24col",
-                "24col",
-                "12diag",
-                "52diag",
-                "23diag",
-                "43diag",
-            ],
-            "35": [
-                "32row",
-                "33row",
-                "05col",
-                "15col",
-                "25col",
-                "02diag",
-                "02diag",
-                "53diag",
-            ],
-            "36": ["33row", "06col", "16col", "26col", "03diag"],
-            "40": ["40row", "10col", "20col", "40diag"],
-            "41": ["40row", "41row", "11col", "21col", "50diag", "41diag"],
-            "42": [
-                "40row",
-                "41row",
-                "42row",
-                "12col",
-                "22col",
-                "20diag",
-                "20diag",
-                "42diag",
-            ],
-            "43": [
-                "40row",
-                "41row",
-                "42row",
-                "43row",
-                "13col",
-                "23col",
-                "23col",
-                "21diag",
-                "52diag",
-                "43diag",
-            ],
-            "44": [
-                "41row",
-                "42row",
-                "43row",
-                "14col",
-                "24col",
-                "11diag",
-                "11diag",
-                "53diag",
-            ],
-            "45": ["42row", "43row", "15col", "25col", "12diag", "23diag"],
-            "46": ["43row", "16col", "26col", "13diag"],
-            "50": ["50row", "20col", "50diag"],
-            "51": ["50row", "51row", "21col", "51diag"],
-            "52": ["50row", "51row", "52row", "22col", "52diag"],
-            "53": ["50row", "51row", "52row", "53row", "23col", "20diag", "20diag"],
-            "54": ["51row", "52row", "53row", "24col", "21diag"],
-            "55": ["52row", "53row", "25col", "22diag"],
-            "56": ["53row", "26col", "23diag"],
+        return {
+            "00row": [0, 1, 2, 3],
+            "01row": [1, 2, 3, 4],
+            "02row": [2, 3, 4, 5],
+            "03row": [3, 4, 5, 6],
+            "10row": [7, 8, 9, 10],
+            "11row": [8, 9, 10, 11],
+            "12row": [9, 10, 11, 12],
+            "13row": [10, 11, 12, 13],
+            "20row": [14, 15, 16, 17],
+            "21row": [15, 16, 17, 18],
+            "22row": [16, 17, 18, 19],
+            "23row": [17, 18, 19, 20],
+            "30row": [21, 22, 23, 24],
+            "31row": [22, 23, 24, 25],
+            "32row": [23, 24, 25, 26],
+            "33row": [24, 25, 26, 27],
+            "40row": [28, 29, 30, 31],
+            "41row": [29, 30, 31, 32],
+            "42row": [30, 31, 32, 33],
+            "43row": [31, 32, 33, 34],
+            "50row": [35, 36, 37, 38],
+            "51row": [36, 37, 38, 39],
+            "52row": [37, 38, 39, 40],
+            "53row": [38, 39, 40, 41],
+            "00col": [0, 7, 14, 21],
+            "10col": [7, 14, 21, 28],
+            "20col": [14, 21, 28, 35],
+            "01col": [1, 8, 15, 22],
+            "11col": [8, 15, 22, 29],
+            "21col": [15, 22, 29, 36],
+            "02col": [2, 9, 16, 23],
+            "12col": [9, 16, 23, 30],
+            "22col": [16, 23, 30, 37],
+            "03col": [3, 10, 17, 24],
+            "13col": [10, 17, 24, 31],
+            "23col": [17, 24, 31, 38],
+            "04col": [4, 11, 18, 25],
+            "14col": [11, 18, 25, 32],
+            "24col": [18, 25, 32, 39],
+            "05col": [5, 12, 19, 26],
+            "15col": [12, 19, 26, 33],
+            "25col": [19, 26, 33, 40],
+            "06col": [6, 13, 20, 27],
+            "16col": [13, 20, 27, 34],
+            "26col": [20, 27, 34, 41],
+            "00diag": [0, 8, 16, 24],
+            "10diag": [7, 15, 23, 31],
+            "20diag": [14, 22, 30, 38],
+            "30diag": [21, 15, 9, 3],
+            "40diag": [28, 22, 16, 10],
+            "50diag": [35, 29, 23, 17],
+            "01diag": [1, 9, 17, 25],
+            "11diag": [8, 16, 24, 32],
+            "21diag": [15, 23, 31, 39],
+            "31diag": [22, 16, 10, 4],
+            "41diag": [29, 23, 17, 11],
+            "51diag": [36, 30, 24, 18],
+            "02diag": [2, 10, 18, 26],
+            "12diag": [9, 17, 25, 33],
+            "22diag": [16, 24, 32, 40],
+            "32diag": [23, 17, 11, 5],
+            "42diag": [30, 24, 18, 12],
+            "52diag": [37, 31, 25, 19],
+            "03diag": [3, 11, 19, 27],
+            "13diag": [10, 18, 26, 34],
+            "23diag": [17, 25, 33, 41],
+            "33diag": [24, 18, 12, 6],
+            "43diag": [31, 25, 19, 13],
+            "53diag ": [38, 32, 26, 20],
         }

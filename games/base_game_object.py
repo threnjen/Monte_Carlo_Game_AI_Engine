@@ -8,23 +8,42 @@ class BaseGameObject(ABC):
 
         The following hooks are required in the Game __init__ file:
         game init must accept player_count argument (int)
-        """
-        self.player_count = player_count
+        game init should declare a save_game dictionary (dict)
 
-    @abstractmethod
+        Init in Game Object should first call super().__init__(player_count)
+        """
+        self.save_game = {}
+        self.player_count = player_count
+        self.game_over = False
+        self.current_player = 0  # can be overridden in child class if this is determined differently (randomly etc). Must always be an int.
+        self.scores = {
+            x: 0 for x in range(0, player_count)
+        }  # scores MUST live in this format of player: score in a dictionary
+
     def get_current_player(self) -> int:
         """
-        Hook #1
         Get currently available actions and active player to take an action from the list
 
         return active player ID as int
         """
-        pass
+        return self.current_player
+
+    def get_game_scores(self):
+        """
+        Retrieves game score
+
+        Must be a dictionary in format {playerID: Score}
+        Where playerID matches IDs sent with get_legal_actions
+
+        Returns:
+            [dict]: dictionary in format playerID: score
+        """
+        return self.scores
 
     @abstractmethod
     def get_available_actions(self, special_policy: bool = False) -> list:
         """
-        Hook #2
+        Hook #1
         Get currently available actions to take an action from the list
 
         Format [list of legal actions]
@@ -36,9 +55,9 @@ class BaseGameObject(ABC):
         pass
 
     @abstractmethod
-    def update_game_with_action(self, action: str, player: int):
+    def update_game_with_action(self, action: str, player: int) -> None:
         """
-        Hook #3
+        Hook #2
         Sends action choice and player to game
 
         After selecting an item from the list of legal actions (see Hook #1),
@@ -56,7 +75,7 @@ class BaseGameObject(ABC):
     @abstractmethod
     def is_game_over(self) -> bool:
         """
-        Hook #4
+        Hook #3
         Checks if game has ended
 
         Requires only True or False
@@ -67,26 +86,34 @@ class BaseGameObject(ABC):
         pass
 
     @abstractmethod
-    def get_game_scores(self) -> dict:
+    def draw_board(self) -> None:
         """
-        Hook #5
-        Retrieves game score
-
-        Must be a dictionary in format {playerID: Score}
-        Where playerID matches IDs sent with get_legal_actions
-
-        Returns:
-            [dict]: dictionary in format playerID: score
-        """
-        pass
-
-    @abstractmethod
-    def draw_board(self):
-        """
-        Hook #6
+        Hook #4
         Requests the game client draw a text representation of the game state
 
         Returns:
             draws game state
+        """
+        pass
+
+    @abstractmethod
+    def save_game_state(self) -> None:
+        """
+        Hook #5
+        Saves the vital elements of the game to re-populate on load.
+
+        The engine does not care about the format of the save state..
+        The game logic must manage the usage of the save state and load state.
+        Save your mutable game state objects here in the self.save_game dictionary
+        Be sure to use DEEP COPIES, as efficiently as possible
+        """
+        pass
+
+    @abstractmethod
+    def load_save_game_state(self) -> None:
+        """
+        Hook #6
+        load the saved game state.
+        Be sure to use DEEP COPIES on load, as efficiently as possible
         """
         pass

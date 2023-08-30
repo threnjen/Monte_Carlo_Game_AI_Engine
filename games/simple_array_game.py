@@ -1,4 +1,7 @@
 import numpy as np
+from copy import copy, deepcopy
+from collections import defaultdict
+from itertools import product
 from games.base_game_object import BaseGameObject
 
 
@@ -13,6 +16,7 @@ class SimpleArrayGame(BaseGameObject):
     """
 
     def __init__(self, player_count):
+        super().__init__(player_count)
         self.board = np.zeros((5, 5))
         self.name = "array_test"
 
@@ -26,9 +30,7 @@ class SimpleArrayGame(BaseGameObject):
         return np.any(self.board.sum(axis=0) == 5)
 
     def update_game_with_action(self, action, player):
-        # action = tuple(action)
         self.board[action] = 1
-        return self.board
 
     def get_game_scores(self):
         scores = {}
@@ -38,3 +40,10 @@ class SimpleArrayGame(BaseGameObject):
 
     def draw_board(self):
         print(self.board)
+
+    def save_game_state(self):
+        print("Saving game state:")
+        self.save_game["board"] = self.board.copy()
+
+    def load_save_game_state(self):
+        self.board = self.save_game["board"].copy()

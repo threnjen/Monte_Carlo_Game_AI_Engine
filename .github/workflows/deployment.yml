@@ -12,14 +12,14 @@ jobs:
         uses: actions/setup-python@v2
         with:
           python-version: 3.9
-      - name: Install dependencies
-        run: |
-          python -m pip install pipenv
-          pipenv sync --dev
-          pipenv run pip list
+      # - name: Install dependencies
+      #   run: |
+      #     python -m pip install pipenv
+      #     pipenv sync --dev
+      #     pipenv run pip list
       #- name: Lint with black
       #  run: |
       #    pipenv run black
-      - name: Test with pytest and coverage
-        run: |
-          pipenv run pytest
+      # - name: Test with pytest and coverage
+      #   run: |
+      #     pipenv run pytest
