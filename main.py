@@ -57,5 +57,3 @@ if __name__ == "__main__":
     )
 
     GameMultiprocessor(game_name, sims, player_count, verbose, num_games, decay).playout_simulations()
-
-    # GameEngine(game_name, sims, player_count, verbose, decay).play_game_by_turns(sims)
