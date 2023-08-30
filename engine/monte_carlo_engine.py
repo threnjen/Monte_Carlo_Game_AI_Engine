@@ -146,7 +146,7 @@ class MonteCarloEngine:
         print(
             f"Chosen Node: {id(selected_child)} Visits: {selected_child.number_of_visits} Score: {selected_child.total_score} "
         )
-        print(f"Action taken: {node_player}, {selected_child.get_action()}")
+        print(f"Action taken: Player {node_player}, Action {selected_child.get_action()}")
 
         return selected_child, selected_child.get_action(), deep_game_log
 

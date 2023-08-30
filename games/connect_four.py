@@ -38,10 +38,16 @@ class ConnectFour(BaseGameObject):
                     win_condition = win_condition % 7
                     special_policy_actions.append(win_condition)
 
+                next_player = (self.current_player + 1) % self.player_count
+                if " " in condition_state and condition_state.count(self.player_marks[next_player]) == 3:
+                    win_condition = [x for x in win_condition if self.positions[x] == " "][0]
+                    win_condition = win_condition % 7
+                    special_policy_actions.append(win_condition)
+
             special_policy_actions = list(set(special_policy_actions))
             if len(special_policy_actions) > 0:
                 # print(
-                #    f"Available win positions for {self.player_marks[current_player]}, Special policy legal actions: {special_policy_actions}"
+                #     f"Available win positions for {self.player_marks[current_player]}, Special policy legal actions: {special_policy_actions}"
                 # )
                 return special_policy_actions
         return legal_actions
@@ -68,11 +74,11 @@ class ConnectFour(BaseGameObject):
 
             if all(item == self.player_marks[0] for item in condition_state):
                 self.scores[0] = 1
-                self.scores[1] = -1  # - 10*open_positions
+                self.scores[1] = -1
                 return True
             if all(item == self.player_marks[1] for item in condition_state):
                 self.scores[1] = 1
-                self.scores[0] = -1  # - 10*open_positions
+                self.scores[0] = -1
                 return True
 
         avail_actions = self.get_available_actions()
@@ -104,21 +110,18 @@ class ConnectFour(BaseGameObject):
         return self.scores
 
     def save_game_state(self):
-        # print("Saving game state:")
-        self.save_game["positions"] = [x for x in self.positions]
+        # self.save_game["positions"] = [x for x in self.positions]
+        self.save_game["positions"] = []
+        self.save_game["positions"].extend(self.positions)
         self.save_game["scores"] = {x: y for x, y in self.scores.items()}
         self.save_game["current_player"] = self.current_player
-        # print("DRAW BOARD BEFORE SAVE")
-        # self.draw_board()
 
     def load_save_game_state(self):
-        # print("DRAW BOARD BEFORE LOAD")
-        # self.draw_board()
-        self.positions = [x for x in self.save_game["positions"]]
+        # self.positions = [x for x in self.save_game["positions"]]
+        self.positions = []
+        self.positions.extend(self.save_game["positions"])
         self.scores = {x: y for x, y in self.save_game["scores"].items()}
         self.current_player = self.save_game["current_player"]
-        # print("DRAW BOARD AFTER LOAD")
-        # self.draw_board()
 
     def get_condition_state(self, win_condition):
         return [self.positions[num] for num in win_condition]

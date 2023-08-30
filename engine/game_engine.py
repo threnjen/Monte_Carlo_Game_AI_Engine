@@ -109,6 +109,7 @@ class GameEngine:
         start = time.time()
 
         while not self.is_game_over():
+            print("\n\n")
             sims_this_turn = sims
             self.turn_log = {}
             self.turn += 1  # increments the game turn
@@ -135,7 +136,7 @@ class GameEngine:
             self.draw_board()
 
         end = time.time()
-        print(f"Total run time: {end-start}")
+        print(f"\n\nTotal run time: {end-start}")
 
         print(self.get_game_scores())
         game_log = pd.DataFrame(self.deep_game_log)
