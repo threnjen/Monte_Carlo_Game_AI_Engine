@@ -4,7 +4,7 @@ from random import randrange
 from itertools import combinations
 from .gui_tryout import display_stuff
 from collections import Counter
-
+from pydantic import BaseModel
 
 MASTER_TILE_DICTIONARY = {
     "red": 0,
@@ -28,6 +28,50 @@ def print_dict(print_dictionary: dict[str, int]) -> str:
     return "\n".join([f"{key}: {value}" for key, value in print_dictionary.items()])
 
 
+class TileContainer(BaseModel):
+    tile_dictionary: dict[str, int]
+
+    @computed_field
+    @property   
+    def _tile_count(self) -> int:
+        return sum(self.tile_dictionary.values())
+
+    @computed_field
+    @property
+    def available_tiles(self) -> dict[str, int]:
+        return {color: amount for color, amount in self.tile_dictionary.items() if amount > 0}
+
+    @validate_call
+    def add_tiles_to_container(self, tiles_to_add: dict[str, int]):
+        for tile, amount in tiles_to_add.items():
+            if tile not in self.tile_dictionary.keys():
+                raise ValueError(f"{tile} not a valid color!")
+            self.tile_dictionary[tile] += amount
+
+
+class Tower:
+    def __init__(self):
+        self.tiles = TileContainer(MASTER_TILE_DICTIONARY.copy())
+
+    def dump_all_tiles(self) -> TileContainer:
+        """This dumps tiles from the tower if possible.  Tiles only get dumped when the bag empties
+        when drawing from the bag.
+        
+        Returns:
+            dictionary: Tiles dumped or an empty dictionary.
+        """
+
+        # converts contents of Tower dictionary into a dump dictionary
+        dump_tiles = self.tiles.copy()
+        # resets tower dictionary to empty
+        self.tiles = TileContainer(MASTER_TILE_DICTIONARY.copy())
+        return (
+            dump_tiles  # returns dump tiles dict to game state to pass to Bag.add_tiles
+        )
+
+    def add_tiles_to_tower(self, tiles_to_add: dict[str, int]):
+        self.tiles.add_tiles_to_container(tiles_to_add)
+
 class TileContainer:
     """This can be used for both the tower and the bag.
 
@@ -37,11 +81,11 @@ class TileContainer:
 
     def __init__(
         self,
-        tile_count: int = 0,
         tile_dictionary: dict[str, int] = MASTER_TILE_DICTIONARY,
     ):
-        """The default object here is the tower.  For other objects, this can either be initialized
-        with the bag keyword and defaults, or initialized with the correct parameters.
+        """The default object here is the tower.
+        
+        For other objects, this can either be initialized with defaults, or initialized with the correct parameters.
         Correct parameters can always be set later via the add_tiles method.
 
         Args:
@@ -51,20 +95,25 @@ class TileContainer:
             master_tile_dictionary
             The master_tile_dictionary gives the default keys in the dictionary.
         """
-        self.tile_count = tile_count  # sets initial empty tile count on init
         # sets initial empty tile dictionary on init
         self.tile_dictionary = tile_dictionary.copy()
+        self._tile_count = self.get_tile_count()  # sets initial empty tile count on init
 
     def add_dictionaries_elementwise(
         self, dictionary_1: dict[str, int], dictionary_2: dict[str, int]
     ) -> dict[str, int]:
+        # We often find ourselves needing to create a new dictionary as the 
         return {
             key: dictionary_1.get(key, 0) + dictionary_2.get(key, 0)
-            for key in set(dictionary_1) or set(dictionary_2)
+            for key in set(dictionary_1.keys()) or set(dictionary_2.keys())
         }
 
+    def get_tile_count(self):
+        return sum(self.tile_dictionary.values())
+
     def get_available_tiles(self) -> dict[str, int]:
-        """Gets tiles in the container as a dictionary
+        """Gets tiles in the container as a dictionary.
+        Omits colors where zero tiles are available.
 
         Returns:
             dict: dictionary of color : count pairs
@@ -73,51 +122,19 @@ class TileContainer:
             color: self.tile_dictionary[color]
             for color in self.tile_dictionary.keys()
             if self.tile_dictionary[color] > 0
-        }  # returns dictionary of tiles in the container
-        # that are over 0
+        }
 
-    def add_tiles(self, new_tiles: dict[str, int]):
+    def add_tiles_to_container(self, new_tiles: dict[str, int]):
         """
 
         Args:
             new_tiles (dictionary): tiles to add
-
-        Raises:
-            f: Error when passed dictionary contains unknown key.
         """
         self.tile_dictionary = self.add_dictionaries_elementwise(
             self.tile_dictionary, new_tiles
         )
-        self.tile_count += sum(new_tiles.values())
+        self._tile_count += sum(new_tiles.values())
 
-
-class Tower(TileContainer):
-    """The tower is the container for tiles that have been used and discarded.
-    It can be dumped into the bag
-
-    Args:
-        tile_container (tile_container): parent class
-    """
-
-    def dump_all_tiles(self) -> dict[str, int]:
-        """This dumps tiles from the tower if possible.  Tiles only get dumped when drawing from the bag.
-        If no tiles exist in the tower, this will return an empty dictionary, which will cause the
-        caller to skip remaining attempts to draw from the bag.
-
-        Returns:
-            dictionary: Tiles dumped or an empty dictionary.
-        """
-        if not self.tile_count:
-            return {}
-
-        # converts contents of Tower dictionary into a dump dictionary
-        dump_tiles = self.tile_dictionary.copy()
-        # resets tower dictionary to empty
-        self.tile_dictionary = MASTER_TILE_DICTIONARY.copy()
-        self.tile_count = 0  # resets tower tile count to empty
-        return (
-            dump_tiles  # returns dump tiles dict to game state to pass to Bag.add_tiles
-        )
 
 
 class Bag(TileContainer):
@@ -138,27 +155,24 @@ class Bag(TileContainer):
         Args:
             take_count (int): Number of tiles to take
 
-        Raises:
-            f: Error occurs when invalid key passed to the chosen_tiles dictionary; this can only
-            occur if the container's tile dictionary somehow gets corrupted
-            f: Error occurs when called on a tower object
-
         Returns:
             dict: dictionary of tiles chosen
             int: number of tiles yet taken
         """
 
         chosen_tiles = MASTER_TILE_DICTIONARY.copy()
+
+        if self._tile_count < take_count:
+            chosen_tiles = self.tile_dictionary.copy()
+            self.add_tiles_to_container(tower.dump_all_tiles())
+            take_count = take_count - sum(chosen_tiles.values())
+
+        # This feels ugly.  I think it might be a symptom of poor storage; perhaps a dictionary is wrong.
         for i in range(take_count):
-            available_tiles = self.get_available_tiles()
-            if not bool(available_tiles):
-                self.tile_dictionary = tower.dump_all_tiles()
-                available_tiles = self.get_available_tiles()
-            color = choice(list(available_tiles.keys()))
+            color = choice(list(self.get_available_tiles().keys()))
             chosen_tiles[color] += 1
             self.tile_dictionary[color] -= 1
-            self.tile_count -= 1
-
+            self._tile_count -= 1
         return chosen_tiles
 
 
@@ -171,21 +185,25 @@ class FactoryDisplay(TileContainer):
     """
 
     def get_available_tiles(self, wild_color: str) -> dict[str, int]:
-        tile_count = sum([cnt for cnt in self.tile_dictionary.values()])
-        if self.tile_dictionary[wild_color] == tile_count and tile_count > 0:
-            return {wild_color: tile_count}
+
+        if self._tile_count == 0:
+            available_tiles = {}
+        # Azul rules are that you cannot only take a wild from a display unless that's all the display contains
+        # Even in that case, you can onloy take one wild.
+        elif self.tile_dictionary[wild_color] == self._tile_count:
+            available_tiles = {wild_color: self._tile_count}
         else:
-            return {
+            available_tiles = {
                 color: self.tile_dictionary[color]
                 for color in self.tile_dictionary.keys()
                 if all([self.tile_dictionary[color] > 0, color != wild_color])
             }
-            # returns dictionary of tiles in the container
-        # that are over 0
+        return available_tiles
+
 
     def take_chosen_tiles(
         self, chosen_color: str, wild_color: str
-    ) -> tuple[dict[str, int]]:
+    ) -> tuple[dict[str, int], dict[str, int]]:
         """We choose a color and take all tiles of that color.  Since player_count cannot skip,
         we return empty dictionarys if the color is not available.  This will force the player to
         choose another display or choose another color.  We also pass in the wild color for the
@@ -196,38 +214,21 @@ class FactoryDisplay(TileContainer):
             chosen_color (str): Chosen color
             wild_color (str): Wild color for the round
 
-        Raises:
-            f: Error thrown when wild color passed is not valid.  Note this is not necessary
-            for chosen colors, since chosen colors check against the universe of available
-            tiles, not the universe of possible tiles.
-
         Returns:
             dict: chosen_tiles, includes number of chosen color and 0 or 1 wild
             dict: leftover tiles, to be placed in the center
         """
         chosen_tiles = {}
-        # get the tiles avail on the display object
-
-        # if chosen_color in available_tiles.keys():  # check if the chosen color is avail
-        if chosen_color != wild_color:  # if the chosen color isn't the wild color,
-            # set the chosen tiles = the chosen color
-            chosen_tiles[chosen_color] = self.tile_dictionary[chosen_color]
-            # set the display object for chosen color to 0
+        if chosen_color != wild_color:
+            chosen_tiles[chosen_color] = self.tile_dictionary.get(chosen_color, 0)
             self.tile_dictionary[chosen_color] = 0
-            # if the wild color is also available
             if self.tile_dictionary[wild_color]:
-                # add one wild to the chosen tiles
                 chosen_tiles[wild_color] = 1
-                # decrement display object by wild color by 1
                 self.tile_dictionary[wild_color] -= 1
-        else:  # if the chosen color is the wild color
-            # set chosen tiles to exactly 1 for that color
+        else:
             chosen_tiles[chosen_color] = 1
-            # decrement display object by wild color by 1
             self.tile_dictionary[chosen_color] -= 1
-        # make a copy of tiles in display object to send to senter
         send_to_center = self.tile_dictionary.copy()
-        # reset this display object to empty
         self.tile_dictionary = MASTER_TILE_DICTIONARY.copy()
         return chosen_tiles, send_to_center
 
@@ -259,7 +260,7 @@ class CenterOfTable(FactoryDisplay):
             available.Defaults to True.
         """
         super(CenterOfTable, self).__init__(tile_count, tile_dictionary)
-        self.first_player_avail = True
+        self._first_player_avail = True
 
     def take_center_tiles(
         self, chosen_color: str, wild_color: str
@@ -277,17 +278,17 @@ class CenterOfTable(FactoryDisplay):
         """
         chosen_tiles, center_tiles = self.take_chosen_tiles(chosen_color, wild_color)
         self.tile_dictionary = center_tiles
-        if self.first_player_avail:
-            self.first_player_avail = False
+        if self._first_player_avail:
+            self._first_player_avail = False
             return chosen_tiles, True
         else:
             return chosen_tiles, False
 
     def reset_first_player(self):
-        self.first_player_avail = True
+        self._first_player_avail = True
 
     def get_first_player_avail(self) -> bool:
-        return self.first_player_avail
+        return self._first_player_avail
 
 
 class Supply:
@@ -297,9 +298,7 @@ class Supply:
 
     def __init__(self):
         """Generates the supply.  Default is to initialize an empty supply."""
-        # super(Supply, self).__init__(tile_count, tile_dictionary)
-        # self.tile_positions = {i: None for i in range(10)}
-        self.tile_positions = []
+        self._tile_positions = []
 
     def get_tile_count(self) -> int:
         """Returns supply tile count
@@ -307,10 +306,10 @@ class Supply:
         Returns:
             int: tile count
         """
-        return len(self.tile_positions)
+        return len(self._tile_positions)
 
     def get_tile_positions(self):
-        return self.tile_positions
+        return self._tile_positions
 
     def fill_supply(self, tiles: dict[str, int]):
         """Fills the supply with tiles from a dictionary.
@@ -321,7 +320,7 @@ class Supply:
         """
         for color, cnt in tiles.items():
             for tile in range(cnt):
-                self.tile_positions.append(color)
+                self._tile_positions.append(color)
 
     def get_legal_actions(self) -> dict[int, str]:
         """Gets the possible tiles we can pull
@@ -331,10 +330,10 @@ class Supply:
         """
         legal_actions = {
             pos: [
-                self.tile_positions[pos],
-                f"{self.tile_prefix}_{self.tile_positions[pos]}",
+                self._tile_positions[pos],
+                f"{self.tile_prefix}_{self._tile_positions[pos]}",
             ]
-            for pos in range(len(self.tile_positions))
+            for pos in range(len(self._tile_positions))
         }
         return legal_actions
 
@@ -358,7 +357,7 @@ class Factory:
         self.center = CenterOfTable()
 
     def populate_display(self, display_num: int, tile_dict: dict[str, int]):
-        self.factory_displays[display_num].add_tiles(tile_dict)
+        self.factory_displays[display_num].add_tiles_to_container(tile_dict)
 
     def take_from_display(
         self, display_number: int, chosen_color: str, wild_color: str
@@ -380,7 +379,7 @@ class Factory:
         received_tiles, center_tiles = self.factory_displays[
             display_number
         ].take_chosen_tiles(chosen_color, wild_color)
-        self.center.add_tiles(center_tiles)
+        self.center.add_tiles_to_container(center_tiles)
         return received_tiles, False
 
     def get_center_tiles(self, wild_color: str) -> dict[str, int]:
@@ -1002,15 +1001,14 @@ class Game:
     factory_req = {1: 9, 2: 5, 3: 7, 4: 9}
     first_player_cost = -2
 
-    def __init__(self, player_count):
+    def __init__(self, player_count: int):
         """Builds the game from the player count.
         Args:
             player_count (int): Player count for this game.
         """
-        self.player_count = player_count
         self.factory = Factory(Game.factory_req[player_count])
         self.supply = Supply()
-        self.player_count = {i: Player(i) for i in range(self.player_count)}
+        self.players = {i: Player(i) for i in range(player_count)}
         self.bag = Bag(
             132,
             {color: Game.tiles_per_color for color in MASTER_TILE_DICTIONARY.keys()},
@@ -1022,7 +1020,7 @@ class Game:
         self.end_round = True
         self.place_tile_phase = False
         self.wild_color = None
-        self.select_starting_player()
+        self.select_starting_player(player_count)
         self._state = None
         self.phase = 1
         self.start_round()
@@ -1030,10 +1028,10 @@ class Game:
         self.save_state()
         self.name = "Azul"
 
-    def select_starting_player(self):
+    def select_starting_player(self, player_count: int):
         """Called once at the beginning of the game."""
-        self.first_player = randrange(0, self.player_count)
-        self.player_count[self.first_player].first_player = True
+        self.first_player = randrange(0, player_count)
+        self.players[self.first_player].first_player = True
 
     def fill_supply(self):
         """Fills the supply with tiles (up to 10).  Called at the beginning
@@ -1048,7 +1046,7 @@ class Game:
     def get_legal_actions(self, rollout: bool = False):
         """Called before every player_count turn.  Depends on the board state and current player.
         This shouldn't alter the game state except at the beginning of a round"""
-        curr_player = self.player_count[self.current_player_num]
+        curr_player = self.players[self.current_player_num]
         if self.phase == 1:
             # Legal actions include taking tiles from the factory displays
             curr_player.legal_moves = self.factory.get_legal_actions(self.wild_color)
@@ -1085,7 +1083,7 @@ class Game:
             return list(legal_moves.keys()), self.current_player_num
 
     def move_reserves_to_player_supply(self):
-        for player in self.player_count.values():
+        for player in self.players.values():
             player.change_player_supply(player.player_board.reserved_tiles)
             player.player_board.reserved_tiles = {}
 
@@ -1102,12 +1100,12 @@ class Game:
             tile_dict = self.bag.randomly_choose_tiles(
                 Game.tiles_per_factory, self.tower
             )
-            display.add_tiles(tile_dict)
+            display.add_tiles_to_container(tile_dict)
 
         self.move_reserves_to_player_supply()
         self.phase = 1
         self.current_player_num = self.first_player
-        for player in self.player_count.values():
+        for player in self.players.values():
             player.done_placing = False
         self.factory.center.reset_first_player()
         self.save_state()
@@ -1120,7 +1118,7 @@ class Game:
             action (var): Player action.
         """
 
-        curr_player = self.player_count[self.current_player_num]
+        curr_player = self.players[self.current_player_num]
         sel_action = curr_player.legal_moves[action]
         if self.phase == 1:
             # If we're in phase one, the action is to take tiles from
@@ -1138,7 +1136,7 @@ class Game:
             if self.factory.get_legal_actions(self.wild_color):
                 self.current_player_num = (
                     self.current_player_num + 1
-                ) % self.player_count
+                ) % self.players
             else:
                 self.phase = 2
                 self.current_player_num = self.first_player
@@ -1151,7 +1149,7 @@ class Game:
             # Here, the sel_action is a tile color
             if self.supply.get_tile_count():
                 curr_player.change_player_supply(
-                    {self.supply.tile_positions.pop(action): 1}
+                    {self.supply._tile_positions.pop(action): 1}
                 )
                 curr_player.bonus_earned -= 1
             else:
@@ -1177,7 +1175,7 @@ class Game:
             curr_player.player_tile_supply = MASTER_TILE_DICTIONARY.copy()
             curr_player.done_placing = True
             self.fill_supply()
-            self.current_player_num = (self.current_player_num + 1) % self.player_count
+            self.current_player_num = (self.current_player_num + 1) % self.players
         else:
             # If they didn't stop placing tiles, they will place one here.
             # Remove the tiles from the player supply (using negatives),
@@ -1193,7 +1191,7 @@ class Game:
             # than creating a new one
             used_tiles[curr_player.legal_moves[action][1]] -= 1
             # We subtract one because one of the tiles stays on the player board.
-            self.tower.add_tiles(used_tiles)
+            self.tower.add_tiles_to_container(used_tiles)
             # We pass the action array to the player board to add a tile and receive points
             # and a possible bonus back
             bonus_tile_count, points = curr_player.player_board.add_tile_to_star(
@@ -1203,11 +1201,11 @@ class Game:
             curr_player.player_score += points
 
         self.save_state()
-        if all([player.done_placing for player in self.player_count.values()]):
+        if all([player.done_placing for player in self.players.values()]):
             self.current_round += 1
             if self.current_round > self.total_rounds:
                 self.move_reserves_to_player_supply()
-                for player in self.player_count.values():
+                for player in self.players.values():
                     player.player_score += -player.get_tile_count()
                 self.game_over = True
                 print(f"Game result: {print_dict(self.get_game_scores())}")
@@ -1220,7 +1218,7 @@ class Game:
     def get_game_scores(self) -> dict[int, int]:
         return {
             player_num: player.player_score
-            for player_num, player in self.player_count.items()
+            for player_num, player in self.players.items()
         }
 
     def save_state(self):
@@ -1228,7 +1226,7 @@ class Game:
         self._state = f"Phase: {self.phase}\n"
         self._state += f"Current_player:  {self.current_player_num}\n"
         self._state += (
-            f"First player available: {self.factory.center.first_player_avail}\n"
+            f"First player available: {self.factory.center._first_player_avail}\n"
         )
         self._state += f"First player for next round: {self.first_player}\n"
         for key, disp in self.factory.factory_displays.items():
@@ -1239,8 +1237,8 @@ class Game:
             f"{print_dict(self.factory.center.get_available_tiles(self.wild_color))}\n"
         )
         self._state += "Supply tiles: \n"
-        self._state += f"{self.supply.tile_positions}"
-        for player_number, player in self.player_count.items():
+        self._state += f"{self.supply._tile_positions}"
+        for player_number, player in self.players.items():
             self._state += f"Player {player_number} score: {player.player_score}\n"
             self._state += f"Player {player_number} tiles:\n"
             self._state += f"{print_dict(player.player_tile_supply)}\n"
@@ -1258,17 +1256,17 @@ class Game:
         for ind, disp in self.factory.factory_displays.items():
             factory_dict[ind] = disp.tile_dictionary
         factory_dict[-1] = self.factory.center.tile_dictionary
-        supply_dict = Counter(self.supply.tile_positions)
+        supply_dict = Counter(self.supply._tile_positions)
         player_dict = {}
         stars = {}
-        for ind, player in self.player_count.items():
+        for ind, player in self.players.items():
             player_dict[ind] = player.player_tile_supply
             stars[ind] = {}
             for star_ind, star in player.player_board.stars.items():
                 stars[ind].update({star_ind: star.tile_positions})
         score_dict = {
             player_num: player.player_score
-            for player_num, player in self.player_count.items()
+            for player_num, player in self.players.items()
         }
 
         action = display_stuff(
@@ -1276,7 +1274,7 @@ class Game:
             supply_dict,
             player_dict,
             stars,
-            self.player_count[self.current_player_num].legal_moves,
+            self.players[self.current_player_num].legal_moves,
             score_dict,
         )
         return action
@@ -1287,7 +1285,7 @@ class Game:
             self.get_legal_actions()
             # print(self._state)
 
-            for key, value in self.player_count[
+            for key, value in self.players[
                 self.current_player_num
             ].legal_moves.items():
                 print(f"{value}:  enter {key}")
@@ -1297,7 +1295,7 @@ class Game:
 
 
 # %%
-# test = Game(1)
-# test.play_game()
+test = Game(2)
+test.play_game()
 
 # %%
