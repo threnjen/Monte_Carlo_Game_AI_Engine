@@ -1,18 +1,10 @@
 import pytest
-import games.azul as azul
-
-MASTER_TILE_DICTIONARY = {
-    'red': 0,
-    "orange": 0,
-    "yellow": 0,
-    "green": 0,
-    "blue": 0,
-    "purple": 0
-}
+import games.azul.azul as azul
+from games.azul.azul import MASTER_TILE_DICTIONARY
 
 
 @pytest.fixture
-def tile_dictionary_rybp():
+def tile_dictionary_rybp() -> dict[str, int]:
     return {
         'red': 1,
         "orange": 0,
@@ -24,17 +16,17 @@ def tile_dictionary_rybp():
 
 
 @pytest.fixture
-def tile_dictionary_rybp_avail():
+def tile_dictionary_rybp_avail() -> dict[str, int]:
     return {'red': 1, 'yellow': 3, 'blue': 5, 'purple': 3}
 
 
 @pytest.fixture
-def tile_dictionary_ro():
+def tile_dictionary_ro() -> dict[str, int]:
     return {'red': 3, "orange": 1}
 
 
 @pytest.fixture
-def tile_dictionary_ro_full():
+def tile_dictionary_ro_full() -> dict[str, int]:
     return {
         'red': 3,
         "orange": 1,
@@ -46,62 +38,67 @@ def tile_dictionary_ro_full():
 
 
 @pytest.fixture
-def tile_dictionary_both():
+def tile_dictionary_both() -> dict[str, int]:
     return {'red': 4, "orange": 1, "yellow": 3, "blue": 5, "purple": 3}
 
 
 @pytest.fixture
-def printed_dictionary():
+def printed_dictionary() -> str:
     return """red: 1\norange: 0\nyellow: 3\ngreen: 0\nblue: 5\npurple: 3"""
 
 
 @pytest.fixture
-def tower_w_tiles(tile_dictionary_rybp: dict):
+def tower_w_tiles(tile_dictionary_rybp: dict) -> azul.Tower:
     return azul.Tower(15, tile_dictionary_rybp)
 
 
 @pytest.fixture
-def fact_display(tile_dictionary_ro_full: dict):
+def fact_display(tile_dictionary_ro_full: dict) -> azul.FactoryDisplay:
     return azul.FactoryDisplay(4, tile_dictionary_ro_full)
 
 
 @pytest.fixture
-def tower_empty():
+def tower_empty() -> azul.Tower:
     return azul.Tower()
 
 
 @pytest.fixture
-def empty_center_of_table():
+def empty_center_of_table() -> azul.CenterOfTable:
     return azul.CenterOfTable()
 
 
 @pytest.fixture
-def center_w_ro(tile_dictionary_ro_full:dict):
+def center_w_ro(tile_dictionary_ro_full:dict) -> azul.CenterOfTable:
     return azul.CenterOfTable(4, tile_dictionary_ro_full)
 
 
 @pytest.fixture
-def supply_empty():
+def supply_empty() -> azul. Supply:
     return azul.Supply()
 
 @pytest.fixture
-def factory_w_displays(tile_dictionary_ro: dict):
+def factory_w_displays(tile_dictionary_ro: dict) -> azul.Factory:
     factory= azul.Factory(2)
     factory.populate_display(0, tile_dictionary_ro)
     factory.populate_display(1, tile_dictionary_ro)
     return factory
+
+def test_get_available_tiles(tower_w_tiles: azul.Tower, tile_dictionary_rybp: dict):
+    assert tower_w_tiles.get_available_tiles() == tile_dictionary_rybp
+
+
 
 def test_print_dictionary(tile_dictionary_rybp:dict, printed_dictionary:str):
     assert azul.print_dict(tile_dictionary_rybp) == printed_dictionary
 
 
 def test_dump_full_tower(tower_w_tiles:azul.Tower, tile_dictionary_rybp:dict):
-    assert tower_w_tiles.dump_all_tiles() == tile_dictionary_rybp
+    assert tower_w_tiles.remove_remaining_tiles() == tile_dictionary_rybp
     assert tower_w_tiles.get_available_tiles() == {}
 
 
 def test_dump_empty_tower(tower_empty:azul.Tower):
-    assert tower_empty.dump_all_tiles() == {}
+    assert tower_empty.remove_remaining_tiles() == {}
     assert tower_empty.get_available_tiles() == {}
 
 
@@ -110,15 +107,15 @@ def test_tower_avail(tower_w_tiles: azul.Tower, tile_dictionary_rybp_avail:azul.
 
 
 def test_add_tiles(tower_w_tiles: azul.Tower, tile_dictionary_ro: dict, tile_dictionary_both: dict):
-    tower_w_tiles.add_tiles(tile_dictionary_ro)
+    tower_w_tiles.add_tiles_to_container(tile_dictionary_ro)
     assert tower_w_tiles.get_available_tiles() == tile_dictionary_both
 
 
-def test_get_available_no_wild(fact_display: azul.FactoryDisplay, tile_dictionary_ro:dict):
+def test_get_available_factory_no_wild(fact_display: azul.FactoryDisplay, tile_dictionary_ro:dict):
     assert fact_display.get_available_tiles('purple') == tile_dictionary_ro
 
 
-def test_get_available_wild(fact_display: azul.FactoryDisplay):
+def test_get_available_factory_wild(fact_display: azul.FactoryDisplay):
     assert fact_display.get_available_tiles('orange') == {'red': 3}
 
 
@@ -167,7 +164,7 @@ def test_take_center_tiles_w_wild(center_w_ro:azul.CenterOfTable):
 
 
 def test_take_center_tiles_no_wild_no_fp(center_w_ro: azul.CenterOfTable):
-    center_w_ro.first_player_avail = False
+    center_w_ro._first_player_avail = False
     assert center_w_ro.take_center_tiles('red', 'purple') == ({
         'red': 3
     }, False)
