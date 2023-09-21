@@ -58,7 +58,6 @@ class Game(BaseModel):
         if self.first_player is None:
             self.first_player = randrange(0, self.player_count)
         self.players[self.first_player].first_player = True
-        self.start_round()
 
     def fill_supply(self):
         """Fills the supply with tiles (up to 10).  Called at the beginning
@@ -123,12 +122,22 @@ class Game(BaseModel):
     def play_game(self):
         """Plays the game (in the case where we are not using a bot)"""
         while not self.is_game_over():
-            pass
-            # This is the hard part.
-            # Roughly speaking:
-            # Players take turns
-            # Resolve the board consequences
-            # end round if needed
+            self.start_round()
+            while self.phase == 1:
+                # players take tiles from the factory
+                if self.factory.is_factory_empty():
+                    self.set_game_phase(2)
+            self.set_current_player(self.current_player_num)
+            while self.phase == 2:
+                if not self.players[self.current_player_num].done_placing:
+                    # Player places tiles on their player board
+                    pass
+                self.set_current_player((self.current_player_num + 1) % self.player_count)
+                if self.current_player_num == self.first_player:
+                    self.set_game_phase(1)
+                    self.current_round += 1
+            if self.current_round >= Game.total_rounds:
+                self.game_over = True
 
 
 

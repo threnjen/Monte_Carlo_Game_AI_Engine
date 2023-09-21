@@ -4,15 +4,21 @@ from typing import ClassVar
 
 
 class Factory(BaseModel):
-    model_config = {'arbitrary_types_allowed': True}
+    model_config = {"arbitrary_types_allowed": True}
     tile_prefix: ClassVar[str] = "fact"
     display_count: int
     factory_displays: dict[int, tc.FactoryDisplay] = None
     center: tc.CenterOfFactory = Field(default_factory=tc.CenterOfFactory)
 
+    def is_factory_empty(self) -> bool:
+        factory_display_total_tiles = sum(
+            display.total() for display in self.factory_displays.values()
+        )
+        return factory_display_total_tiles + self.center.total() == 0
+
     def model_post_init(self, __context) -> None:
         if self.factory_displays is None:
-            self.factory_displays ={
+            self.factory_displays = {
                 i: tc.FactoryDisplay() for i in range(self.display_count)
             }
 
@@ -36,9 +42,9 @@ class Factory(BaseModel):
         Returns:
             dict: received tiles
         """
-        received_tiles = self.factory_displays[
-            display_number
-        ].take_chosen_tiles(chosen_color, wild_color)
+        received_tiles = self.factory_displays[display_number].take_chosen_tiles(
+            chosen_color, wild_color
+        )
         self.center += self.factory_displays[display_number].remove_all_tiles()
         return received_tiles
 
