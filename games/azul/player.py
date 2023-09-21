@@ -1,6 +1,9 @@
-from azul.tile_container import MASTER_TILE_CONTAINER, TileContainer
+from games.azul.tile_container import MASTER_TILE_CONTAINER, TileContainer
+from pydantic import BaseModel, Field
+from typing import Any, ClassVar
 
-class Star:
+
+class Star(BaseModel):
     """Player board star.  There are seven possible:  six colors and one colorless,
     denoted here as 'all'.  The primary action here is to add a tile, and the primary
     return is the points received.
@@ -9,7 +12,7 @@ class Star:
         object (object): Star on player board.
     """
 
-    STAR_POINTS = {
+    STAR_POINTS: ClassVar[dict[str, int]] = {
         "red": 14,
         "green": 18,
         "orange": 17,
@@ -18,31 +21,19 @@ class Star:
         "purple": 20,
         "all": 12,
     }
-    STAR_SIZE = 6
+    STAR_SIZE: ClassVar[int] = 6
+    color: str
+    star_full: bool = False
+    tile_positions: dict[int, bool] = Field(
+        default_factory=lambda: {i: False for i in range(1, Star.STAR_SIZE + 1)}
+    )
+    colors_allowed: dict[str, bool] = {color: False for color in MASTER_TILE_CONTAINER.keys()}
 
-    def __init__(self, color: str):
-        """The only unique starting property of the star is the color, since points are from
-        the class variable.  Otherwise, all stars are the same.  Their position is controlled
-        by the player board, so all bonus tile received are also controlled by the player board.
-
-        Args:
-            color (string): Star color
-        """
-        self.color = color
-        self.tile_positions = {i: False for i in range(1, self.STAR_SIZE)}
-        self.star_full = False
-        self.colors_allowed = {
-            color: False for color in MASTER_TILE_CONTAINER.keys()
-        }
-
-        self.setup_colors_allowed()
-
-    def setup_colors_allowed(self):
+    def model_post_init(self, __context: Any) -> None:
         """If the start type is all, we need to allow all colors initially.
         Afterward, we will restrict as tiles are placed.
         Otherwise, we will restrict to the single color of the star.  This seem
         redundant, but is to avoid different treatment for the "all" start later.
-
         """
         if self.color == "all":
             self.colors_allowed = {color: True for color in self.colors_allowed.keys()}
@@ -131,17 +122,14 @@ class Star:
         return points
 
 
-class PlayerBoard:
+class PlayerBoard(BaseModel):
     """The player board stores the player stars, which in turn store the tiles placed.
     It may be best to have a function to add tiles to the star from here."""
-
-    BONUS_STAR_INDEX = 0
-    BONUS_POS_INDEX = 1
-    ACTION_STAR_INDEX = 0
-    ACTION_TILE_INDEX = 1
-    ACTION_POS_INDEX = 2
-    TILE_PREFIX = "star"
-    BONUSES_LOOKUP = {
+    model_config = {'arbitrary_types_allowed': True}
+    BONUS_STAR_INDEX: ClassVar[int] = 0
+    BONUS_POS_INDEX: ClassVar[int] = 1
+    TILE_PREFIX: ClassVar[str] = "star"
+    BONUSES_LOOKUP: ClassVar[dict[str, list[str]]] = {
         "blue1": ["YBS"],
         "blue2": ["YBS", "BAP"],
         "blue3": ["BAP", "BRS"],
@@ -186,7 +174,7 @@ class PlayerBoard:
         "all6": ["PAP", "OAP"],
     }
 
-    BONUS_CRITERIA = {
+    BONUS_CRITERIA: ClassVar[dict[str, dict]] = {
         "BAP": {
             "criteria": [("blue", 2), ("blue", 3), ("all", 2), ("all", 3)],
             "reward": 1,
@@ -242,24 +230,15 @@ class PlayerBoard:
         "BW": {"criteria": [("blue", 5), ("blue", 6)], "reward": 3},
         "RW": {"criteria": [("red", 5), ("red", 6)], "reward": 3},
     }
+    reserved_tiles: TileContainer = TileContainer(MASTER_TILE_CONTAINER.copy())
+    stars: dict[str, Star] = {
+        color: Star(color=color)
+        for color in list(MASTER_TILE_CONTAINER.keys()) + ["all"]
+    }
 
-    def __init__(self, player_num: int):
-        """Note that we don't copy the reseverd tiles dictionary from
-        the master_tile_dictionary.  We can only ever reserve four tiles;
-        there's no need to have all six spots reserved.
-
-        Args:
-            player_color (str): Player color
-            first_plyaer (bool, optional): Whether this is the first player. Defaults to False.
-        """
-        self.player = player_num
-        self.reserved_tiles = TileContainer()
-        self.stars = {
-            color: Star(color)
-            for color in list(MASTER_TILE_CONTAINER.keys()) + ["all"]
-        }
-
-    def add_tile_to_star(self, star_color: str, tile_color: str, position: str) -> tuple[int]:
+    def add_tile_to_star(
+        self, star_color: str, tile_color: str, position: str
+    ) -> tuple[int]:
         """Adds a tile to star, checks for bonuses and points, and returns both.
 
         Args:
@@ -338,3 +317,18 @@ class PlayerBoard:
                 ]
             ) * (tile_placed_position)
         return points_earned
+
+
+class Player(BaseModel):
+    model_config = {'arbitrary_types_allowed': True}
+    max_tile_reserve: ClassVar[int] = 4
+    first_player: bool
+    player_number: int
+    bonus_earned: int = 0
+    done_placing: bool = False
+    player_score: int = 5
+    player_board: PlayerBoard = PlayerBoard()
+    player_tile_supply: TileContainer = MASTER_TILE_CONTAINER.copy()
+
+    def reserve_tiles(self, tiles_to_reserve: TileContainer):
+        self.player_tile_supply.subtract(tiles_to_reserve)

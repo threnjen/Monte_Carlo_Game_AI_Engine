@@ -12,6 +12,7 @@ matplotlib = "*"
 pydot = "*"
 graphviz = "*"
 scipy = "*"
+pydantic = "*"
 
 [dev-packages]
 pytest = "*"
