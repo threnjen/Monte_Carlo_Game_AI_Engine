@@ -1,6 +1,8 @@
 from __future__ import annotations
 from collections import Counter
 from random import sample
+from games.azul.action import AzulAction
+from itertools import combinations
 
 
 MASTER_TILE_CONTAINER = Counter(
@@ -117,6 +119,32 @@ class FactoryDisplay(TileContainer):
         self.subtract(chosen_tiles)
         return chosen_tiles
 
+    def list_possible_actions(self, wild_color: str) -> list[AzulAction]:
+        """Lists all possible actions for the factory display.  This includes taking all tiles of
+        a given color or taking a wild tile (if present).
+
+        Args:
+            wild_color (str): Wild color for the round
+
+        Returns:
+            list: List of potential actions
+        """
+        actions = []
+
+        for color in self.keys():
+            if self[color] == 0:
+                continue
+            action = AzulAction()
+            # We can't take wild colors if other colors are present
+            if color == wild_color and (self[wild_color] != self.total()):
+                continue
+            action[AzulAction.FACTORY_TAKE_COLOR_START + AzulAction.COLORS[color]] = self[color]
+            # If we don't have a wild color, we're allowed to take one if it's present
+            if self[wild_color] > 0 and color != wild_color:
+                action[AzulAction.FACTORY_TAKE_COLOR_START + AzulAction.COLORS[wild_color]] = 1
+            actions.append(action)
+        return actions
+
 
 class CenterOfFactory(FactoryDisplay):
     """Center of table area (between factories).  Functions the same as a factory display,
@@ -170,3 +198,27 @@ class Supply(TileContainer):
             tiles (dict): dictionary of tile: count pairs.
         """
         self += fill_tiles
+
+    def list_possible_actions(self, num_tiles_to_take: int) -> list[AzulAction]:
+        """Lists all possible actions for the supply.  This includes taking all tiles of
+        a given color or taking a wild tile (if present).
+
+        Args:
+            num_tiles_to_take (int): Number of tiles to take
+
+        Returns:
+            list: List of potential actions
+        """
+
+        if num_tiles_to_take >= self.total():
+            action = AzulAction()
+            for color in self.keys():
+                action[AzulAction.BONUS_START + AzulAction.COLORS[color]] = self[color]
+            return [action]
+        combinations_list = list(combinations(list(self.elements()), num_tiles_to_take))
+        actions = []
+        for combination in combinations_list:
+            action = AzulAction()
+            for color in combination:
+                action[AzulAction.BONUS_START + AzulAction.COLORS[color]] += 1
+            actions.append(action)

@@ -1,11 +1,12 @@
 import games.azul.tile_container as tc
 from pydantic import BaseModel, Field
 from typing import ClassVar
-
+from games.azul.action import AzulAction
 
 class Factory(BaseModel):
     model_config = {"arbitrary_types_allowed": True}
     tile_prefix: ClassVar[str] = "fact"
+    center_size: ClassVar[int] = 1
     display_count: int
     factory_displays: dict[int, tc.FactoryDisplay] = None
     center: tc.CenterOfFactory = Field(default_factory=tc.CenterOfFactory)
@@ -64,3 +65,19 @@ class Factory(BaseModel):
             self.center.take_chosen_tiles(chosen_color, wild_color),
             self.center.take_first_player(),
         )
+
+    def list_possible_actions(self, wild_color: str) -> list[AzulAction]:
+        """Lists all potential actions for the factory.  This includes taking from any factory
+        display or the center. 
+
+        Returns:
+            list: List of potential actions
+        """
+        actions = []
+        for display in self.factory_displays.values():
+            actions.append(
+                display.list_possible_actions(wild_color)
+            )
+        actions.append(
+            self.center.list_possible_actions(wild_color))
+        return actions

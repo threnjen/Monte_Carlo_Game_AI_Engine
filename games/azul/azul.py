@@ -28,7 +28,7 @@ class Game(BaseModel):
     }
     # Number of factory displays by player count
     factory_display_requirement: ClassVar[dict[int, int]] = {1: 9, 2: 5, 3: 7, 4: 9}
-    cost_to_take_first_player: ClassVar[int] = -2
+    cost_to_take_first_player: ClassVar[int] = 2
     player_count: int
     current_round: int = 1
     current_player_num: int = None
@@ -147,4 +147,3 @@ test = Game(player_count=2)
 import json
 with open("test.json", "w") as f:
     f.write(json.dumps(test.model_dump()))
-

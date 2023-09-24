@@ -1,6 +1,8 @@
 from games.azul.tile_container import MASTER_TILE_CONTAINER, TileContainer
 from pydantic import BaseModel, Field
 from typing import Any, ClassVar
+from games.azul.action import AzulAction
+from itertools import combinations
 
 
 class Star(BaseModel):
@@ -24,10 +26,12 @@ class Star(BaseModel):
     STAR_SIZE: ClassVar[int] = 6
     color: str
     star_full: bool = False
-    tile_positions: dict[int, bool] = Field(
+    filled_positions: dict[int, bool] = Field(
         default_factory=lambda: {i: False for i in range(1, Star.STAR_SIZE + 1)}
     )
-    colors_allowed: dict[str, bool] = {color: False for color in MASTER_TILE_CONTAINER.keys()}
+    colors_allowed: dict[str, bool] = {
+        color: False for color in MASTER_TILE_CONTAINER.keys()
+    }
 
     def model_post_init(self, __context: Any) -> None:
         """If the start type is all, we need to allow all colors initially.
@@ -40,7 +44,7 @@ class Star(BaseModel):
         else:
             self.colors_allowed[self.color] = True
 
-    def place_tiles_on_star(self, position: int, color: str) -> int:
+    def place_tiles_on_star(self, position: int, color: str):
         """Adds a tile to the board at a given position.
         This can only be done if the position is empty and if the
         player has the required tiles.  However, the tile requirement
@@ -54,16 +58,83 @@ class Star(BaseModel):
             int: Points gained from tile placement, including completing the star if applicable.
         """
 
-        self.tile_positions[position] = True
+        self.filled_positions[position] = True
         if self.color == "all":
             self.colors_allowed[color] = False
-        if all([value for value in self.tile_positions.values()]):
+        if all([value for value in self.filled_positions.values()]):
             self.star_full = True
-        points_earned = (
+
+    def score_points_for_position_placed(self, position: int) -> int:
+        """Scores points for a given position, if it is filled.  This is used
+        for the end of the round.
+
+        Args:
+            position (int): Position to score
+
+        Returns:
+            int: Points earned
+        """
+        return (
             self.check_contiguous(position)
             + self.star_full * Star.STAR_POINTS[self.color]
         )
-        return points_earned
+
+    def list_possible_actions(self, tiles: TileContainer, wild_color: str):
+        """Lists all possible actions for the star.  This includes placing a tile of the
+        star color or a wild tile (if present).  Note that wild cannot be taken if other
+        tiles are present, and any color choice will also return one wild (if present)
+
+        Args:
+            tiles (TileContainer): Tiles available to place
+            wild_color (str): Wild color for the round
+
+        Returns:
+            list: List of potential actions
+        """
+        actions = []
+        for color in self.colors_allowed.keys():
+            if not self.colors_allowed[color]:
+                continue
+            for position in self.filled_positions.keys():
+                actions.append(
+                    self._generate_actions_for_position(
+                        tiles, position, color, wild_color
+                    )
+                )
+        return actions
+
+    def _generate_actions_for_position(
+        self, tiles: TileContainer, position: int, color: str, wild_color: str
+    ):
+        # If we're playing a wild, there's only one way to fill a position with just wilds
+        if color == wild_color:
+            action = AzulAction()
+            action[AzulAction.STAR_POINT_START + position] = 1
+            action[
+                AzulAction.STAR_SPEND_COLOR_START + AzulAction.COLORS[color]
+            ] = position
+            return [action]
+        # Otherwise, we need to generate all possible combinations of wilds and the color
+        action_list = []
+        # We demand at least one non-wild tile, and we must have sufficient primary color tiles
+        # This means our primary tile count has a maximum of 1 or the position less the number of wilds
+        # It also means the primary tile count has a minimum of the number of primary tiles or the position
+        for primary_color_count in range(
+            max(position - tiles.get(wild_color, 0), 1),
+            min(tiles.get(color, 0), position) + 1,
+        ):
+            if primary_color_count > tiles.get(color, 0):
+                continue
+            action = AzulAction()
+            action[AzulAction.STAR_POINT_START + position] = 1
+            action[
+                AzulAction.STAR_SPEND_COLOR_START + AzulAction.COLORS[color]
+            ] = primary_color_count
+            action[
+                AzulAction.STAR_SPEND_COLOR_START + AzulAction.COLORS[wild_color]
+            ] = (position - primary_color_count)
+            action_list.append(action)
+        return action_list
 
     def check_left_contiguous(self, position: int) -> int:
         """Checks the number of contiguous tiles to the left and returns the point value,
@@ -77,7 +148,7 @@ class Star(BaseModel):
         """
         points = 1
         for points in range(1, self.STAR_SIZE + 1):
-            if self.tile_positions[(position - points - 1) % self.STAR_SIZE + 1]:
+            if self.filled_positions[(position - points - 1) % self.STAR_SIZE + 1]:
                 pass
             else:
                 return points
@@ -98,7 +169,7 @@ class Star(BaseModel):
         # This is terrible, but I had some dumb error I couldn't trace in my indices somewhere
         # in a different part of the code.  I'll fix this someday (ie. never)
         for distance in range(1, self.STAR_SIZE):
-            if self.tile_positions[(position + distance - 1) % self.STAR_SIZE + 1]:
+            if self.filled_positions[(position + distance - 1) % self.STAR_SIZE + 1]:
                 points += 1
             else:
                 return points
@@ -125,7 +196,8 @@ class Star(BaseModel):
 class PlayerBoard(BaseModel):
     """The player board stores the player stars, which in turn store the tiles placed.
     It may be best to have a function to add tiles to the star from here."""
-    model_config = {'arbitrary_types_allowed': True}
+
+    model_config = {"arbitrary_types_allowed": True}
     BONUS_STAR_INDEX: ClassVar[int] = 0
     BONUS_POS_INDEX: ClassVar[int] = 1
     TILE_PREFIX: ClassVar[str] = "star"
@@ -236,6 +308,16 @@ class PlayerBoard(BaseModel):
         for color in list(MASTER_TILE_CONTAINER.keys()) + ["all"]
     }
 
+    def list_possible_actions_for_tile_placement(
+        self, tiles: TileContainer, wild_color: str
+    ):
+        action_list = []
+        for star in self.stars.values():
+            if star.star_full:
+                continue
+            action_list.append(star.list_possible_actions(tiles, wild_color))
+        return action_list
+
     def add_tile_to_star(
         self, star_color: str, tile_color: str, position: str
     ) -> tuple[int]:
@@ -284,7 +366,7 @@ class PlayerBoard(BaseModel):
 
             bonus_achieved = all(
                 [
-                    self.stars[tile[self.BONUS_STAR_INDEX]].tile_positions[
+                    self.stars[tile[self.BONUS_STAR_INDEX]].filled_positions[
                         tile[self.BONUS_POS_INDEX]
                     ]
                     for tile in self.BONUS_CRITERIA[potential_bonus]["criteria"]
@@ -312,7 +394,7 @@ class PlayerBoard(BaseModel):
         if tile_placed_position < 5:
             points_earned = all(
                 [
-                    self.stars[color].tile_positions[tile_placed_position]
+                    self.stars[color].filled_positions[tile_placed_position]
                     for color in self.stars.keys()
                 ]
             ) * (tile_placed_position)
@@ -320,7 +402,7 @@ class PlayerBoard(BaseModel):
 
 
 class Player(BaseModel):
-    model_config = {'arbitrary_types_allowed': True}
+    model_config = {"arbitrary_types_allowed": True}
     max_tile_reserve: ClassVar[int] = 4
     first_player: bool
     player_number: int
@@ -332,3 +414,22 @@ class Player(BaseModel):
 
     def reserve_tiles(self, tiles_to_reserve: TileContainer):
         self.player_tile_supply.subtract(tiles_to_reserve)
+
+    def _get_reserve_actions(self) -> list[AzulAction]:
+        if self.max_tile_reserve >= self.player_tile_supply.total():
+            action = AzulAction()
+            for color in self.player_tile_supply():
+                action[AzulAction.BONUS_START + AzulAction.COLORS[color]] = self[color]
+            return [action]
+        combinations_list = list(
+            combinations(
+                list(self.player_tile_supply.elements()), self.max_tile_reserve()
+            )
+        )
+        actions = []
+        for combination in combinations_list:
+            action = AzulAction()
+            for color in combination:
+                action[AzulAction.BONUS_START + AzulAction.COLORS[color]] += 1
+            actions.append(action)
+        return actions
