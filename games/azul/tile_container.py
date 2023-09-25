@@ -4,15 +4,22 @@ from random import sample
 from games.azul.action import AzulAction
 from itertools import combinations
 
+RED = 0
+ORANGE = 1
+YELLOW = 2
+GREEN = 3
+BLUE = 4
+PURPLE = 5
+
 
 MASTER_TILE_CONTAINER = Counter(
     {
-        "red": 0,
-        "orange": 0,
-        "yellow": 0,
-        "green": 0,
-        "blue": 0,
-        "purple": 0,
+        RED: 0,
+        ORANGE: 0,
+        YELLOW: 0,
+        GREEN: 0,
+        BLUE: 0,
+        PURPLE: 0,
     }
 )
 
@@ -93,7 +100,7 @@ class FactoryDisplay(TileContainer):
     """
 
     def take_chosen_tiles(
-        self, chosen_color: str, wild_color: str
+        self, chosen_color: int, wild_color: int
     ) -> tuple[dict[str, int], dict[str, int]]:
         """We choose a color and take all tiles of that color.  Since player_count cannot skip,
         we return empty dictionarys if the color is not available.  This will force the player to
@@ -102,8 +109,8 @@ class FactoryDisplay(TileContainer):
         if that tile is available.
 
         Args:
-            chosen_color (str): Chosen color
-            wild_color (str): Wild color for the round
+            chosen_color (int): Chosen color
+            wild_color (int): Wild color for the round
 
         Returns:
             dict: chosen_tiles, includes number of chosen color and 0 or 1 wild
@@ -119,12 +126,12 @@ class FactoryDisplay(TileContainer):
         self.subtract(chosen_tiles)
         return chosen_tiles
 
-    def list_possible_actions(self, wild_color: str) -> list[AzulAction]:
+    def get_available_actions(self, wild_color: int) -> list[AzulAction]:
         """Lists all possible actions for the factory display.  This includes taking all tiles of
         a given color or taking a wild tile (if present).
 
         Args:
-            wild_color (str): Wild color for the round
+            wild_color (int): Wild color for the round
 
         Returns:
             list: List of potential actions
@@ -138,10 +145,10 @@ class FactoryDisplay(TileContainer):
             # We can't take wild colors if other colors are present
             if color == wild_color and (self[wild_color] != self.total()):
                 continue
-            action[AzulAction.FACTORY_TAKE_COLOR_START + AzulAction.COLORS[color]] = self[color]
+            action[AzulAction.FACTORY_TAKE_COLOR_START + color] = self[color]
             # If we don't have a wild color, we're allowed to take one if it's present
             if self[wild_color] > 0 and color != wild_color:
-                action[AzulAction.FACTORY_TAKE_COLOR_START + AzulAction.COLORS[wild_color]] = 1
+                action[AzulAction.FACTORY_TAKE_COLOR_START + wild_color] = 1
             actions.append(action)
         return actions
 
@@ -199,7 +206,7 @@ class Supply(TileContainer):
         """
         self += fill_tiles
 
-    def list_possible_actions(self, num_tiles_to_take: int) -> list[AzulAction]:
+    def get_available_actions(self, num_tiles_to_take: int) -> list[AzulAction]:
         """Lists all possible actions for the supply.  This includes taking all tiles of
         a given color or taking a wild tile (if present).
 
@@ -213,12 +220,12 @@ class Supply(TileContainer):
         if num_tiles_to_take >= self.total():
             action = AzulAction()
             for color in self.keys():
-                action[AzulAction.BONUS_START + AzulAction.COLORS[color]] = self[color]
+                action[AzulAction.BONUS_START + color] = self[color]
             return [action]
         combinations_list = list(combinations(list(self.elements()), num_tiles_to_take))
         actions = []
         for combination in combinations_list:
             action = AzulAction()
             for color in combination:
-                action[AzulAction.BONUS_START + AzulAction.COLORS[color]] += 1
+                action[AzulAction.BONUS_START + color] += 1
             actions.append(action)

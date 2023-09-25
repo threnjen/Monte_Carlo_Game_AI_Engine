@@ -2,7 +2,7 @@ import numpy as np
 import copy
 
 from engine.monte_carlo_node import MonteCarloNode
-from games.base_game_object import BaseGameObject
+from games.base_game_object import GameEnvironment
 from engine.monte_carlo_tree import MonteCarloTree
 
 
@@ -21,7 +21,7 @@ class MonteCarloEngine:
         self.root = MonteCarloNode(player=start_player, game_state="Root", game_image="Root")
         self.tree.add_mc_node(self.root)
         self.verbose = verbose
-        self.game: BaseGameObject = None
+        self.game: GameEnvironment = None
 
     def update_action_log_start(
         self, node: MonteCarloNode, sim_num: int, node_player: str
@@ -55,7 +55,7 @@ class MonteCarloEngine:
     def sim_turn_select_best_node(
         self,
         num_sims: int,
-        game: BaseGameObject,
+        game: GameEnvironment,
         node_player: int,
         parent: MonteCarloNode,
     ) -> tuple[MonteCarloNode, list[str]]:
@@ -168,7 +168,7 @@ class MonteCarloEngine:
 
         return selected_child, self.tree.get_action(parent_node=parent, child_node=selected_child), deep_game_log
 
-    def _copy_game_state_for_sim(self, game: BaseGameObject) -> BaseGameObject:
+    def _copy_game_state_for_sim(self, game: GameEnvironment) -> GameEnvironment:
         """copy the game state to test rollout"""
         return copy.deepcopy(game)
 

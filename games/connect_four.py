@@ -1,4 +1,4 @@
-from games.base_game_object import BaseGameObject
+from games.base_game_object import GameEnvironment
 
 
 class Player:
@@ -9,7 +9,7 @@ class Player:
         self.score = 0
 
 
-class ConnectFour(BaseGameObject):
+class ConnectFour(GameEnvironment):
     """Basic game of connect four."""
 
     player_count = 2

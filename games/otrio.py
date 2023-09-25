@@ -1,7 +1,7 @@
 from cgi import test
 import numpy as np
 
-from games.base_game_object import BaseGameObject
+from games.base_game_object import GameEnvironment
 
 
 class Player:
@@ -16,7 +16,7 @@ class Player:
         self.pieces[2] = [mark, mark, mark]
 
 
-class Otrio(BaseGameObject):
+class Otrio(GameEnvironment):
     def __init__(self, player_count):
 
         self.board = np.zeros((3, 3, 3)).astype("int")

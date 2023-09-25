@@ -1,7 +1,12 @@
-from abc import ABC, abstractmethod
+from abc import abstractmethod
+from pydantic import BaseModel
+from .base_game_object import GameEnvironment as BaseGameEnvironment
+from .player import Player as BasePlayer
 
+class GameEnvironment(BaseModel):
+    game: BaseGameEnvironment
+    players: dict[int, BasePlayer]
 
-class BaseGameObject(ABC):
     def __init__(self, player_count: int):
         """
         Initializes game.

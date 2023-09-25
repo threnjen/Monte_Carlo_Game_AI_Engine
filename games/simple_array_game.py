@@ -1,8 +1,8 @@
 import numpy as np
-from games.base_game_object import BaseGameObject
+from games.base_game_object import GameEnvironment
 
 
-class SimpleArrayGame(BaseGameObject):
+class SimpleArrayGame(GameEnvironment):
     """
     Game rules:
     There is an array of 5x5 zeros

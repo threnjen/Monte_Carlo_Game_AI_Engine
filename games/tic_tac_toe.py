@@ -1,10 +1,10 @@
 from random import choice
 
 from pandas import array
-from games.base_game_object import BaseGameObject
+from games.base_game_object import GameEnvironment
 
 
-class TicTacToe(BaseGameObject):
+class TicTacToe(GameEnvironment):
     """Tic tac toe game"""
 
     def __init__(self, player_count=2):

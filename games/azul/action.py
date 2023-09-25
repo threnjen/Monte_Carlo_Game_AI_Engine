@@ -1,31 +1,31 @@
+from typing import ClassVar
 # This is the right length for the vector, but it's possible the implementation is (very) wrong
-class AzulAction(list):
-    PHASE_1_START = 0
-    PHASE_1_END = 16
 
-    PHASE_2_START = 16
-    PHASE_2_END = 53
-    FACTORY_START = 0
-    FACTORY_END = 9
-    CENTER_START = 9
-    CENTER_END = 10
-    FACTORY_TAKE_COLOR_START = 10
-    FACTORY_TAKE_COLOR_END = 16
-    STAR_START = 16
-    STAR_END = 23
-    STAR_POINT_START = 23
-    STAR_POINT_END = 29
-    STAR_SPEND_COLOR_START = 29
-    STAR_SPEND_COLOR_END = 35
-    BONUS_START = 35
-    BONUS_END = 41
-    TILE_START = 41
-    TILE_END = 47
-    SAVE_TILE_START = 47
-    SAVE_TILE_END = 53
-    COLORS = {'red':0, 'orange':1, 'yellow':2, 'green':3, 'blue':4, 'purple':5}
+import numpy as np
+class AzulAction(np.ndarray):
+    PHASE_1_START: ClassVar[int] = 0
+    PHASE_1_END: ClassVar[int] = 16
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        if len(self) == 0:
-            self.extend([0] * self.PHASE_2_END)
+    PHASE_2_START: ClassVar[int] = 16
+    PHASE_2_END: ClassVar[int] = 53
+    FACTORY_START: ClassVar[int] = 0
+    FACTORY_END: ClassVar[int] = 9
+    CENTER_START: ClassVar[int] = 9
+    CENTER_END: ClassVar[int] = 10
+    FACTORY_TAKE_COLOR_START: ClassVar[int] = 10
+    FACTORY_TAKE_COLOR_END: ClassVar[int] = 16
+    STAR_START: ClassVar[int] = 16
+    STAR_END: ClassVar[int] = 23
+    STAR_POINT_START: ClassVar[int] = 23
+    STAR_POINT_END: ClassVar[int] = 29
+    STAR_SPEND_COLOR_START: ClassVar[int] = 29
+    STAR_SPEND_COLOR_END: ClassVar[int] = 35
+    BONUS_START: ClassVar[int] = 35
+    BONUS_END: ClassVar[int] = 41
+    TILE_START: ClassVar[int] = 41
+    TILE_END: ClassVar[int] = 47
+    RESERVE_TILE_START: ClassVar[int] = 47
+    RESERVE_TILE_END: ClassVar[int] = 53
+
+    def __new__(cls):
+        return np.zeros(cls.RESERVE_TILE_END, dtype=int).view(cls)
