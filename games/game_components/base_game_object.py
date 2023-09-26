@@ -1,7 +1,10 @@
 from abc import ABC, abstractmethod
-
+from .game import Game
+from .player import Player as BasePlayer
 
 class GameEnvironment(ABC):
+    game: Game
+    players: dict[int, BasePlayer]
     def __init__(self, player_count: int):
         """
         Initializes game.
