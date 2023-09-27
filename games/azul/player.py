@@ -1,4 +1,5 @@
 from .tile_container import MASTER_TILE_CONTAINER, TileContainer
+from .factory import Factory
 from typing import ClassVar
 from .action import AzulAction
 from itertools import combinations
@@ -15,9 +16,6 @@ class AzulPlayer(BasePlayer):
     bonus_owed: int = 0
     player_board: PlayerBoard = PlayerBoard()
     player_tile_supply: TileContainer = MASTER_TILE_CONTAINER.copy()
-
-    def reserve_tiles(self, tiles_to_reserve: TileContainer):
-        self.player_tile_supply.subtract(tiles_to_reserve)
 
     def _get_reserve_actions(self) -> list[AzulAction]:
         if self.max_tile_reserve >= self.player_tile_supply.total():
@@ -37,53 +35,43 @@ class AzulPlayer(BasePlayer):
                 action[AzulAction.BONUS_START + color] += 1
             actions.append(action)
         return actions
-
-    def get_available_actions(self, game: AzulGame):
-        actions = []
-        if game.phase == 1:
-            actions.append(game.get_available_actions())
-        elif game.phase == 2:
-            if self.bonus_owed > 0:
-                actions.append(game.supply.get_available_actions(self.bonus_owed))
-            else:
-                actions.append(self._get_placement_actions(game.wild_color))
-                actions.append(self._get_reserve_actions())
-        return actions
-
-    def _score_points_for_tile_placement(self, star: int, position: int):
-        self.player_score += self.player_board.stars[star].score_points_for_position_placed(position)
-        self.player_score += self.player_board.check_multistar_bonus(position)
-
-    def _update_placement_action(self, action: AzulAction, game: AzulGame):
-        if sum(action[AzulAction.STAR_START: AzulAction.STAR_END]) == 1:
-            star = np.argmax(action[AzulAction.STAR_START: AzulAction.STAR_END])
-            position = np.argmax(action[AzulAction.STAR_POINT_START: AzulAction.STAR_POINT_END])
-            leftover_tiles = self.player_board.update_game_with_action(action, game.wild_color)
-            self._score_points_for_tile_placement(star, position)
-            self.bonus_owed += self.player_board.bonus_tile_lookup(star, position)
-            game.tower += leftover_tiles
-
-    def _update_reserve_action(self, action: AzulAction):
-        if sum(action[AzulAction.RESERVE_TILE_START: AzulAction.RESERVE_TILE_END]) > 0:
-            tiles_to_reserve = TileContainer({color: action[AzulAction.RESERVE_TILE_START + color] for color in MASTER_TILE_CONTAINER.keys()})
-            self.reserve_tiles(tiles_to_reserve)
-            self.done_placing = True
-
-    def _update_take_bonus_action(self, action: AzulAction, game: AzulGame):
-        if sum(action[AzulAction.BONUS_START: AzulAction.BONUS_END]) > 0:
-            selected_bonus = TileContainer({color: action[AzulAction.BONUS_START + color] for color in MASTER_TILE_CONTAINER.keys()})
-            self.player_tile_supply += game.supply.subtract(selected_bonus)
-            self.bonus_owed = 0
-
-    def update_game_with_action(self, action: AzulAction, game: AzulGame):
-        self._update_placement_action(action, game)
-        self._update_placement_action(action, game)
-        self._update_reserve_action(action)
-
+    
     def _get_placement_actions(self, wild_color: int) -> list[AzulAction]:
         return self.player_board.get_available_actions(self.player_tile_supply, wild_color)
+
+    def get_available_actions(self, wild_color: int):
+        actions = []
+        actions.append(self._get_placement_actions(wild_color))
+        actions.append(self._get_reserve_actions())
+        return actions
 
     def start_round_for_player(self):
         self.done_placing = False
         self.first_player = False
         self.player_tile_supply = self.player_board.reserved_tiles.remove_all_tiles()
+
+    def _score_points_for_tile_placement(self, star: int, position: int):
+        self.player_score += self.player_board.stars[star].score_points_for_position_placed(position)
+        self.player_score += self.player_board.check_multistar_bonus(position)
+
+    def place_tile_action(self, action: AzulAction, wild_color: int):
+        # This action is broken
+        # Things to do
+        # Determine tile color to add
+        # Add tile to star (done)
+        # Subtract tiles from player supply
+        # Place tiles back in the tower
+        self.player_board.add_tile_to_star(action.star_to_place_tile)
+        leftover_tiles = self.player_board.update_game_with_action(action, wild_color)
+        self._score_points_for_tile_placement(action.star_to_place_tile, action.position_to_place_tile)
+        self.bonus_owed += self.player_board.bonus_tile_lookup(action.star_to_place_tile, action.position_to_place_tile)
+        return leftover_tiles
+
+    def add_tiles_to_player_supply(self, tiles: TileContainer):
+        self.player_tile_supply += tiles
+
+    def reserve_tiles(self, tiles_to_reserve: TileContainer):
+        self.player_board.reserved_tiles += self.player_tile_supply.subtract(tiles_to_reserve)
+        self.player_score -= self.player_tile_supply.total()
+        self.player_tile_supply.clear()
+        self.done_placing = True

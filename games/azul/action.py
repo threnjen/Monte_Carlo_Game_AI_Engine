@@ -29,3 +29,35 @@ class AzulAction(np.ndarray):
 
     def __new__(cls):
         return np.zeros(cls.RESERVE_TILE_END, dtype=int).view(cls)
+
+    @property
+    def factory_take_color(self) -> int:
+        return np.argmax(self[AzulAction.FACTORY_TAKE_COLOR_START: AzulAction.FACTORY_TAKE_COLOR_END])
+
+    @property
+    def take_from_displays_ind(self) -> bool:
+        return self[AzulAction.FACTORY_START: AzulAction.FACTORY_END].max() == 1
+
+    @property
+    def display_take_number(self) -> int:
+        return np.argmax(self[AzulAction.FACTORY_START: AzulAction.FACTORY_END])
+
+    @property
+    def tile_placement_action_ind(self) -> int:
+        return sum(self[AzulAction.STAR_START: AzulAction.STAR_END]) == 1
+
+    @property
+    def take_bonus_tiles_ind(self) -> int:
+        return sum(self[AzulAction.BONUS_START: AzulAction.BONUS_END]) > 0
+
+    @property
+    def reserve_tile_action_ind(self) ->int:
+        return sum(self[AzulAction.RESERVE_TILE_START: AzulAction.RESERVE_TILE_END]) > 0
+
+    @property
+    def star_to_place_tile(self) -> int:
+        return np.argmax(self[AzulAction.STAR_START: AzulAction.STAR_END])
+
+    @property
+    def position_to_place_tile(self) ->int:
+        return np.argmax(self[AzulAction.STAR_POINT_START: AzulAction.STAR_POINT_END])

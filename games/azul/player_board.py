@@ -89,7 +89,7 @@ class Star(BaseModel):
 
         Args:
             tiles (TileContainer): Tiles available to place
-            wild_color (str): Wild color for the round
+            wild_color (int): Wild color for the round
 
         Returns:
             list: List of potential actions
@@ -201,7 +201,7 @@ class PlayerBoard(BaseModel):
     BONUS_POS_INDEX: ClassVar[int] = 1
     TILE_PREFIX: ClassVar[str] = "star"
     reserved_tiles: TileContainer = TileContainer(MASTER_TILE_CONTAINER.copy())
-    stars: dict[str, Star] = {
+    stars: dict[int, Star] = {
         color: Star(color=color)
         for color in list(MASTER_TILE_CONTAINER.keys()) + [ALL]
     }
@@ -315,6 +315,9 @@ class PlayerBoard(BaseModel):
             action_list.append(star.get_available_actions(tiles, wild_color))
         return action_list
 
+    def add_tile_to_star(self, star_color: int, tile_color: int, position: int):
+        self.stars[star_color].place_tiles_on_star(position, tile_color)
+
     def update_game_with_action(self, action: AzulAction, wild_color: int):
         """Updates the game with the action taken.  This includes updating the player
         board and returning the points earned.
@@ -326,8 +329,6 @@ class PlayerBoard(BaseModel):
         Returns:
             int: Points earned
         """
-        star = np.argmax(action[AzulAction.STAR_START: AzulAction.STAR_END])
-        position = np.argmax(action[AzulAction.STAR_POINT_START: AzulAction.STAR_POINT_END])
         color = np.argmax(action[AzulAction.STAR_SPEND_COLOR_START: AzulAction.STAR_SPEND_COLOR_END])
         color_amount = max(action[AzulAction.STAR_SPEND_COLOR_START: AzulAction.STAR_SPEND_COLOR_END])
         if color != wild_color:
@@ -335,7 +336,7 @@ class PlayerBoard(BaseModel):
         else:
             wild_tiles = 0
         action[AzulAction.STAR_SPEND_COLOR_START + wild_color] = 0
-        self.stars[star].place_tiles_on_star(position, color)
+        
         return TileContainer({color: color_amount - 1, wild_color: wild_tiles})
 
     def add_tile_to_star(

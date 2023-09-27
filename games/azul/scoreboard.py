@@ -2,7 +2,7 @@ from pydantic import BaseModel
 
 class ScoreBoard(BaseModel):
     """Master scoreboard.  Only tracks player points and the round number."""
-    player_colors: dict[str, int]
+    player_colors: dict[int, int]
     round_number: int = 0
 
     def increment_round(self):
@@ -13,7 +13,7 @@ class ScoreBoard(BaseModel):
         """Adds the points to the player color
 
         Args:
-            player (str): Player color
+            player (int): Player color
             points (int): Points added (or removed)
         """
         self.player_colors[player] += points

@@ -83,7 +83,7 @@ class Factory(BaseModel):
             self.center.get_available_actions(wild_color))
         return actions
 
-    def update_game_with_action(self, action: AzulAction, wild_color: int) -> tuple[tc.TileContainer, bool]:
+    def take_tiles(self, action: AzulAction, wild_color: int) -> tuple[tc.TileContainer, bool]:
         """Plays the action.  The action
         is assumed to be valid.  It returns the tiles taken and the first player
         marker (if taken).
@@ -94,11 +94,10 @@ class Factory(BaseModel):
         Returns:
             tuple: Tiles taken and first player marker
         """
-        take_color = np.argmax(action[AzulAction.FACTORY_TAKE_COLOR_START: AzulAction.FACTORY_TAKE_COLOR_END])
-        if action[AzulAction.FACTORY_START: AzulAction.FACTORY_END].max() == 1:
-            factory_num = np.argmax(action[AzulAction.FACTORY_START: AzulAction.FACTORY_END])
-            return self.take_from_factory_display(factory_num, take_color, wild_color), False
+
+        if action.take_from_displays_ind:
+            return self.take_from_factory_display(action.display_take_number, action.factory_take_color, wild_color), False
         else:
             return self.take_from_factory_center(
-                take_color, wild_color
+                action.factory_take_color, wild_color
             )

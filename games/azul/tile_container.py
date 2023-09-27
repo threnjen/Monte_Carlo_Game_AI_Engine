@@ -23,9 +23,10 @@ MASTER_TILE_CONTAINER = Counter(
     }
 )
 
+
 class TileContainer(Counter):
-    """Tile containers represent all game objects that can hold tiles.
-    """
+    """Tile containers represent all game objects that can hold tiles."""
+
     def model_dump_json(self) -> dict:
         return dict(self)
 
@@ -57,6 +58,7 @@ class TileContainer(Counter):
         remaining_tiles = TileContainer(self.elements())
         self.clear()
         return remaining_tiles
+
 
 class Bag(TileContainer):
     """The bag is where we draw tiles from.  We can take tiles directly from the bag (to either refill
@@ -179,7 +181,9 @@ class CenterOfFactory(FactoryDisplay):
         self._first_player_avail = True
 
     def model_dump_json(self) -> dict:
-        return super().model_dump_json() | {"first_player_avail": self._first_player_avail}
+        return super().model_dump_json() | {
+            "first_player_avail": self._first_player_avail
+        }
 
     def reset_first_player(self):
         self._first_player_avail = True
@@ -194,8 +198,7 @@ class CenterOfFactory(FactoryDisplay):
 
 
 class Supply(TileContainer):
-    """Supply, which lives in the center of the scoreboard.
-    """
+    """Supply, which lives in the center of the scoreboard."""
 
     def fill_supply(self, fill_tiles: TileContainer):
         """Fills the supply with tiles from a dictionary.
@@ -205,6 +208,14 @@ class Supply(TileContainer):
             tiles (dict): dictionary of tile: count pairs.
         """
         self += fill_tiles
+
+    def take_tile(self, action: AzulAction) -> TileContainer:
+        return TileContainer(
+            {
+                color: action[AzulAction.BONUS_START + color]
+                for color in MASTER_TILE_CONTAINER.keys()
+            }
+        )
 
     def get_available_actions(self, num_tiles_to_take: int) -> list[AzulAction]:
         """Lists all possible actions for the supply.  This includes taking all tiles of
