@@ -307,7 +307,7 @@ class PlayerBoard(BaseModel):
         "RW": {"criteria": [(RED, 5), (RED, 6)], "reward": 3},
     }
 
-    def get_available_actions(self, tiles: TileContainer, wild_color: int):
+    def get_tile_placement_actions(self, tiles: TileContainer, wild_color: int):
         action_list = []
         for star in self.stars.values():
             if star.star_full:
@@ -338,24 +338,6 @@ class PlayerBoard(BaseModel):
         action[AzulAction.STAR_SPEND_COLOR_START + wild_color] = 0
         
         return TileContainer({color: color_amount - 1, wild_color: wild_tiles})
-
-    def add_tile_to_star(
-        self, star_color: str, tile_color: str, position: str
-    ) -> tuple[int]:
-        """Adds a tile to star, checks for bonuses and points, and returns both.
-
-        Args:
-            star_color ([type]): [description]
-            tile_color ([type]): [description]
-            position ([type]): [description]
-
-        Returns:
-            [type]: [description]
-        """
-        tile_points = self.stars[star_color].place_tiles_on_star(position, tile_color)
-        bonus_tile_count = self.bonus_tile_lookup(star_color, position)
-        bonus_points = self.check_multistar_bonus(position)
-        return bonus_tile_count, tile_points + bonus_points
 
     def bonus_tile_lookup(self, star_color: int, position: int) -> int:
         """This uses the two lookup dictionaries in the PlayerBoard class to determine

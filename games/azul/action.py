@@ -1,7 +1,10 @@
 from typing import ClassVar
+
 # This is the right length for the vector, but it's possible the implementation is (very) wrong
 
 import numpy as np
+
+
 class AzulAction(np.ndarray):
     PHASE_1_START: ClassVar[int] = 0
     PHASE_1_END: ClassVar[int] = 16
@@ -32,32 +35,63 @@ class AzulAction(np.ndarray):
 
     @property
     def factory_take_color(self) -> int:
-        return np.argmax(self[AzulAction.FACTORY_TAKE_COLOR_START: AzulAction.FACTORY_TAKE_COLOR_END])
+        return np.argmax(
+            self[
+                AzulAction.FACTORY_TAKE_COLOR_START : AzulAction.FACTORY_TAKE_COLOR_END
+            ]
+        )
 
     @property
     def take_from_displays_ind(self) -> bool:
-        return self[AzulAction.FACTORY_START: AzulAction.FACTORY_END].max() == 1
+        return self[AzulAction.FACTORY_START : AzulAction.FACTORY_END].max() == 1
 
     @property
     def display_take_number(self) -> int:
-        return np.argmax(self[AzulAction.FACTORY_START: AzulAction.FACTORY_END])
+        return np.argmax(self[AzulAction.FACTORY_START : AzulAction.FACTORY_END])
 
     @property
     def tile_placement_action_ind(self) -> int:
-        return sum(self[AzulAction.STAR_START: AzulAction.STAR_END]) == 1
+        return sum(self[AzulAction.STAR_START : AzulAction.STAR_END]) == 1
 
     @property
     def take_bonus_tiles_ind(self) -> int:
-        return sum(self[AzulAction.BONUS_START: AzulAction.BONUS_END]) > 0
+        return sum(self[AzulAction.BONUS_START : AzulAction.BONUS_END]) > 0
 
     @property
-    def reserve_tile_action_ind(self) ->int:
-        return sum(self[AzulAction.RESERVE_TILE_START: AzulAction.RESERVE_TILE_END]) > 0
+    def reserve_tile_action_ind(self) -> int:
+        return (
+            sum(self[AzulAction.RESERVE_TILE_START : AzulAction.RESERVE_TILE_END]) > 0
+        )
 
     @property
     def star_to_place_tile(self) -> int:
-        return np.argmax(self[AzulAction.STAR_START: AzulAction.STAR_END])
+        return np.argmax(self[AzulAction.STAR_START : AzulAction.STAR_END])
 
     @property
-    def position_to_place_tile(self) ->int:
-        return np.argmax(self[AzulAction.STAR_POINT_START: AzulAction.STAR_POINT_END])
+    def position_to_place_tile(self) -> int:
+        return np.argmax(self[AzulAction.STAR_POINT_START : AzulAction.STAR_POINT_END])
+
+    @property
+    def wilds_to_spend(self, wild_color: int) -> int:
+        return self[AzulAction.STAR_SPEND_COLOR_START + wild_color]
+
+    @property
+    def non_wilds_to_spend(self, wild_color: int) -> int:
+        return sum(
+            self[AzulAction.STAR_SPEND_COLOR_START : AzulAction.STAR_SPEND_COLOR_END]
+        ) - self.wilds_to_spend(wild_color)
+
+    @property
+    def tile_color_to_place(self, wild_color: int) -> int:
+        temp_array = self[
+            AzulAction.STAR_SPEND_COLOR_START : AzulAction.STAR_SPEND_COLOR_END
+        ].copy()
+        temp_array[wild_color] = 0
+        return np.argwhere(temp_array > 0)
+
+    @property
+    def tiles_to_reserve(self) -> dict:
+        return {
+            i: self[AzulAction.RESERVE_TILE_START + i]
+            for i in range(AzulAction.RESERVE_TILE_END - AzulAction.RESERVE_TILE_START)
+        }
