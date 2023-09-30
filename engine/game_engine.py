@@ -24,7 +24,6 @@ class GameEngine:
         self.game = self.load_game_engine(game_name)
         self.turn = 0  # Set the initial turn as 0
         self.decay = decay
-        self.game_log = []
         self.montecarlo = MonteCarloEngine(
             start_player=self.get_current_player(), verbose=self.verbose
         )  # initialize the monte carlo engine
@@ -89,15 +88,6 @@ class GameEngine:
         """
         return self.game.draw_board()
 
-    def _update_turn_log(self, action_to_record, current_player, sims_this_turn):
-        self.turn_log["Turn"] = self.turn
-        # self.turn_log["Simulations"] = sims_this_turn
-        self.turn_log["Player"] = current_player
-        self.turn_log["Action"] = str(action_to_record)
-        scores = self.get_game_scores()
-        # self.turn_log["Score"] = scores[current_player]
-        self.game_log.append(self.turn_log)
-
     def play_game_by_turns(self, sims) -> None:
         """
         Intializes Monte Carlo engine
@@ -110,7 +100,6 @@ class GameEngine:
         while not self.is_game_over():
             print("\n\n")
             sims_this_turn = sims
-            self.turn_log = {}
             self.turn += 1  # increments the game turn
             current_player = self.get_current_player()
 
@@ -128,12 +117,11 @@ class GameEngine:
             self.deep_game_log += deep_game_log
 
             self.update_game_with_action(chosen_action, current_player)
-            self._update_turn_log(chosen_action, current_player, sims_this_turn)
 
             sims = self.update_sims(sims)
 
             self.draw_board()
-        
+
         end = time.time()
         print(f"Total time: {end-start}")
         print(self.get_game_scores())
