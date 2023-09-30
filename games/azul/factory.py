@@ -13,18 +13,25 @@ class Factory(BaseModel):
     center: tc.CenterOfFactory = Field(default_factory=tc.CenterOfFactory)
 
     def is_factory_empty(self) -> bool:
+        """Checks to see if the factory is empty.  This is true if all factory displays and the
+        center are empty.
+
+        Returns:
+            bool: Factory empty indicator
+        """
         factory_display_total_tiles = sum(
             display.total() for display in self.factory_displays.values()
         )
         return factory_display_total_tiles + self.center.total() == 0
 
     def model_post_init(self, __context) -> None:
+        """If a factory is created without a display, it will create the displays."""
         if self.factory_displays is None:
             self.factory_displays = {
                 i: tc.FactoryDisplay() for i in range(self.display_count)
             }
 
-    def populate_factory_display(self, display_num: int, tiles: tc.TileContainer):
+    def add_tiles_to_factory_display(self, display_num: int, tiles: tc.TileContainer):
         self.factory_displays[display_num] += tiles
 
     def take_from_factory_display(

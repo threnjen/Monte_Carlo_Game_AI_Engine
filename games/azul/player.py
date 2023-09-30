@@ -104,6 +104,13 @@ class AzulPlayer(BasePlayer):
         appropriate information for the placement.  This includes the star,
         position, and the number of wilds and non-wilds to spend.
 
+        This will place a tile on the star, subtract the appropriate tiles
+        from the player's supply, score the tile placement, add potential bonus tiles
+        to the player's owed bonus, and return any remaining spent tiles to the tower.
+
+        Recall that when a tile is placed on a star, only one tile is physically
+        placed on the board.  The rest are returned to the tower.
+
         Args:
             action (AzulAction): Tile placing action, assumed to be valid
             wild_color (int): Wild color for the round

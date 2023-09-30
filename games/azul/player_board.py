@@ -70,6 +70,11 @@ class Star(BaseModel):
         """Scores points for a given position, if it is filled.  This is used
         for the end of the round.
 
+        Position points come from adjacent tiles, and are calculated by
+        checking the number of contiguous tiles to the left and right.  Note
+        that this is not the same as the number of tiles in the star, since not
+        all tiles placed may be contiguous.
+
         Args:
             position (int): Position to score
 
@@ -83,9 +88,10 @@ class Star(BaseModel):
         return points
 
     def get_available_actions(self, tiles: TileContainer, wild_color: int):
-        """Lists all possible actions for the star.  This includes placing a tile of the
-        star color or a wild tile (if present).  Note that wild cannot be taken if other
-        tiles are present, and any color choice will also return one wild (if present)
+        """Lists all possible actions for the star.  This checks the available colors for the star
+        and the available tiles for the player (passed as the tiles parameter).  A player can only
+        place a tile if they have the required tiles, and they can only place a tile if the color
+        is allowed for the star.
 
         Args:
             tiles (TileContainer): Tiles available to place
@@ -95,10 +101,13 @@ class Star(BaseModel):
             list: List of potential actions
         """
         actions = []
+        # This is only a nontrivial loop for the center "all" star
         for color in self.colors_allowed.keys():
             if not self.colors_allowed[color]:
                 continue
             for position in self.filled_positions.keys():
+                if self.filled_positions[position]:
+                    continue
                 actions.append(
                     self._generate_actions_for_position(
                         tiles, position, color, wild_color
@@ -108,7 +117,26 @@ class Star(BaseModel):
 
     def _generate_actions_for_position(
         self, tiles: TileContainer, position: int, color: int, wild_color: int
-    ):
+    ) -> list[AzulAction]:
+        """Checks the actions available for a star position.  This is a helper function for
+        get_available_actions.  It checks the number of tiles available for the color and
+        the number of wilds available.  It then generates all possible combinations of tiles
+        and wilds that can be placed in the position.  Note that this is a list of actions,
+        since there may be multiple ways to place tiles.
+
+        To place tiles, a player must have at least one tile for the color they're trying to
+        place.
+
+        Args:
+            tiles (TileContainer): Tiles available to place
+            position (int): Position on the start to place tiles
+            color (int): Color of tiles to place.  This needn't match the star color (in case of
+            the "all" star)
+            wild_color (int): Wild color for the round
+
+        Returns:
+            list[AzulAction]: List of actions available for the position
+        """
         # If we're playing a wild, there's only one way to fill a position with just wilds
         if color == wild_color:
             action = AzulAction()
@@ -118,8 +146,12 @@ class Star(BaseModel):
         # Otherwise, we need to generate all possible combinations of wilds and the color
         action_list = []
         # We demand at least one non-wild tile, and we must have sufficient primary color tiles
-        # This means our primary tile count has a maximum of 1 or the position less the number of wilds
-        # It also means the primary tile count has a minimum of the number of primary tiles or the position
+        # This means our primary tile count has a range of possible
+        # spending amounts.  On the low end, it must be at least 1,
+        # But also is required to be large enough so that the primary count + the wild count is
+        # at least as large as the position.
+        # On the higher end of the range, we can't spend more primary tiles than we have, and can
+        # only spend as many as the position.
         for primary_color_count in range(
             max(position - tiles.get(wild_color, 0), 1),
             min(tiles.get(color, 0), position) + 1,
@@ -146,6 +178,9 @@ class Star(BaseModel):
             int: Points received (so far)
         """
         points = 1
+        # We get one point for the tile we just placed, and then check
+        # the tiles to the left.  For each tile we find, we get one point.
+        # If we find an empty tile, we stop.
         for points in range(1, self.STAR_SIZE + 1):
             if self.filled_positions[(position - points - 1) % self.STAR_SIZE + 1]:
                 pass
@@ -165,8 +200,9 @@ class Star(BaseModel):
             int: Points
         """
         distance = 1
-        # This is terrible, but I had some dumb error I couldn't trace in my indices somewhere
-        # in a different part of the code.  I'll fix this someday (ie. never)
+        # We check the tiles to the right.  For each tile we find, we get one point and add it
+        # to the points we received.  If we find an empty tile, we stop and return the total
+        # Otherwise, we return the max points (equal to the star size)
         for distance in range(1, self.STAR_SIZE):
             if self.filled_positions[(position + distance - 1) % self.STAR_SIZE + 1]:
                 points += 1
@@ -176,9 +212,9 @@ class Star(BaseModel):
 
     def check_contiguous(self, position: int) -> int:
         """Checks both left and right contiguous from a given position.
-        This is used to determine points when placing a tile.  Note this is
-        really annoying because star positions are 1-6, not 0-5 (see the
-        individual functions)
+        This is used to determine points when placing a tile. Right contiguous
+        is only needed to be checked if left contiguous returns points
+        less than the star size.
 
         Args:
             position (int): position to check
@@ -197,8 +233,10 @@ class PlayerBoard(BaseModel):
     It may be best to have a function to add tiles to the star from here."""
 
     model_config = {"arbitrary_types_allowed": True}
+
     BONUS_STAR_INDEX: ClassVar[int] = 0
     BONUS_POS_INDEX: ClassVar[int] = 1
+    FILL_ALL_POS_BONUS: ClassVar[int] = 4
     TILE_PREFIX: ClassVar[str] = "star"
     reserved_tiles: TileContainer = TileContainer(MASTER_TILE_CONTAINER.copy())
     stars: dict[int, Star] = {
@@ -307,7 +345,19 @@ class PlayerBoard(BaseModel):
         "RW": {"criteria": [(RED, 5), (RED, 6)], "reward": 3},
     }
 
-    def get_tile_placement_actions(self, tiles: TileContainer, wild_color: int):
+    def get_tile_placement_actions(self, tiles: TileContainer, wild_color: int) -> list[AzulAction]:
+        """Gets all possible actions for placing tiles on the player board.  This is done by
+        checking all stars and all positions on the stars, and then checking the available
+        actions for each position.  Note that each position results in a list of actions,
+        since there may be multiple ways to place tiles.
+
+        Args:
+            tiles (TileContainer): Tiles that could be available to be placed.
+            wild_color (int): Wild color for the round, which influences tiles we can place.
+
+        Returns:
+            list[AzulAction]: possible actions for tile placing.
+        """
         action_list = []
         for star in self.stars.values():
             if star.star_full:
@@ -374,9 +424,9 @@ class PlayerBoard(BaseModel):
 
     def check_multistar_bonus(self, tile_placed_position: int) -> int:
         """This checks if a point bonus is received for placing all tiles of a particular
-        number.  Note that again tile position range (0-5 or 1-6) is causing a problem:
-        since bonuses are 4 * the tile position value, we need to add one to the tile position.
-        This is really making me think we should have the range be 1-6.
+        number.  If every star on the board has a tile placed at the given position (given
+        the position is less than 5), then the player receives a bonus equal to the position
+        of the tile placed times the number of stars.
 
         Args:
             tile_placed_position (int): Position of tile placed, and bonus to check
@@ -392,4 +442,4 @@ class PlayerBoard(BaseModel):
                     for color in self.stars.keys()
                 ]
             ) * (tile_placed_position)
-        return points_earned
+        return points_earned * PlayerBoard.FILL_ALL_POS_BONUS

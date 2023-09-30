@@ -1,7 +1,7 @@
 from cgi import test
 import numpy as np
 
-from games.base_game_object import GameEnvironment
+from games.game_components.base_game_object import GameEnvironment
 
 
 class Player:

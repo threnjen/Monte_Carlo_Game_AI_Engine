@@ -13,7 +13,7 @@ from datetime import datetime
 from engine.monte_carlo_engine import MonteCarloEngine
 from engine.monte_carlo_node import MonteCarloNode
 from games.games_config import GAMES_MAP
-from games.base_game_object import GameEnvironment
+from games.game_components.base_game_object import GameEnvironment
 from itertools import repeat
 
 
