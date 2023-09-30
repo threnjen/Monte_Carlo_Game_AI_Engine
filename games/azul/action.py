@@ -26,9 +26,10 @@ class AzulAction(GameAction):
     TILE_END: ClassVar[int] = 47
     RESERVE_TILE_START: ClassVar[int] = 47
     RESERVE_TILE_END: ClassVar[int] = 53
+    ACTION_SPACE_SIZE: ClassVar[int] = 53
 
     def __new__(cls):
-        return np.zeros(cls.RESERVE_TILE_END, dtype=int).view(cls)
+        return np.zeros(cls.ACTION_SPACE_SIZE, dtype=int).view(cls)
 
     @property
     def factory_take_color(self) -> int:

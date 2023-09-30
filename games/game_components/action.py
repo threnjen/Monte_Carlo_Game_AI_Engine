@@ -1,5 +1,5 @@
-import numpy as np
+from numpy import ndarray
+from typing import ClassVar
 
-
-class GameAction(np.ndarray):
-    pass
+class GameAction(ndarray):
+    ACTION_SPACE_SIZE: ClassVar[int]

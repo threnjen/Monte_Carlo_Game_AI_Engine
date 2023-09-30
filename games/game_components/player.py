@@ -7,12 +7,6 @@ class Player(BaseModel):
     first_player: bool = False
     choose_action: callable = None
 
-    def get_available_actions(self, special_policy: bool = False) -> list:
-        pass
-
-    def take_action(self, action: list[float]):
-        pass
-
     def get_action_choice(self, action_list: list) -> list:
         chosen_action = None
         while chosen_action not in action_list:

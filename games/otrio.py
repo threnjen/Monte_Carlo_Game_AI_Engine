@@ -160,7 +160,7 @@ class Otrio(GameEnvironment):
 
         return self.scores
 
-    def draw_board(self):
+    def board(self):
 
         self.board_draw = f"""
         Level 1\t\t\tLevel 2\t\t\tLevel 3\n

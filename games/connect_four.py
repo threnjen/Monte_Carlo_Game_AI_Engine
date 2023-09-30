@@ -128,7 +128,7 @@ class ConnectFour(GameEnvironment):
             )
             self.board += "_" * (self.columns * 2 - 1) + "\n"
 
-    def draw_board(self):
+    def board(self):
         print(self.board)
 
     def get_game_scores(self):

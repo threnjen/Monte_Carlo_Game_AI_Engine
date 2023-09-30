@@ -98,7 +98,7 @@ class GameEngine:
         """
         Requests the game client draw a text representation of the game state
         """
-        return self.game.draw_board()
+        return self.game.board()
 
     def _update_turn_log(self, action_to_record, current_player, sims_this_turn):
         self.turn_log["Turn"] = self.turn

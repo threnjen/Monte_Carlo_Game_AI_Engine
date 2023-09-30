@@ -51,5 +51,5 @@ class SimpleArrayGame(GameEnvironment):
         scores[0] = np.argmax(finished_array)
         return scores
 
-    def draw_board(self):
+    def board(self):
         print(self.board)

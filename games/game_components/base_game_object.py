@@ -76,7 +76,7 @@ class GameEnvironment(BaseModel):
         pass
 
     @abstractmethod
-    def draw_board(self):
+    def board(self):
         """
         Hook #6
         Requests the game client draw a text representation of the game state
