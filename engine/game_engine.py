@@ -24,9 +24,8 @@ class GameEngine:
         self.game = self.load_game_engine(game_name)
         self.turn = 0  # Set the initial turn as 0
         self.decay = decay
-        self.game_log = []
         self.montecarlo = MonteCarloEngine(
-            start_player=self.get_current_player(), verbose=self.verbose
+            start_player=self.game.get_current_player, verbose=self.verbose
         )  # initialize the monte carlo engine
         self.deep_game_log = []
 
@@ -35,91 +34,30 @@ class GameEngine:
         game_instance = getattr(game_module, self.game_name)
         return game_instance(self.player_count)
 
-    def get_current_player(self) -> int:
-        """
-        Get active player
-
-        Returns:
-            int: active player ID
-        """
-        current_player = self.game.get_current_player()
-        return current_player
-
-    def get_available_actions(self, special_policy: bool = False) -> list:
-        """
-        Get currently available actions
-
-        Returns:
-            [list]: List of: list of legal actions
-        """
-        legal_actions = self.game.get_available_actions(special_policy)
-        return legal_actions
-
-    def update_game_with_action(self, action_to_record: str, current_player: int) -> None:
-        """
-        Sends action choice and player to game
-
-        Args:
-            action (list item): selected item from list of legal actions
-            player (int): player number
-        """
-        return self.game.update_game_with_action(action_to_record, current_player)
-
-    def is_game_over(self) -> bool:
-        """
-        Checks if game has ended
-
-        Returns:
-            [True/False]: True/False if game is over
-        """
-        return self.game.is_game_over()
-
-    def get_game_scores(self) -> dict:
-        """
-        Retrieves game score
-
-        Returns:
-            [dict]: dictionary in format playerID: score
-        """
-        return self.game.get_game_scores()
-
-    def draw_board(self) -> None:
-        """
-        Requests the game client draw a text representation of the game state
-        """
-        return self.game.draw_board()
-
-    def _update_turn_log(self, action_to_record, current_player, sims_this_turn):
-        self.turn_log["Turn"] = self.turn
-        # self.turn_log["Simulations"] = sims_this_turn
-        self.turn_log["Player"] = current_player
-        self.turn_log["Action"] = str(action_to_record)
-        scores = self.get_game_scores()
-        # self.turn_log["Score"] = scores[current_player]
-        self.game_log.append(self.turn_log)
-
     def play_game_by_turns(self, sims) -> None:
         """
         Intializes Monte Carlo engine
         Will play a single game until game over condition is met
+
+        Available game method hooks:
+        self.game.get_current_player() -> int
+        self.game.update_game_with_action(action from list, player int)
+        self.game.is_game_over() -> bool
+        self.game.get_game_scores() -> dict
+        self.game.draw_board()
         """
 
         current_node = self.montecarlo.root  # set first node as monte carlo root
-        start = time.time()
+        start_time = time.time()
 
-        while not self.is_game_over():
-            print("\n\n")
-            sims_this_turn = sims
-            self.turn_log = {}
+        while not self.game.is_game_over():
             self.turn += 1  # increments the game turn
-            current_player = self.get_current_player()
+            current_player = self.game.get_current_player
 
-            print(
-                f"\nTurn {self.turn}\nGame gets {sims_this_turn} simulations for this turn. Player {current_player}'s turn."
-            )
+            print(f"\n\nTurn {self.turn}\nGame gets {sims} simulations for this turn. Player {current_player}'s turn.")
 
-            current_node, chosen_action, deep_game_log = self.montecarlo.sim_turn_select_best_node(
-                num_sims=sims_this_turn,
+            current_node, chosen_action, deep_game_log = self.montecarlo.select_and_return_best_real_action(
+                num_sims=sims,
                 game=self.game,
                 node_player=current_player,
                 parent=current_node,
@@ -127,26 +65,20 @@ class GameEngine:
 
             self.deep_game_log += deep_game_log
 
-            self.update_game_with_action(chosen_action, current_player)
-            self._update_turn_log(chosen_action, current_player, sims_this_turn)
+            self.game.update_game_with_action(action=chosen_action, player=current_player)
 
-            sims = self.update_sims(sims)
+            sims = self.update_num_of_sims_for_turn(sims)
 
-            self.draw_board()
-        
-        end = time.time()
-        print(f"Total time: {end-start}")
-        print(self.get_game_scores())
-        game_log = pd.DataFrame(self.deep_game_log)
+            self.game.draw_board()
 
-        timestamp = datetime.now().strftime("%m%d%Y_%H%M%S")
-        game_log.to_csv(
-            f"logs/{self.game_name}_deep_log_{self.number_of_sims}_sims_games_{timestamp}.csv",
+        print(f"Total time: {time.time()-start_time}\n{self.game.get_game_scores()}")
+
+        pd.DataFrame(self.deep_game_log).to_csv(
+            f"logs/{self.game_name}_deep_log_{self.number_of_sims}_sims_games_{datetime.now().strftime('%m%d%Y_%H%M%S')}.csv",
             index=False,
         )
 
-    def update_sims(self, sims):
-        sims = sims
+    def update_num_of_sims_for_turn(self, sims):
         if self.decay:
             if self.decay == "halving":
                 return int(np.ceil(sims / 2))  # simulation decay halves # sims each round

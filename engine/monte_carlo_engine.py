@@ -3,6 +3,7 @@ import copy
 
 from engine.monte_carlo_node import MonteCarloNode
 from games.base_game_object import BaseGameObject
+from engine.game_logger import GameLogger
 
 
 class MonteCarloEngine:
@@ -15,29 +16,10 @@ class MonteCarloEngine:
             node_player (int): Current player id
         """
         self.root = MonteCarloNode(player=start_player)
+        self.game_logger = GameLogger()
         self.verbose = verbose
 
-    def update_action_log_start(self, node: MonteCarloNode, sim_num: int, node_player: str):
-        self.turn_action_log = {}
-        self.turn_action_log["Game Turn"] = node.depth
-        self.turn_action_log["Sim Number"] = sim_num
-        self.turn_action_log["Node Owner"] = node_player
-
-    def update_action_log_node(self, node: MonteCarloNode, label: str, all=True):
-        if all:
-            self.turn_action_log[f"{label} Node"] = id(node)
-        self.turn_action_log[f"{label} Node Score"] = node.total_score
-        self.turn_action_log[f"{label} Node Visits"] = node.number_of_visits
-        if all:
-            self.turn_action_log[f"{label} Parent Node"] = id(node.parent)
-            self.turn_action_log[f"{label} Node Action"] = node.node_action
-            self.turn_action_log[f"{label} Node # Children"] = len(node.children)
-            self.turn_action_log[f"{label} Node Children"] = [id(child) for child in node.children]
-
-    def update_action_log_end(self):
-        self.turn_action_log["Rollout Score"] = self.scores
-
-    def sim_turn_select_best_node(
+    def select_and_return_best_real_action(
         self,
         num_sims: int,
         game: BaseGameObject,
@@ -67,92 +49,42 @@ class MonteCarloEngine:
         self.turn_player = node_player
         self.game_copy = game
 
-        def weighted_score(parent: MonteCarloNode, child: MonteCarloNode):
-            try:
-                score = (child.total_score / child.number_of_visits) + 1.414 * (
-                    np.sqrt(np.log(parent.number_of_visits) / child.number_of_visits)
-                )
-                return round(score, 5)
-            except:
-                return 1000
-
-        def explore_term(parent: MonteCarloNode, child: MonteCarloNode):
-            try:
-                return round(
-                    1.414 * np.sqrt(np.log(parent.number_of_visits) / child.number_of_visits),
-                    5,
-                )
-            except:
-                return 1000
-
         deep_game_log = []
 
         print(f"Incoming node: {id(parent)} Visits: {parent.number_of_visits} Score: {parent.total_score} ")
-        # nodes = [
-        #     {
-        #         id(child): [
-        #             child.number_of_visits,
-        #             child.total_score,
-        #             round(child.total_score / child.number_of_visits, 4),
-        #             weighted_score(parent, child),
-        #             explore_term(parent, child),
-        #         ]
-        #     }
-        #     for child in parent.get_children()
-        # ]
-        # print(f"{nodes}\n")
+
         self.game_copy.save_game_state()
 
         for i in range(num_sims):
-            self.update_action_log_start(parent, i, node_player)
-            self.update_action_log_node(parent, "Starting")
-
-            # self.game_copy = self._copy_game_state_for_sim(game)
+            self.game_logger.create_turn_action_log()
+            self.game_logger.update_action_log_start(parent, i, node_player)
+            self.game_logger.update_action_log_node(parent, "Starting")
 
             rollout_node = self._select_rollout_node(parent, node_player)
 
-            self.update_action_log_node(rollout_node, "Rollout")
+            self.game_logger.update_action_log_node(rollout_node, "Rollout")
 
             self._rollout_from_selected_node()
 
             self.scores = self.game_copy.get_game_scores()
-            self.update_action_log_end()
+            self.game_logger.update_action_log_end(scores=self.scores)
 
             self._backpropogate_node_scores(rollout_node)
 
-            self.update_action_log_node(rollout_node, "Rollout After", all=False)
+            self.game_logger.update_action_log_node(rollout_node, "Rollout After", all=False)
 
-            deep_game_log.append(self.turn_action_log)
-            del self.turn_action_log
+            deep_game_log.append(self.game_logger.send_turn_action_log())
 
             self.game_copy.load_save_game_state()
 
         selected_child = parent.best_child(real_move=True)
 
-        # nodes = [
-        #     {
-        #         id(child): [
-        #             child.number_of_visits,
-        #             child.total_score,
-        #             round(child.total_score / child.number_of_visits, 4),
-        #             weighted_score(parent, child),
-        #             explore_term(parent, child),
-        #         ]
-        #     }
-        #     for child in parent.get_children()
-        # ]
-        # print("End node scores after simulations")
-        # print(nodes)
         print(
             f"Chosen Node: {id(selected_child)} Visits: {selected_child.number_of_visits} Score: {selected_child.total_score} "
         )
         print(f"Action taken: Player {node_player}, Action {selected_child.get_action()}")
 
         return selected_child, selected_child.get_action(), deep_game_log
-
-    def _copy_game_state_for_sim(self, game: BaseGameObject) -> BaseGameObject:
-        """copy the game state to test rollout"""
-        return copy.deepcopy(game)
 
     def _select_rollout_node(self, node: MonteCarloNode, node_player: int) -> MonteCarloNode:
         """
