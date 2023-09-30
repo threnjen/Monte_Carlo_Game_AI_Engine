@@ -67,47 +67,15 @@ class MonteCarloEngine:
         self.turn_player = node_player
         self.game_copy = game
 
-        def weighted_score(parent: MonteCarloNode, child: MonteCarloNode):
-            try:
-                score = (child.total_score / child.number_of_visits) + 1.414 * (
-                    np.sqrt(np.log(parent.number_of_visits) / child.number_of_visits)
-                )
-                return round(score, 5)
-            except:
-                return 1000
-
-        def explore_term(parent: MonteCarloNode, child: MonteCarloNode):
-            try:
-                return round(
-                    1.414 * np.sqrt(np.log(parent.number_of_visits) / child.number_of_visits),
-                    5,
-                )
-            except:
-                return 1000
-
         deep_game_log = []
 
         print(f"Incoming node: {id(parent)} Visits: {parent.number_of_visits} Score: {parent.total_score} ")
-        # nodes = [
-        #     {
-        #         id(child): [
-        #             child.number_of_visits,
-        #             child.total_score,
-        #             round(child.total_score / child.number_of_visits, 4),
-        #             weighted_score(parent, child),
-        #             explore_term(parent, child),
-        #         ]
-        #     }
-        #     for child in parent.get_children()
-        # ]
-        # print(f"{nodes}\n")
+
         self.game_copy.save_game_state()
 
         for i in range(num_sims):
             self.update_action_log_start(parent, i, node_player)
             self.update_action_log_node(parent, "Starting")
-
-            # self.game_copy = self._copy_game_state_for_sim(game)
 
             rollout_node = self._select_rollout_node(parent, node_player)
 
@@ -129,20 +97,6 @@ class MonteCarloEngine:
 
         selected_child = parent.best_child(real_move=True)
 
-        # nodes = [
-        #     {
-        #         id(child): [
-        #             child.number_of_visits,
-        #             child.total_score,
-        #             round(child.total_score / child.number_of_visits, 4),
-        #             weighted_score(parent, child),
-        #             explore_term(parent, child),
-        #         ]
-        #     }
-        #     for child in parent.get_children()
-        # ]
-        # print("End node scores after simulations")
-        # print(nodes)
         print(
             f"Chosen Node: {id(selected_child)} Visits: {selected_child.number_of_visits} Score: {selected_child.total_score} "
         )
