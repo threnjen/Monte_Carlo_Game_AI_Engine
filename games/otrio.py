@@ -1,7 +1,7 @@
 from cgi import test
 from copy import deepcopy
 
-from games.base_game_object import BaseGameObject
+from games.game_components.base_game_object import GameEnvironment
 
 
 class Player:
@@ -15,7 +15,7 @@ class Player:
         self.pieces[2] = [mark, mark, mark]
 
 
-class Otrio(BaseGameObject):
+class Otrio(GameEnvironment):
     def __init__(self, player_count):
         super().__init__(player_count)
         self.game_over = False

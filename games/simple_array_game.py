@@ -2,7 +2,7 @@ import numpy as np
 from copy import copy, deepcopy
 from collections import defaultdict
 from itertools import product
-from games.base_game_object import BaseGameObject
+from games.game_components.base_game_object import BaseGameObject
 
 
 class SimpleArrayGame(BaseGameObject):
@@ -14,6 +14,7 @@ class SimpleArrayGame(BaseGameObject):
     The score is the index of the column that was filled
 
     """
+    array_length = 5
 
     def __init__(self, player_count):
         super().__init__(player_count)
@@ -22,6 +23,20 @@ class SimpleArrayGame(BaseGameObject):
 
     def get_available_actions(self, special_policy: bool = False) -> list:
         return list([tuple(i) for i in (np.argwhere(self.board == 0))])
+
+    def get_game_state(self) -> tuple:
+        game_state = [row_col for row in self.board.tolist() for row_col in row]
+        return tuple(game_state)
+
+    def _to_tuple(self, incoming_list):
+        try:
+            return tuple(self._to_tuple(x) for x in incoming_list)
+        except TypeError:
+            return incoming_list
+
+    def update_game_state(self, game_state: tuple):
+        game_state = np.asarray(game_state)
+        self.board = np.reshape(game_state, (self.array_length, self.array_length))
 
     def get_current_player(self) -> int:
         return 0
@@ -38,7 +53,7 @@ class SimpleArrayGame(BaseGameObject):
         scores[0] = np.argmax(finished_array)
         return scores
 
-    def draw_board(self):
+    def board(self):
         print(self.board)
 
     def save_game_state(self):

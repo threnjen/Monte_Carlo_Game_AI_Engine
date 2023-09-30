@@ -7,6 +7,12 @@ name = "pypi"
 pandas = "*"
 numpy = "*"
 pysimplegui = "*"
+networkx = "*"
+matplotlib = "*"
+pydot = "*"
+graphviz = "*"
+scipy = "*"
+pydantic = "*"
 
 [dev-packages]
 pytest = "*"

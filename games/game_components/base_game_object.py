@@ -1,24 +1,15 @@
 from abc import ABC, abstractmethod
+from .player import Player as BasePlayer
+from pydantic import BaseModel
 
 
-class BaseGameObject(ABC):
-    def __init__(self, player_count: int):
-        """
-        Initializes game.
+class GameEnvironment(BaseModel):
 
-        The following hooks are required in the Game __init__ file:
-        game init must accept player_count argument (int)
-        game init should declare a save_game dictionary (dict)
-
-        Init in Game Object should first call super().__init__(player_count)
-        """
-        self.save_game = {}
-        self.player_count = player_count
-        self.game_over = False
-        self.current_player = 0  # can be overridden in child class if this is determined differently (randomly etc). Must always be an int.
-        self.scores = {
-            x: 0 for x in range(0, player_count)
-        }  # scores MUST live in this format of player: score in a dictionary. Can be overridden in child class for different presentation.
+    player_count: int
+    players: dict[int, BasePlayer] = None
+    game_over: bool = False
+    save_game: dict = None
+    current_player_num: int = 0
 
     def get_current_player(self) -> int:
         """
@@ -88,7 +79,21 @@ class BaseGameObject(ABC):
     @abstractmethod
     def draw_board(self) -> None:
         """
-        Hook #4
+        Hook #5
+        Retrieves game score
+
+        Must be a dictionary in format {playerID: Score}
+        Where playerID matches IDs sent with get_legal_actions
+
+        Returns:
+            [dict]: dictionary in format playerID: score
+        """
+        pass
+
+    @abstractmethod
+    def board(self):
+        """
+        Hook #6
         Requests the game client draw a text representation of the game state
 
         Returns:
@@ -97,23 +102,18 @@ class BaseGameObject(ABC):
         pass
 
     @abstractmethod
-    def save_game_state(self) -> None:
-        """
-        Hook #5
-        Saves the vital elements of the game to re-populate on load.
+    def get_game_state(self) -> tuple:
+        """Hook #7
+        Requests the game client to return a tuple representing a completely unique game state.
 
-        The engine does not care about the format of the save state..
-        The game logic must manage the usage of the save state and load state.
-        Save your mutable game state objects here in the self.save_game dictionary
-        Be sure to use DEEP COPIES, as efficiently as possible
+        Returns:
+            tuple: Game state.  Tuple must contain strings and integers (it will be hashed later)
         """
         pass
 
     @abstractmethod
-    def load_save_game_state(self) -> None:
+    def update_game_state(self, game_state: tuple):
+        """Hook #8
+        Gives the game a game state, allowing a partially played game to be created.
+        tuple must be in the same format as the one returned in get_game_state
         """
-        Hook #6
-        load the saved game state.
-        Be sure to use DEEP COPIES on load, as efficiently as possible
-        """
-        pass
