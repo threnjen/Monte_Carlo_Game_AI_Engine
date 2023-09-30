@@ -25,7 +25,7 @@ class GameEngine:
         self.turn = 0  # Set the initial turn as 0
         self.decay = decay
         self.montecarlo = MonteCarloEngine(
-            start_player=self.game.get_current_player, verbose=self.verbose
+            start_player=self.game.get_current_player(), verbose=self.verbose
         )  # initialize the monte carlo engine
         self.deep_game_log = []
 
@@ -52,7 +52,7 @@ class GameEngine:
 
         while not self.game.is_game_over():
             self.turn += 1  # increments the game turn
-            current_player = self.game.get_current_player
+            current_player = self.game.get_current_player()
 
             print(f"\n\nTurn {self.turn}\nGame gets {sims} simulations for this turn. Player {current_player}'s turn.")
 

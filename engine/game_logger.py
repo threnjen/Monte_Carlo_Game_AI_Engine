@@ -3,7 +3,7 @@ from engine.monte_carlo_node import MonteCarloNode
 
 class GameLogger:
     def __init__(self) -> None:
-        pass
+        self.turn_action_log = {}
 
     def create_turn_action_log(self):
         del self.turn_action_log
