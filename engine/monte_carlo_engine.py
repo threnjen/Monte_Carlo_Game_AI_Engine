@@ -49,31 +49,31 @@ class MonteCarloEngine:
         self.turn_player = node_player
         self.game_copy = game
 
-        deep_game_log = []
+        # deep_game_log = []
 
-        print(f"Incoming node: {id(parent)} Visits: {parent.number_of_visits} Score: {parent.total_score} ")
+        # print(f"Incoming node: {id(parent)} Visits: {parent.number_of_visits} Score: {parent.total_score} ")
 
         self.game_copy.save_game_state()
 
         for i in range(num_sims):
-            self.game_logger.create_turn_action_log()
-            self.game_logger.update_action_log_start(parent, i, node_player)
-            self.game_logger.update_action_log_node(parent, "Starting")
+            # self.game_logger.create_turn_action_log()
+            # self.game_logger.update_action_log_start(parent, i, node_player)
+            # self.game_logger.update_action_log_node(parent, "Starting")
 
             rollout_node = self._select_rollout_node(parent, node_player)
 
-            self.game_logger.update_action_log_node(rollout_node, "Rollout")
+            # self.game_logger.update_action_log_node(rollout_node, "Rollout")
 
             self._rollout_from_selected_node()
 
             self.scores = self.game_copy.get_game_scores()
-            self.game_logger.update_action_log_end(scores=self.scores)
+            # self.game_logger.update_action_log_end(scores=self.scores)
 
             self._backpropogate_node_scores(rollout_node)
 
-            self.game_logger.update_action_log_node(rollout_node, "Rollout After", all=False)
+            # self.game_logger.update_action_log_node(rollout_node, "Rollout After", all=False)
 
-            deep_game_log.append(self.game_logger.send_turn_action_log())
+            # deep_game_log.append(self.game_logger.send_turn_action_log())
 
             self.game_copy.load_save_game_state()
 
@@ -84,7 +84,7 @@ class MonteCarloEngine:
         )
         print(f"Action taken: Player {node_player}, Action {selected_child.get_action()}")
 
-        return selected_child, selected_child.get_action(), deep_game_log
+        return selected_child.get_action()  # , deep_game_log
 
     def _select_rollout_node(self, node: MonteCarloNode, node_player: int) -> MonteCarloNode:
         """
