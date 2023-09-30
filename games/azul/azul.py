@@ -15,7 +15,7 @@ from .tile_container import (
 )
 from .action import AzulAction
 from pydantic import BaseModel, Field
-from typing import ClassVar
+from typing import ClassVar, Union
 from .player import AzulPlayer
 from random import choice
 

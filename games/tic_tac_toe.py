@@ -1,7 +1,7 @@
 from random import choice
 
 from pandas import array
-from games.base_game_object import GameEnvironment
+from games.game_components.base_game_object import GameEnvironment
 
 
 class TicTacToe(GameEnvironment):

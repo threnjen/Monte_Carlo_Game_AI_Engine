@@ -1,18 +1,10 @@
 from abc import ABC, abstractmethod
-from .game import Game
 from .player import Player as BasePlayer
+from pydantic import BaseModel
 
-class GameEnvironment(ABC):
-    game: Game
-    players: dict[int, BasePlayer]
-    def __init__(self, player_count: int):
-        """
-        Initializes game.
-
-        The following hooks are required in the Game __init__ file:
-        game init must accept player_count argument (int)
-        """
-        self.player_count = player_count
+class GameEnvironment(BaseModel):
+    player_count: int
+    players: dict[int, BasePlayer] = None
 
     @abstractmethod
     def get_current_player(self) -> int:

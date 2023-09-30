@@ -1,11 +1,8 @@
 from typing import ClassVar
-
-# This is the right length for the vector, but it's possible the implementation is (very) wrong
-
+from games.game_components.action import GameAction
 import numpy as np
 
-
-class AzulAction(np.ndarray):
+class AzulAction(GameAction):
     PHASE_1_START: ClassVar[int] = 0
     PHASE_1_END: ClassVar[int] = 16
 

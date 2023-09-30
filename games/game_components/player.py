@@ -1,5 +1,4 @@
 from pydantic import BaseModel
-from games.game_components.game import Game
 
 class Player(BaseModel):
     model_config = {"arbitrary_types_allowed": True}
@@ -11,7 +10,7 @@ class Player(BaseModel):
     def get_available_actions(self, special_policy: bool = False) -> list:
         pass
 
-    def take_action(self, action: list[float], game_object: Game):
+    def take_action(self, action: list[float]):
         pass
 
     def get_action_choice(self, action_list: list) -> list:
