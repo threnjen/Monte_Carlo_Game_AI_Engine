@@ -19,7 +19,7 @@ class MonteCarloEngine:
         self.game_logger = GameLogger()
         self.verbose = verbose
 
-    def select_best_real_action(
+    def select_and_return_best_real_action(
         self,
         num_sims: int,
         game: BaseGameObject,

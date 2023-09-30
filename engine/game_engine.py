@@ -56,7 +56,7 @@ class GameEngine:
 
             print(f"\n\nTurn {self.turn}\nGame gets {sims} simulations for this turn. Player {current_player}'s turn.")
 
-            current_node, chosen_action, deep_game_log = self.montecarlo.select_best_real_action(
+            current_node, chosen_action, deep_game_log = self.montecarlo.select_and_return_best_real_action(
                 num_sims=sims,
                 game=self.game,
                 node_player=current_player,
