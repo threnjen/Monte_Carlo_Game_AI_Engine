@@ -1,9 +1,9 @@
 import numpy as np
-import copy
 
 from engine.monte_carlo_node import MonteCarloNode
 from games.game_components.base_game_object import BaseGameObject
 from engine.game_logger import GameLogger
+from games.game_components.action import GameAction
 
 
 class MonteCarloEngine:
@@ -18,7 +18,6 @@ class MonteCarloEngine:
         self.root = MonteCarloNode(player=start_player)
         self.game_logger = GameLogger()
         self.verbose = verbose
-        self.game: BaseGameObject = None
 
     def select_and_return_best_real_action(
         self,
@@ -26,7 +25,7 @@ class MonteCarloEngine:
         game: BaseGameObject,
         node_player: int,
         parent: MonteCarloNode,
-    ) -> tuple[MonteCarloNode, list[str]]:
+    ) -> GameAction:
         """
         Receives a specific game state from which to make a move
 
@@ -50,42 +49,42 @@ class MonteCarloEngine:
         self.turn_player = node_player
         self.game_copy = game
 
-        deep_game_log = []
+        # deep_game_log = []
 
-        print(f"Incoming node: {id(parent)} Visits: {parent.number_of_visits} Score: {parent.total_score} ")
+        # print(f"Incoming node: {id(parent)} Visits: {parent.number_of_visits} Score: {parent.total_score} ")
 
         self.game_copy.save_game_state()
 
         for i in range(num_sims):
-            self.game_logger.create_turn_action_log()
-            self.game_logger.update_action_log_start(parent, i, node_player)
-            self.game_logger.update_action_log_node(parent, "Starting")
+            # self.game_logger.create_turn_action_log()
+            # self.game_logger.update_action_log_start(parent, i, node_player)
+            # self.game_logger.update_action_log_node(parent, "Starting")
 
             rollout_node = self._select_rollout_node(parent, node_player)
 
-            self.game_logger.update_action_log_node(rollout_node, "Rollout")
+            # self.game_logger.update_action_log_node(rollout_node, "Rollout")
 
             self._rollout_from_selected_node()
 
             self.scores = self.game_copy.get_game_scores()
-            self.game_logger.update_action_log_end(scores=self.scores)
+            # self.game_logger.update_action_log_end(scores=self.scores)
 
-            self._backpropogate_node_scores(rollout_node_path)
+            self._backpropogate_node_scores(rollout_node)
 
-            self.game_logger.update_action_log_node(rollout_node, "Rollout After", all=False)
+            # self.game_logger.update_action_log_node(rollout_node, "Rollout After", all=False)
 
-            deep_game_log.append(self.game_logger.send_turn_action_log())
+            # deep_game_log.append(self.game_logger.send_turn_action_log())
 
             self.game_copy.load_save_game_state()
 
         selected_child = parent.best_child(real_move=True)
 
         print(
-            f"Chosen Node: {id(selected_child)} Visits: {selected_child.get_visit_count()} Score: {selected_child.get_total_score()} "
+            f"Chosen Node: {id(selected_child)} Visits: {selected_child.number_of_visits} Score: {selected_child.total_score} "
         )
         print(f"Action taken: Player {node_player}, Action {selected_child.get_action()}")
 
-        return selected_child, self.tree.get_action(parent_node=parent, child_node=selected_child), deep_game_log
+        return selected_child.get_action()  # , deep_game_log
 
     def _select_rollout_node(self, node: MonteCarloNode, node_player: int) -> MonteCarloNode:
         """
@@ -94,39 +93,38 @@ class MonteCarloEngine:
         Returns:
             current_node (object instance): MonteCarloNode object instance
         """
-        node_path = [node]
-        while len(self.tree.get_children(node)) > 0 and node.get_visit_count() > 0:
+
+        while len(node.children) > 0 and node.number_of_visits > 0:
             # HAS CHILDREN, IS VISITED, CHECK GAME END AFTER LOOP
             node = self._move_to_best_child_node(node, node_player)
-            node_path.append(node)
-            if self.game.is_game_over():
-                return node_path
-            node_player = self.game.get_current_player()
+            if self.game_copy.is_game_over():
+                return node
+            node_player = self.game_copy.get_current_player()
             # loop and check again if we hit a leaf; this branch may move more than one node down to find a new expansion point
 
-        if len(self.game.get_available_actions()) == 0:
+        if len(self.game_copy.get_available_actions()) == 0:
             # NO CHILDREN, IS VISITED, means game is over
-            return node_path
+            return node
 
-        elif node.get_visit_count() == 0 and not node == self.root:
+        elif node.number_of_visits == 0 and not node == self.root:
             # NO CHILDREN, NOT VISITED, NOT ROOT
             node = self._expand_new_nodes(node)
-            return node_path
+            return node
 
         elif len(node.children) == 0 and node.number_of_visits > 0 and not node == self.root:
             # NO CHILDREN, IS VISITED, NOT ROOT
             node = self._expand_new_nodes(node)
             node = self._move_to_best_child_node(node, node_player)
-            return node_path + [node]
+            return node
 
-        elif node.get_visit_count() == 0 and node == self.root:
+        elif node.number_of_visits == 0 and node == self.root:
             # NO CHILDREN, NOT VISITED, IS ROOT
             node = self._expand_new_nodes(node)
             node = self._move_to_best_child_node(node, node_player)
-            return node_path + [node]
+            return node
 
         else:
-            return node_path
+            return node
 
     def _move_to_best_child_node(self, parent: MonteCarloNode, player: int) -> MonteCarloNode:
         best_child = parent.best_child()
@@ -151,22 +149,22 @@ class MonteCarloEngine:
         As we pop items off the list and apply them to the
         """
 
-        actions_to_pop = self.game.get_available_actions()
-        current_player = self.game.get_current_player()
-        game_state_before_action = self.game.get_game_state()
+        actions_to_pop = self.game_copy.get_available_actions()
+        current_player = self.game_copy.get_current_player()
+
         for action in actions_to_pop:
             # make the child node for the popped action:
-            self.game.update_game_state(game_state_before_action)
-            self.game.update_game_with_action(action, current_player)
             child_node = MonteCarloNode(
-                label=self.game.get_game_state(),
-                depth=(parent_node.get_depth() + 1),
+                parent=parent_node,
+                node_action=action,
+                label=f"Action {action}",
+                depth=(parent_node.depth + 1),
                 player=current_player,
-                game_state=self.game.get_game_state(),
-                game_image=self.game.draw_board()
             )
 
-            self.tree.add_child_node(parent_node, child_node, action)
+            parent_node.children.append(
+                child_node
+            )  # appends this new child node to the current node's list of children
         return parent_node
 
     def _rollout_from_selected_node(self):
@@ -187,7 +185,7 @@ class MonteCarloEngine:
             self.game_copy.update_game_with_action(random_action, current_player)  # takes action just pulled at random
             rollout += 1
 
-    def _backpropogate_node_scores(self, rollout_node_path: list[MonteCarloNode]):
+    def _backpropogate_node_scores(self, child_node: MonteCarloNode):
         """
         Node statistics are updated starting with rollout node and moving up, until the parent node is reached.
 
@@ -198,6 +196,7 @@ class MonteCarloEngine:
             node (object instance): MonteCarloNode object instance
         """
 
-        for node  in rollout_node_path:
-            node.add_to_visits(1)
-            node.add_to_score(self.scores[node.get_node_owner()])
+        # if self.turn_action_log == node.player_owner:
+        for ancestor in child_node.get_ancestors():
+            ancestor.number_of_visits += 1
+            ancestor.total_score += self.scores[ancestor.player_owner]

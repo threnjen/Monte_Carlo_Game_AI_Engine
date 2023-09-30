@@ -24,15 +24,13 @@ class GameEngine:
         self.game = self.load_game_engine(game_name)
         self.turn = 0  # Set the initial turn as 0
         self.decay = decay
-        self.montecarlo = MonteCarloEngine(
-            start_player=self.game.get_current_player(), verbose=self.verbose
-        )  # initialize the monte carlo engine
+
         self.deep_game_log = []
 
-    def load_game_engine(self, game_name: str) -> GameEnvironment:
-        game_module = importlib.import_module(f".{game_name}", package="games")
+    def load_game_engine(self, game_name: str) -> BaseGameObject:
+        game_module = importlib.import_module(f".{game_name}.{game_name}", package="games")
         game_instance = getattr(game_module, self.game_name)
-        return game_instance(self.player_count)
+        return game_instance(player_count=self.player_count)
 
     def play_game_by_turns(self, sims) -> None:
         """
@@ -47,23 +45,25 @@ class GameEngine:
         self.game.draw_board()
         """
 
-        current_node = self.montecarlo.root  # set first node as monte carlo root
         start_time = time.time()
 
         while not self.game.is_game_over():
+            montecarlo = MonteCarloEngine(
+                start_player=self.game.get_current_player(), verbose=self.verbose
+            )  # initialize the monte carlo engine
+
             self.turn += 1  # increments the game turn
             current_player = self.game.get_current_player()
 
             print(f"\n\nTurn {self.turn}\nGame gets {sims} simulations for this turn. Player {current_player}'s turn.")
 
-            current_node, chosen_action, deep_game_log = self.montecarlo.select_and_return_best_real_action(
+            chosen_action = montecarlo.select_and_return_best_real_action(  # , deep_game_log
                 num_sims=sims,
                 game=self.game,
                 node_player=current_player,
-                parent=current_node,
+                parent=montecarlo.root,
             )
-
-            self.deep_game_log += deep_game_log
+            # self.deep_game_log += deep_game_log
 
             self.game.update_game_with_action(action=chosen_action, player=current_player)
 
@@ -73,10 +73,10 @@ class GameEngine:
 
         print(f"Total time: {time.time()-start_time}\n{self.game.get_game_scores()}")
 
-        pd.DataFrame(self.deep_game_log).to_csv(
-            f"logs/{self.game_name}_deep_log_{self.number_of_sims}_sims_games_{datetime.now().strftime('%m%d%Y_%H%M%S')}.csv",
-            index=False,
-        )
+        # pd.DataFrame(self.deep_game_log).to_csv(
+        #     f"logs/{self.game_name}_deep_log_{self.number_of_sims}_sims_games_{datetime.now().strftime('%m%d%Y_%H%M%S')}.csv",
+        #     index=False,
+        # )
 
     def update_num_of_sims_for_turn(self, sims):
         if self.decay:
