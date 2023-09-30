@@ -18,7 +18,7 @@ class BaseGameObject(ABC):
         self.current_player = 0  # can be overridden in child class if this is determined differently (randomly etc). Must always be an int.
         self.scores = {
             x: 0 for x in range(0, player_count)
-        }  # scores MUST live in this format of player: score in a dictionary
+        }  # scores MUST live in this format of player: score in a dictionary. Can be overridden in child class for different presentation.
 
     def get_current_player(self) -> int:
         """

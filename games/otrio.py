@@ -1,5 +1,5 @@
 from cgi import test
-import numpy as np
+from copy import deepcopy
 
 from games.base_game_object import BaseGameObject
 
@@ -17,16 +17,37 @@ class Player:
 
 class Otrio(BaseGameObject):
     def __init__(self, player_count):
-        super().__init__()
-
-        self.board = np.zeros((3, 3, 3)).astype("int")
+        super().__init__(player_count)
         self.game_over = False
-        self.state = ""
+        self.player_count_dict = self._set_player_count(player_count)
+        print(self.player_count_dict[1].pieces)
+        self.win_conditions = self._create_win_position_ref()  # Build game board win matrix
+        self.board = [[[0 for _ in range(3)] for _ in range(3)] for _ in range(3)]
         self.scores = {n + 1: 0 for n in range(player_count)}
         self.current_player_num = 1
         self.turn = 0
-        self.player_count = self._set_player_count(player_count)
-        self._create_win_position_ref()  # Build game board win matrix
+
+    def save_game_state(self) -> None:
+        print("Saving game")
+        self.save_game["board"] = []
+        self.save_game["board"].extend(self.board)
+        self.save_game["scores"] = {x: y for x, y in self.scores.items()}
+        self.save_game["turn"] = self.turn
+        self.save_game["current_player_num"] = self.current_player_num
+        for player, details in self.player_count_dict.items():
+            self.save_game[player] = deepcopy(details)
+        # print(self.player_count_dict[1].pieces)
+
+    def load_save_game_state(self) -> None:
+        # print(self.player_count_dict[1].pieces)
+        self.board = []
+        self.board.extend(self.save_game["board"])
+        self.scores = {x: y for x, y in self.save_game["scores"].items()}
+        self.turn = self.save_game["turn"]
+        self.current_player_num = self.save_game["current_player_num"]
+        for player in self.player_count_dict.keys():
+            self.player_count_dict[player] = deepcopy(self.save_game[player])
+        # print(self.player_count_dict[1].pieces)
 
     def _set_player_count(self, player_count):
         if player_count >= 2:
@@ -41,18 +62,19 @@ class Otrio(BaseGameObject):
 
     def _make_move(self, action, current_player_num):
         self.turn += 1
-        position = tuple(action)
-        self.board[position] = self.player_count[current_player_num].pieces[action[0]].pop()
+        print(action)
+
+        self.board[action[0]][action[1]][action[2]] = self.player_count_dict[current_player_num].pieces[action[0]].pop()
 
         remove_conditions = []
-        lookup_index = str(action)
+        lookup_index = str(list(action))
         # print(f"Chosen action being checked: {lookup_index}")
 
         for current_win_condition in self.win_conditions[lookup_index]:
             # print(f"Win condition being checked: {current_win_condition}")
 
             test_indices = [tuple(x) for x in current_win_condition]
-            check_current_marks = [self.board[i] for i in test_indices]
+            check_current_marks = [self.board[i[0]][i[1]][i[2]] for i in test_indices]
             # print(f"Player pieces in this condition: {check_current_marks}")
 
             if 0 not in check_current_marks and not all(
@@ -89,9 +111,16 @@ class Otrio(BaseGameObject):
 
     def get_available_actions(self, special_policy=False):
         current_player = self.current_player_num
-        invalid_player_levels = [k for k, v in self.player_count[current_player].pieces.items() if len(v) == 0]
+        invalid_player_levels = [k for k, v in self.player_count_dict[current_player].pieces.items() if len(v) == 0]
 
-        legal_actions = np.argwhere(self.board == 0).tolist()
+        # legal_actions = np.argwhere(self.board == 0).tolist()
+        legal_actions = [
+            (i, j, k)
+            for i, row in enumerate(self.board)
+            for j, inner_list in enumerate(row)
+            for k, value in enumerate(inner_list)
+            if value == 0
+        ]
         legal_actions = [x for x in legal_actions if x[0] not in invalid_player_levels]
 
         if special_policy:
@@ -112,9 +141,9 @@ class Otrio(BaseGameObject):
         return legal_actions
 
     def check_player_kill_moves(self, move, player):
-        for current_win_condition in self.win_conditions[str(move)]:
+        for current_win_condition in self.win_conditions[str(list(move))]:
             test_indices = [tuple(x) for x in current_win_condition]
-            check_current_marks = [self.board[i] for i in test_indices]
+            check_current_marks = [self.board[i[0]][i[1]][i[2]] for i in test_indices]
 
             if check_current_marks.count(0) == 1 and len(set(check_current_marks)) == 2:
                 if player in check_current_marks:
@@ -142,11 +171,11 @@ class Otrio(BaseGameObject):
     def draw_board(self):
         self.board_draw = f"""
         Level 1\t\t\tLevel 2\t\t\tLevel 3\n
-        {self.board[0,0,0]}|{self.board[0,0,1]}|{self.board[0,0,2]}\t\t\t{self.board[1,0,0]}|{self.board[1,0,1]}|{self.board[1,0,2]}\t\t\t{self.board[2,0,0]}|{self.board[2,0,1]}|{self.board[2,0,2]}       
+        {self.board[0][0][0]}|{self.board[0][0][1]}|{self.board[0][0][2]}\t\t\t{self.board[1][0][0]}|{self.board[1][0][1]}|{self.board[1][0][2]}\t\t\t{self.board[2][0][0]}|{self.board[2][0][1]}|{self.board[2][0][2]}       
         _____\t\t\t_____\t\t\t_____
-        {self.board[0,1,0]}|{self.board[0,1,1]}|{self.board[0,1,2]}\t\t\t{self.board[1,1,0]}|{self.board[1,1,1]}|{self.board[1,1,2]}\t\t\t{self.board[2,1,0]}|{self.board[2,1,1]}|{self.board[2,1,2]}
+        {self.board[0][1][0]}|{self.board[0][1][1]}|{self.board[0][1][2]}\t\t\t{self.board[1][1][0]}|{self.board[1][1][1]}|{self.board[1][1][2]}\t\t\t{self.board[2][1][0]}|{self.board[2][1][1]}|{self.board[2][1][2]}
         _____\t\t\t_____\t\t\t_____
-        {self.board[0,2,0]}|{self.board[0,2,1]}|{self.board[0,2,2]}\t\t\t{self.board[1,2,0]}|{self.board[1,2,1]}|{self.board[1,2,2]}\t\t\t{self.board[2,2,0]}|{self.board[2,2,1]}|{self.board[2,2,2]}
+        {self.board[0][2][0]}|{self.board[0][2][1]}|{self.board[0][2][2]}\t\t\t{self.board[1][2][0]}|{self.board[1][2][1]}|{self.board[1][2][2]}\t\t\t{self.board[2][2][0]}|{self.board[2][2][1]}|{self.board[2][2][2]}
         """
 
         print(self.board_draw)
@@ -157,12 +186,12 @@ class Otrio(BaseGameObject):
             self._make_move(pos, self.current_player_num)
 
         for player_num in self.scores.keys():
-            print(f"{self.player_count[player_num].mark}:  {self.scores[player_num]}")
+            print(f"{self.player_count_dict[player_num].mark}:  {self.scores[player_num]}")
 
         return self.scores
 
     def _create_win_position_ref(self):
-        self.win_conditions = {
+        return {
             "[0, 0, 0]": [
                 [[0, 0, 0], [0, 0, 1], [0, 0, 2]],
                 [[0, 0, 0], [0, 1, 0], [0, 2, 0]],
