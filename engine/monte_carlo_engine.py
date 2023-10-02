@@ -1,9 +1,9 @@
 import numpy as np
-import copy
 
 from engine.monte_carlo_node import MonteCarloNode
-from games.base_game_object import BaseGameObject
+from games.game_components.base_game_object import BaseGameObject
 from engine.game_logger import GameLogger
+from games.game_components.action import GameAction
 
 
 class MonteCarloEngine:
@@ -25,7 +25,7 @@ class MonteCarloEngine:
         game: BaseGameObject,
         node_player: int,
         parent: MonteCarloNode,
-    ) -> tuple[MonteCarloNode, list[str]]:
+    ) -> GameAction:
         """
         Receives a specific game state from which to make a move
 

@@ -1,7 +1,7 @@
 from cgi import test
 from copy import deepcopy
 
-from games.base_game_object import BaseGameObject
+from games.game_components.base_game_object import BaseGameObject
 
 
 class Player:

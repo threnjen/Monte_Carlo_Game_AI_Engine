@@ -1,24 +1,15 @@
 from abc import ABC, abstractmethod
+from .player import Player as BasePlayer
+from pydantic import BaseModel
 
 
-class BaseGameObject(ABC):
-    def __init__(self, player_count: int):
-        """
-        Initializes game.
+class BaseGameObject(BaseModel):
 
-        The following hooks are required in the Game __init__ file:
-        game init must accept player_count argument (int)
-        game init should declare a save_game dictionary (dict)
-
-        Init in Game Object should first call super().__init__(player_count)
-        """
-        self.save_game = {}
-        self.player_count = player_count
-        self.game_over = False
-        self.current_player = 0  # can be overridden in child class if this is determined differently (randomly etc). Must always be an int.
-        self.scores = {
-            x: 0 for x in range(0, player_count)
-        }  # scores MUST live in this format of player: score in a dictionary. Can be overridden in child class for different presentation.
+    player_count: int
+    players: dict[int, BasePlayer] = None
+    game_over: bool = False
+    save_game: dict = None
+    current_player_num: int = 0
 
     def get_current_player(self) -> int:
         """
@@ -26,7 +17,7 @@ class BaseGameObject(ABC):
 
         return active player ID as int
         """
-        return self.current_player
+        return self.players[self.current_player_num]
 
     def get_game_scores(self):
         """
@@ -38,7 +29,7 @@ class BaseGameObject(ABC):
         Returns:
             [dict]: dictionary in format playerID: score
         """
-        return self.scores
+        pass
 
     @abstractmethod
     def get_available_actions(self, special_policy: bool = False) -> list:
@@ -110,7 +101,7 @@ class BaseGameObject(ABC):
         pass
 
     @abstractmethod
-    def load_save_game_state(self) -> None:
+    def load_save_game_state(self, dict) -> None:
         """
         Hook #6
         load the saved game state.

@@ -1,4 +1,4 @@
-from games.base_game_object import BaseGameObject
+from games.game_components.base_game_object import BaseGameObject
 
 
 class ConnectFour(BaseGameObject):

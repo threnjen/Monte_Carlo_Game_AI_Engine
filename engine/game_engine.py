@@ -12,7 +12,7 @@ from datetime import datetime
 
 from engine.monte_carlo_engine import MonteCarloEngine
 from games_config import GAMES_MAP
-from games.base_game_object import BaseGameObject
+from games.game_components.base_game_object import BaseGameObject
 
 
 class GameEngine:
@@ -28,9 +28,9 @@ class GameEngine:
         self.deep_game_log = []
 
     def load_game_engine(self, game_name: str) -> BaseGameObject:
-        game_module = importlib.import_module(f".{game_name}", package="games")
+        game_module = importlib.import_module(f".{game_name}.{game_name}", package="games")
         game_instance = getattr(game_module, self.game_name)
-        return game_instance(self.player_count)
+        return game_instance(player_count=self.player_count)
 
     def play_game_by_turns(self, sims) -> None:
         """
@@ -63,7 +63,8 @@ class GameEngine:
                 node_player=current_player,
                 parent=montecarlo.root,
             )
-
+            
+            
             # self.deep_game_log += deep_game_log
 
             self.game.update_game_with_action(action=chosen_action, player=current_player)
