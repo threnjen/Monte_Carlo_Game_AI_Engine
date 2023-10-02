@@ -63,6 +63,8 @@ class GameEngine:
                 node_player=current_player,
                 parent=montecarlo.root,
             )
+            
+            
             # self.deep_game_log += deep_game_log
 
             self.game.update_game_with_action(action=chosen_action, player=current_player)
