@@ -9,6 +9,7 @@ numpy = "*"
 pysimplegui = "*"
 scipy = "*"
 pydantic = "*"
+pyinstrument = "*"
 
 [dev-packages]
 pytest = "*"
