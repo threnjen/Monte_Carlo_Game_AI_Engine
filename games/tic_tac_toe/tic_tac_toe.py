@@ -6,7 +6,6 @@ from typing import ClassVar
 from .action import TicTacToeAction
 import numpy as np
 
-
 class TicTacToe(BaseGameObject):
     """Tic tac toe game"""
 
@@ -84,20 +83,18 @@ class TicTacToe(BaseGameObject):
         """Gets available moves in a dictionary.
         The bot will only ever need the keys; values should be unknown
         """
-        legal_actions = [
-            self.generate_action_from_position(i)
-            for i in range(TicTacToeAction.ACTION_SPACE_SIZE)
-            if self.positions[i] == " "
-        ]
+        legal_positions = [i for i in range(TicTacToeAction.ACTION_SPACE_SIZE) if self.positions[i] == " "]
+
 
         # print(f"Original legal actions: {legal_actions}")
 
         if special_policy:
             special_policy_actions = []
             for position, win_condition_names in self.wins_by_position.items():
+                if position not in legal_positions:
+                    continue
                 for name in win_condition_names:
-                    win_condition = self.win_conditions[name]
-                    condition_state = self.get_condition_state(win_condition)
+                    condition_state = self.get_condition_state(self.win_conditions[name])
                     next_player = self.players[
                         (self.current_player_num + 1) % self.player_count
                     ]
@@ -119,6 +116,11 @@ class TicTacToe(BaseGameObject):
                 #    f"Available win positions for {self.player_marks[current_player]}, Special policy legal actions: {special_policy_actions}"
                 # )
                 return special_policy_actions
+
+        legal_actions = [
+            self.generate_action_from_position(i)
+            for i in legal_positions
+        ]
 
         return legal_actions
 
@@ -186,12 +188,9 @@ class TicTacToe(BaseGameObject):
         return self.scores
 
     def generate_action_from_position(self, position: int):
-        return np.array(
-            [
-                1 if i == position else 0
-                for i in range(TicTacToeAction.ACTION_SPACE_SIZE)
-            ]
-        ).view(TicTacToeAction)
+        action = np.zeros(TicTacToeAction.ACTION_SPACE_SIZE, dtype=int)
+        action[position] = 1
+        return action.view(TicTacToeAction)
 
 
 if __name__ == "__main__":
