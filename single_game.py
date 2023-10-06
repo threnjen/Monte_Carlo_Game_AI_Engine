@@ -4,7 +4,7 @@ import argparse
 import sys
 from pyinstrument import Profiler
 
-profiler = Profiler()
+profiler = Profiler(interval=0.0001)
 profiler.start()
 
 def parseArguments():

@@ -82,9 +82,9 @@ class MonteCarloEngine:
         print(
             f"Chosen Node: {id(selected_child)} Visits: {selected_child.number_of_visits} Score: {selected_child.total_score} "
         )
-        print(f"Action taken: Player {node_player}, Action {selected_child.get_action()}")
+        print(f"Action taken: Player {node_player}, Action {selected_child.node_action}")
 
-        return selected_child.get_action()  # , deep_game_log
+        return selected_child.node_action  # , deep_game_log
 
     def _select_rollout_node(self, node: MonteCarloNode, node_player: int) -> MonteCarloNode:
         """
@@ -133,12 +133,10 @@ class MonteCarloEngine:
 
     def _choose_random_action(self, potential_actions: list):
         # pops off node actions randomly so that the order of try-stuff isn't as deterministic
-        random_end = len(potential_actions)
-        action = potential_actions[np.random.randint(random_end)]
 
-        return action
+        return potential_actions[np.random.randint(len(potential_actions))]
 
-    def _expand_new_nodes(self, parent_node: MonteCarloNode):
+    def _expand_new_nodes(self, parent_node: MonteCarloNode, gui_reporting: bool = False):
         """
         From the present state we _expand_new_nodes the nodes to the next possible states
         We take in a node with no children and we will _expand_new_nodes it to all children
@@ -148,16 +146,19 @@ class MonteCarloEngine:
         Query the game state for all of the legal actions, and store that in a list
         As we pop items off the list and apply them to the
         """
-
-        actions_to_pop = self.game_copy.get_available_actions()
+        
+        actions_to_pop: list[GameAction] = self.game_copy.get_available_actions()
         current_player = self.game_copy.get_current_player()
-
+    
         for action in actions_to_pop:
             # make the child node for the popped action:
+            label = None
+            if gui_reporting:
+                label = f"Action {action}"
             child_node = MonteCarloNode(
                 parent=parent_node,
                 node_action=action,
-                label=f"Action {action}",
+                label=label,
                 depth=(parent_node.depth + 1),
                 player=current_player,
             )
