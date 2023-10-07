@@ -178,7 +178,7 @@ class MonteCarloEngine:
 
         rollout = 1
         while not self.game_copy.is_game_over():
-            legal_actions = self.game_copy.get_available_actions(special_policy=True)
+            legal_actions = self.game_copy.get_available_actions(special_policy=False)
             current_player = self.game_copy.get_current_player()
 
             random_action = self._choose_random_action(potential_actions=legal_actions)

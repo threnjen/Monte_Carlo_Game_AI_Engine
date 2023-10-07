@@ -70,4 +70,4 @@ if __name__ == "__main__":
 
 profiler.stop()
 
-profiler.print()
+# profiler.print()
