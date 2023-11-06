@@ -1,13 +1,11 @@
 import sys
 from engine.game_engine import GameEngine
 import argparse
-from icecream import install
 import sys
-from datetime import datetime
+from pyinstrument import Profiler
 
-
-install()
-
+profiler = Profiler()
+profiler.start()
 
 def parseArguments():
     # Create argument parser
@@ -69,3 +67,7 @@ if __name__ == "__main__":
     # sys.stdout = open(f"logs/{game_name}_{sims}_{timestamp}.log", "w")
 
     GameEngine(game_name, sims, player_count, verbose, decay).play_game_by_turns(sims)
+
+profiler.stop()
+
+profiler.print()
