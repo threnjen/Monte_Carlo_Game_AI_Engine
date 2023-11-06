@@ -5,24 +5,28 @@ from .player import TicTacToePlayer
 from typing import ClassVar
 from .action import TicTacToeAction
 import numpy as np
+from pydantic import Field
 
 
 class TicTacToe(BaseGameObject):
     """Tic tac toe game"""
 
+    empty_space: ClassVar[int] = -1
     player_count: int = 2
-    positions: list[str] = [" "] * TicTacToeAction.ACTION_SPACE_SIZE
-    game_over: bool = False
+    positions: list[int] = Field(
+        default_factory=lambda: [TicTacToe.empty_space]
+        * TicTacToeAction.ACTION_SPACE_SIZE
+    )
     current_player_num: int = 0
-    win_conditions: ClassVar[dict[str, list[int]]] = {
-        "top_row": [0, 1, 2],
-        "left_diag": [0, 4, 8],
-        "mid_row": [3, 4, 5],
-        "bot_row": [6, 7, 8],
-        "right_diag": [6, 4, 2],
-        "left_col": [0, 3, 6],
-        "mid_col": [1, 4, 7],
-        "right_col": [2, 5, 8],
+    win_conditions: ClassVar[dict[str, np.ndarray[int]]] = {
+        "top_row": np.array([0, 1, 2]),
+        "mid_row": np.array([3, 4, 5]),
+        "bot_row": np.array([6, 7, 8]),
+        "left_col": np.array([0, 3, 6]),
+        "mid_col": np.array([1, 4, 7]),
+        "right_col": np.array([2, 5, 8]),
+        "left_diag": np.array([0, 4, 8]),
+        "right_diag": np.array([2, 4, 6]),
     }
     wins_by_position: ClassVar[dict[int, list[str]]] = {
         0: ["top_row", "left_diag", "left_col"],
@@ -38,6 +42,7 @@ class TicTacToe(BaseGameObject):
     player_marks: ClassVar[dict[int, str]] = {0: "X", 1: "O"}
     players: dict[int, TicTacToePlayer] = None
     save_game: dict = None
+    num_to_win: ClassVar[int] = 3
 
     @property
     def current_player(self) -> TicTacToePlayer:
@@ -70,8 +75,11 @@ class TicTacToe(BaseGameObject):
         _____
         {self.positions[3]}|{self.positions[4]}|{self.positions[5]}
         _____
-        {self.positions[6]}|{self.positions[7]}|{self.positions[8]}"""
-
+        {self.positions[6]}|{self.positions[7]}|{self.positions[8]}""".replace(
+            f"{TicTacToe.empty_space}", " "
+        )
+        for player_num, player in self.players.items():
+            board = board.replace(str(player_num), player.mark)
         return board
 
     def draw_board(self):
@@ -84,29 +92,31 @@ class TicTacToe(BaseGameObject):
         """Gets available moves in a dictionary.
         The bot will only ever need the keys; values should be unknown
         """
-        legal_actions = [
-            self.generate_action_from_position(i)
-            for i in range(TicTacToeAction.ACTION_SPACE_SIZE)
-            if self.positions[i] == " "
+        legal_positions = [
+            i
+            for i, position in enumerate(self.positions)
+            if position == TicTacToe.empty_space
         ]
 
         # print(f"Original legal actions: {legal_actions}")
 
-        if special_policy:
+        if special_policy and sum(self.positions) > -6:
             special_policy_actions = []
             for position, win_condition_names in self.wins_by_position.items():
+                if position not in legal_positions:
+                    continue
                 for name in win_condition_names:
-                    win_condition = self.win_conditions[name]
-                    condition_state = self.get_condition_state(win_condition)
-                    next_player = self.players[
-                        (self.current_player_num + 1) % self.player_count
-                    ]
+                    condition_state = self.get_condition_state(
+                        self.win_conditions[name]
+                    )
+                    next_player_num = (self.current_player_num + 1) % self.player_count
+
                     if (
-                        " " in condition_state
-                        and condition_state.count(self.current_player.mark) == 2
+                        TicTacToe.empty_space in condition_state
+                        and condition_state.count(self.current_player_num) == 2
                     ) or (
-                        " " in condition_state
-                        and condition_state.count(next_player.mark) == 2
+                        TicTacToe.empty_space in condition_state
+                        and condition_state.count(next_player_num) == 2
                     ):
                         special_policy_actions += [
                             self.generate_action_from_position(position)
@@ -120,6 +130,8 @@ class TicTacToe(BaseGameObject):
                 # )
                 return special_policy_actions
 
+        legal_actions = [self.generate_action_from_position(i) for i in legal_positions]
+
         return legal_actions
 
     def update_game_with_action(
@@ -127,8 +139,8 @@ class TicTacToe(BaseGameObject):
     ):
         """Makes a move on the board and draws it"""
 
-        self.positions[action.position] = self.current_player.mark
-        self.game_over = self.check_game_over()
+        self.positions[action.position] = self.current_player_num
+        # self.game_over = self.check_game_over()
 
         self.current_player_num = (self.current_player_num + 1) % self.player_count
 
@@ -136,7 +148,7 @@ class TicTacToe(BaseGameObject):
         return [self.positions[num] for num in win_condition]
 
     def is_game_over(self):
-        return self.game_over
+        return self.check_game_over()
 
     def check_game_over(self):
         """Checks for the eight win conditions, and whether there are moves left.
@@ -144,25 +156,23 @@ class TicTacToe(BaseGameObject):
         Returns:
             bool: Over or not
         """
-
+        if sum(self.positions) < -2:
+            return False
         for win_condition in self.win_conditions.values():
             condition_state = self.get_condition_state(win_condition)
+            prior_player_num = (self.current_player_num + 1) % self.player_count
             if (
-                condition_state.count(condition_state[0]) == len(condition_state)
-                and condition_state[0] == self.current_player.mark
+                condition_state.count(condition_state[0]) == TicTacToe.num_to_win
+                and condition_state[0] == prior_player_num
             ):
-                self.current_player.player_score = 1
-                self.players[
-                    (self.current_player_num + 1) % self.player_count
-                ].player_score = -1
+                self.current_player.player_score = -1
+                self.players[prior_player_num].player_score = 1
                 return True
-
-        if len(self.get_available_actions()) == 0:
+        if all([pos != TicTacToe.empty_space for pos in self.positions]):
             self.players[0].player_score = 0
             self.players[1].player_score = 0
             return True
-        else:
-            return False
+        return False
 
     @property
     def scores(self):
@@ -186,12 +196,9 @@ class TicTacToe(BaseGameObject):
         return self.scores
 
     def generate_action_from_position(self, position: int):
-        return np.array(
-            [
-                1 if i == position else 0
-                for i in range(TicTacToeAction.ACTION_SPACE_SIZE)
-            ]
-        ).view(TicTacToeAction)
+        action = np.zeros(TicTacToeAction.ACTION_SPACE_SIZE, dtype=int)
+        action[position] = 1
+        return action.view(TicTacToeAction)
 
 
 if __name__ == "__main__":

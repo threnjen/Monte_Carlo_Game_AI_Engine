@@ -4,7 +4,12 @@ import numpy as np
 
 class MonteCarloNode:
     def __init__(
-        self, parent: MonteCarloNode = None, node_action=None, label="Root Node", depth=0, player=None
+        self,
+        parent: MonteCarloNode = None,
+        node_action=None,
+        label:str ="Root Node",
+        depth=0,
+        player=None,
     ):  # , legal_actions=None
         """
         Initializes monte carlo node
@@ -19,23 +24,14 @@ class MonteCarloNode:
 
         self.parent = parent  # the node that spawned this node. Root is None.
         self.node_action = node_action  # the action being taken at this node
-        self.children: list[MonteCarloNode] = []  # the storage for the children of this node
+        self.children: list[
+            MonteCarloNode
+        ] = []  # the storage for the children of this node
         self.number_of_visits = 0  # number of times current node is visited
         self.total_score = 0  # total score for this node ONLY for its owner
         self.label = label  # label for the node, is used in GUI reporting
         self.depth = depth  # depth of the node
-        self.player_owner = (
-            player  # the player who owns/plays this node layer. Should be same player at any given depth.
-        )
-
-    def get_children(self) -> list[MonteCarloNode]:
-        return self.children
-
-    def get_action(self):
-        return self.node_action
-
-    def get_parents(self):
-        return self.parent
+        self.player_owner = player  # the player who owns/plays this node layer. Should be same player at any given depth.
 
     def get_ancestors(self) -> set[MonteCarloNode]:
         ancestor_list: list[MonteCarloNode] = [self]
@@ -54,23 +50,31 @@ class MonteCarloNode:
         Returns:
             child node (object instance): MonteCarloNode object instance
         """
-        choices_weights = []  # makes a list to store the score calculations
-        explore_param = 5
-        for child in self.get_children():
-            try:
-                # get scores of all child nodes
-                if real_move:
-                    score = child.total_score / child.number_of_visits
-                else:
-                    score = (child.total_score / child.number_of_visits) + explore_param * (
-                        np.sqrt(np.log(self.number_of_visits) / child.number_of_visits)
-                    )
-                choices_weights.append(score)
-            except:
-                # if calculation runs into a divide by 0 error because child has never been visted
-                score = 1000
-                choices_weights.append(1000)
-
-        return self.get_children()[
-            np.argmax(choices_weights)
+        return self.children[
+            np.argmax(
+                np.array(
+                    [
+                        self._calculate_score(child, explore_param, real_move)
+                        for child in self.children
+                    ]
+                )
+            )
         ]  # gets index of max score and sends back identity of child
+
+    def _calculate_score(
+        self,
+        node: MonteCarloNode,
+        explore_param: float = 1.414,
+        real_move: bool = False,
+    ) -> float:
+        # if calculation runs into a divide by 0 error because child has never been visted
+        if node.number_of_visits == 0:
+            return 1000
+        # get scores of all child nodes
+        score = node.total_score / node.number_of_visits
+        if real_move:
+            return score
+        score += explore_param * (
+            np.sqrt(np.log(self.number_of_visits) / node.number_of_visits)
+        )
+        return score
