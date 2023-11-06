@@ -146,10 +146,10 @@ class MonteCarloEngine:
         Query the game state for all of the legal actions, and store that in a list
         As we pop items off the list and apply them to the
         """
-        
+
         actions_to_pop: list[GameAction] = self.game_copy.get_available_actions()
         current_player = self.game_copy.get_current_player()
-    
+
         for action in actions_to_pop:
             # make the child node for the popped action:
             label = None
@@ -178,7 +178,7 @@ class MonteCarloEngine:
 
         rollout = 1
         while not self.game_copy.is_game_over():
-            legal_actions = self.game_copy.get_available_actions(special_policy=False)
+            legal_actions = self.game_copy.get_available_actions(special_policy=True)
             current_player = self.game_copy.get_current_player()
 
             random_action = self._choose_random_action(potential_actions=legal_actions)
