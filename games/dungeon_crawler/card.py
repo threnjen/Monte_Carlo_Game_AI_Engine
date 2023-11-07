@@ -1,25 +1,36 @@
 from pydantic import BaseModel
 
+
 class DungeonCrawlerCard(BaseModel):
     type: str
     modifier: int
 
+
 class AttackCard(DungeonCrawlerCard):
-    type: str = 'attack'
+    name: str
+    type: str = "attack"
     modifier: int
+
 
 class DefenseCard(DungeonCrawlerCard):
-    type: str = 'defense'
+    name: str
+    type: str = "defense"
     modifier: int
+
 
 class MoveCard(DungeonCrawlerCard):
-    type: str = 'move'
+    name: str
+    type: str = "move"
     modifier: int
+
 
 class RecoverCard(DungeonCrawlerCard):
-    type: str = 'recover'
+    name: str
+    type: str = "recover"
     modifier: int
 
+
 class SpecialCard(DungeonCrawlerCard):
-    type: str = 'special'
+    name: str
+    type: str = "special"
     modifier: int
