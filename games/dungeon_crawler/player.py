@@ -6,7 +6,7 @@ import random
 
 
 class Player(Actor):
-    actor_deck: list[DungeonCrawlerCard] = Field(default_factory=list, validate_default=True)
+    # actor_deck: list[DungeonCrawlerCard] = Field(default_factory=list, validate_default=True)
     actor_health: int = BASE_PLAYER_HEALTH
     actor_defense: int = BASE_PLAYER_DEFENSE
     actor_recovery: int = BASE_PLAYER_RECOVER

@@ -6,7 +6,7 @@ import random
 
 
 class Actor(BaseModel, ABC):
-    actor_deck: list[DungeonCrawlerCard] = Field(default_factory=list, validate_default=True)
+    # actor_deck: list[DungeonCrawlerCard] = Field(default_factory=list, validate_default=True)
     actor_health: int = None
     actor_defense: int = None
     actor_recovery: int = None
