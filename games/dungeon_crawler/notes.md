@@ -33,7 +33,7 @@ The way I've laid it out below, it seems like a general `Actor` class could be t
 - Method to attack adjacent player (does this live in the battle?)
 - Method to select random action (card)
 - Death indicator/method
-- Special list
+- Special list (put in config file for each monster?)
 - Type
 - Owner (human or computer)
 - Species (rename later) (ghost, zombie, etc.)

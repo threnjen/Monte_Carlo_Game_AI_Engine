@@ -28,20 +28,17 @@ BASE_ENEMY_DEFENSE = 1
 BASE_ENEMY_RECOVER = 1
 BASE_ENEMY_MOVEMENT = 1
 BASE_ENEMY_INITIATIVE = 49
-ENEMY_DECK = [
+SAMPLE_ENEMY_SPECIALS = {
+    "Special_1": {"type": "move", "modifier": 2},
+    "Special_2": {"type": "attack", "modifier": 2},
+    "Special_3": {"type": "defense", "modifier": 2},
+}
+BASE_ENEMY_DECK = [
     AttackCard(name="Base_Attack", modifier=0),
     AttackCard(name="Base_Attack", modifier=0),
     AttackCard(name="Base_Attack", modifier=0),
     MoveCard(name="Base_Move", modifier=0),
     MoveCard(name="Base_Move", modifier=0),
     MoveCard(name="Base_Move", modifier=0),
-    SpecialCard(name="Special_1", modifier=0),
-    SpecialCard(name="Special_1", modifier=0),
-    SpecialCard(name="Special_1", modifier=0),
-    SpecialCard(name="Special_2", modifier=0),
-    SpecialCard(name="Special_2", modifier=0),
-    SpecialCard(name="Special_2", modifier=0),
-    SpecialCard(name="Special_3", modifier=0),
-    SpecialCard(name="Special_3", modifier=0),
-    SpecialCard(name="Special_3", modifier=0),
 ]
+SPECIAL_CARD_TYPE = {"move": MoveCard, "defense": DefenseCard, "attack": AttackCard, "special": SpecialCard}
