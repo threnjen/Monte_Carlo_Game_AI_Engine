@@ -1,6 +1,4 @@
-from pydantic import field_validator, Field
 from actor import Actor
-from card import DungeonCrawlerCard
 from base_config import *
 import random
 
