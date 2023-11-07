@@ -1,24 +1,29 @@
-from pydantic import BaseModel, field_validator, Field
+from pydantic import field_validator, Field
+from actor import Actor
 from card import DungeonCrawlerCard
 from base_config import *
 
 
-class Enemy(BaseModel):
-    enemy_deck: list[DungeonCrawlerCard] = Field(default_factory=list, validate_default=True)
-    enemy_health: int = BASE_ENEMY_HEALTH
-    enemy_defense: int = BASE_ENEMY_DEFENSE
-    enemy_recovery: int = BASE_ENEMY_RECOVER
-    enemy_attack: int = BASE_ENEMY_ATTACK
-    enemy_movement: int = BASE_ENEMY_MOVEMENT
+class Enemy(Actor):
+    actor_deck: list[DungeonCrawlerCard] = Field(default_factory=list, validate_default=True)
+    actor_health: int = BASE_ENEMY_HEALTH
+    actor_defense: int = BASE_ENEMY_DEFENSE
+    actor_recovery: int = BASE_ENEMY_RECOVER
+    actor_attack: int = BASE_ENEMY_ATTACK
+    actor_movement: int = BASE_ENEMY_MOVEMENT
+    actor_hand_limit: int = BASE_ROUND_ACTIONS
+    actor_deck: list = ENEMY_DECK
+    actor_hand: list[DungeonCrawlerCard] = []
+    actor_discard: list[DungeonCrawlerCard] = []
 
-    @field_validator("enemy_deck")
+    @field_validator("actor_deck")
     @classmethod
-    def create_enemy_deck(cls, enemy_deck):
-        if not enemy_deck:
-            enemy_deck = ENEMY_DECK
-        return enemy_deck
+    def create_actor_deck(cls, actor_deck):
+        if not actor_deck:
+            actor_deck = ENEMY_DECK
+        return actor_deck
 
 
 if __name__ == "__main__":
     enemy = Enemy()
-    print(enemy.enemy_deck)
+    print(enemy.actor_deck)
