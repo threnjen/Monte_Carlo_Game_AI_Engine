@@ -6,12 +6,13 @@ from base_config import *
 
 class Enemy(Actor):
     actor_deck: list[DungeonCrawlerCard] = Field(default_factory=list, validate_default=True)
-    actor_health: int = BASE_ENEMY_HEALTH
+    actor_max_health: int = BASE_ENEMY_MAX_HEALTH
     actor_defense: int = BASE_ENEMY_DEFENSE
     actor_recovery: int = BASE_ENEMY_RECOVER
     actor_attack: int = BASE_ENEMY_ATTACK
     actor_movement: int = BASE_ENEMY_MOVEMENT
     actor_hand_limit: int = BASE_ROUND_ACTIONS
+    actor_initiative: int = BASE_ENEMY_INITIATIVE
     actor_deck: list = ENEMY_DECK
     actor_hand: list[DungeonCrawlerCard] = []
     actor_discard: list[DungeonCrawlerCard] = []

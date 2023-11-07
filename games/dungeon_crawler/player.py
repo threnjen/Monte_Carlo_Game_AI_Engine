@@ -7,13 +7,14 @@ import random
 
 class Player(Actor):
     # actor_deck: list[DungeonCrawlerCard] = Field(default_factory=list, validate_default=True)
-    actor_health: int = BASE_PLAYER_HEALTH
+    actor_max_health: int = BASE_PLAYER_MAX_HEALTH
     actor_defense: int = BASE_PLAYER_DEFENSE
     actor_recovery: int = BASE_PLAYER_RECOVER
     actor_attack: int = BASE_PLAYER_ATTACK
     actor_movement: int = BASE_PLAYER_MOVEMENT
     actor_hand_limit: int = BASE_PLAYER_HAND
     actor_deck: list = BASE_PLAYER_DECK
+    actor_initiative: int = BASE_PLAYER_INITIATIVE
     round_number: int = 1
 
     def play_pretend_round(self):
