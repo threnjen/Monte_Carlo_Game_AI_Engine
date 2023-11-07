@@ -1,6 +1,7 @@
 from actor import Actor
 from base_config import *
 import random
+from itertools import permutations
 
 
 class Player(Actor):
@@ -20,25 +21,39 @@ class Player(Actor):
         random.shuffle(self.actor_discard)
         for i in range(0, 3):
             self.actor_discard.append(self.actor_hand.pop())
-        print("Player hand:")
-        print([x.name for x in self.actor_hand])
+        print(f"Player hand: {[x.name for x in self.actor_hand]}")
         print(f"Cards in discard pile: {len(self.actor_discard)}")
         print(f"Cards in deck: {len(self.actor_deck)}")
         self.round_number += 1
 
-    def get_available_card_hand(self):
-        return self.actor_hand
+    def get_available_actions(self, actions_required_this_round):
+        action_names = [x.name for x in self.actor_hand]
+        all_perms = [x for x in permutations(action_names, actions_required_this_round)]
+        unique_perms = list(set(all_perms))
+        return unique_perms
+
+    def play_card_to_stack(self, action_set):
+        print(f"Chosen action set: {action_set}")
+
+        def execute_action(action):
+            item_index = 0
+            for card in self.actor_hand:
+                if card.name == action:
+                    card = self.actor_hand.pop(item_index)
+                    self.round_stack.append(card)
+                    break
+                item_index += 1
+
+        for action in action_set:
+            execute_action(action)
+
+        print(f"Remaining hand: {[x.name for x in self.actor_hand]}")
+        print(f"Actions in stack: {[x.name for x in self.round_stack]}")
 
 
 if __name__ == "__main__":
     player = Player()
     player.begin_new_round()
-    player.play_pretend_round()
-    player.begin_new_round()
-    player.play_pretend_round()
-    player.begin_new_round()
-    player.play_pretend_round()
-    player.begin_new_round()
-    player.play_pretend_round()
-    player.begin_new_round()
-    # print(player.actor_deck)
+    avail_actions = player.get_available_actions()
+    action = avail_actions.pop()
+    player.play_card_to_stack(action)

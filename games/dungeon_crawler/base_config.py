@@ -17,7 +17,7 @@ BASE_PLAYER_DECK = [
     MoveCard(name="Base_Move", modifier=0),
     MoveCard(name="Base_Move", modifier=0),
     MoveCard(name="Base_Move", modifier=0),
-    DefenseCard(name="Base_Defense", modifier=0),
+    MoveCard(name="Base_Move", modifier=0),
     DefenseCard(name="Base_Defense", modifier=0),
     RecoverCard(name="Base_Recover", modifier=0),
     RecoverCard(name="Base_Recover", modifier=0),

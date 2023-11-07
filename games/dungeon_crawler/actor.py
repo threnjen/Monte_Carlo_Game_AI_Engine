@@ -18,6 +18,7 @@ class Actor(BaseModel, ABC):
     actor_deck: list[DungeonCrawlerCard] = []
     actor_hand: list[DungeonCrawlerCard] = []
     actor_discard: list[DungeonCrawlerCard] = []
+    round_stack: list = []
 
     # @field_validator("actor_deck")
     # @classmethod
@@ -40,5 +41,4 @@ class Actor(BaseModel, ABC):
         print("Drawing cards")
         for i in range(0, cards_to_draw):
             self.actor_hand.append(self.actor_deck.pop())
-        print("Player hand:")
-        print([x.name for x in self.actor_hand])
+        print(f"Player hand: {[x.name for x in self.actor_hand]}")
