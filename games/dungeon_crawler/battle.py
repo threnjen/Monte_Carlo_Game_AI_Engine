@@ -19,22 +19,22 @@ class Battle(BaseGameObject):
     monsters: dict = None
     round_num: int = 0
 
-    @field_validator("battle_grid")
+    @field_validator("battle_grid", mode="before")
     def create_battle_grid(self):
         if self.battle_grid is None:
             self.battle_grid = BattleGrid()
 
-    @field_validator("human_players")
+    @field_validator("human_players", mode="before")
     def create_human_players(self):
         if self.human_players is None:
             self.human_players = {name: actor for name, actor in self.actors.items() if actor.type == self._HUMAN}
 
-    @field_validator("monsters")
+    @field_validator("monsters", mode="before")
     def create_monsters(self):
         if self.monsters is None:
             self.monsters = {name: actor for name, actor in self.actors.items() if actor.type == self._UNDEAD}
 
-    @field_validator(round_num):
+    @field_validator(round_num, mode="before")
     def create_round_num(self):
         if self.round_num == 0:
             self.round_num = 1
@@ -117,7 +117,8 @@ class Battle(BaseGameObject):
         return False
 
     def start_round(self):
-        pass
+        for actor in self.actors.values():
+            actor.draw
 
     def draw_board(self) -> None:
         pass
