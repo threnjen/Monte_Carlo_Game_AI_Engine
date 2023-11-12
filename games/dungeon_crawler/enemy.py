@@ -36,7 +36,7 @@ class Enemy(Actor):
         discard pile and add it to the bottom of deck.  This way players are
         forced to see all cards, but monsters are not.  This eliminates some
         card counting."""
-        self.actor_discard.append(self.actor_deck)
+        self.actor_discard.extend(self.actor_deck)
         self.actor_deck = []
         random.shuffle(self.actor_discard)
         self.actor_deck.extend(self.actor_discard)

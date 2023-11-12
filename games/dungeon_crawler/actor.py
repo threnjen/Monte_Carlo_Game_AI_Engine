@@ -191,7 +191,7 @@ class Actor(BaseModel, ABC):
         elif self.targeting_priority == "strongest":
             return max(actors, key=lambda actor: actor.actor_current_health)
         elif self.targeting_priority == "first":
-            return actors[0]
+            return min(actors, key=lambda actor: actor.actor_initiative)
         else:
             raise ValueError(f"Unknown targeting priority {self.targeting_priority}")
 

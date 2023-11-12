@@ -13,12 +13,13 @@ def actors_adjacent_1_0():
         Enemy(location_on_grid=(0, 1), actor_current_health=3),
     ]
 
+
 @pytest.fixture
 def player_on_grid_1_0():
     return Player(location_on_grid=(1, 0))
 
-class TestPlayer:
 
+class TestPlayer:
     def test_replenish_deck_empty_discard(self, player_on_grid_1_0: Player):
         player_on_grid_1_0.actor_discard = []
         player_on_grid_1_0.actor_deck = [1, 2, 3]
@@ -87,17 +88,23 @@ class TestPlayer:
         neighbors = player_on_grid_1_0._get_enemy_neighbors(actors)
         assert neighbors == []
 
-    def test_select_target_first(self,player_on_grid_1_0: Player, actors_adjacent_1_0: list[Actor]):
+    def test_select_target_first(
+        self, player_on_grid_1_0: Player, actors_adjacent_1_0: list[Actor]
+    ):
         player_on_grid_1_0.targeting_priority = "first"
         target = player_on_grid_1_0._select_target(actors_adjacent_1_0)
         assert target.location_on_grid == (2, 0)
 
-    def test_select_target_weakest(self, player_on_grid_1_0: Player, actors_adjacent_1_0: list[Actor]):
+    def test_select_target_weakest(
+        self, player_on_grid_1_0: Player, actors_adjacent_1_0: list[Actor]
+    ):
         player_on_grid_1_0.targeting_priority = "weakest"
         target = player_on_grid_1_0._select_target(actors_adjacent_1_0)
         assert target.location_on_grid == (0, 1)
 
-    def test_select_target_weakest_same_health(self, player_on_grid_1_0: Player, actors_adjacent_1_0: list[Actor]):
+    def test_select_target_weakest_same_health(
+        self, player_on_grid_1_0: Player, actors_adjacent_1_0: list[Actor]
+    ):
         player_on_grid_1_0.targeting_priority = "weakest"
         actors_adjacent_1_0[1].actor_current_health = actors_adjacent_1_0[
             2
@@ -105,12 +112,16 @@ class TestPlayer:
         target = player_on_grid_1_0._select_target(actors_adjacent_1_0)
         assert target.location_on_grid == (1, 1)
 
-    def test_select_target_strongest(self, player_on_grid_1_0, actors_adjacent_1_0: list[Actor]):
+    def test_select_target_strongest(
+        self, player_on_grid_1_0: Player, actors_adjacent_1_0: list[Actor]
+    ):
         player_on_grid_1_0.targeting_priority = "strongest"
         target = player_on_grid_1_0._select_target(actors_adjacent_1_0)
         assert target.location_on_grid == (1, 1)
 
-    def test_select_target_strongest_same_health(self, player_on_grid_1_0: Player, actors_adjacent_1_0: list[Actor]):
+    def test_select_target_strongest_same_health(
+        self, player_on_grid_1_0: Player, actors_adjacent_1_0: list[Actor]
+    ):
         player_on_grid_1_0.targeting_priority = "strongest"
         actors_adjacent_1_0[0].actor_current_health = actors_adjacent_1_0[
             1
