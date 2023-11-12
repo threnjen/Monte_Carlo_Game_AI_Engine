@@ -120,6 +120,14 @@ class Actor(BaseModel, ABC):
         random.shuffle(self.actor_deck)
 
     def _get_enemy_neighbors(self, actors: list[Actor]) -> list[tuple[int, int]]:
+        """Return a list of all adjacent enemy actors.  Here, enemy is defined by
+        the actor's class.  This is used to determine which actors are valid targets.
+        
+        Args:
+            actors (list[Actor]): A list of all actors in the battle.
+        
+        Returns:
+            list[Actor]: A list of all adjacent enemy actors."""
         neighbors = [
             (self.location_on_grid[0] - 1, self.location_on_grid[1]),
             (self.location_on_grid[0] + 1, self.location_on_grid[1]),
@@ -140,6 +148,9 @@ class Actor(BaseModel, ABC):
         pass
 
     def _draw_cards(self):
+        """Draw cards from the actor's deck until the actor's hand is full.
+        If the deck is empty, shuffle the discard pile and add it to the deck.
+        The replenish method differs by enemy and player."""
         cards_to_draw = self.actor_hand_limit - len(self.actor_hand)
         if len(self.actor_deck) < cards_to_draw:
             print("Shuffling discard")
@@ -151,19 +162,37 @@ class Actor(BaseModel, ABC):
         print(f"Actor hand: {[x.name for x in self.actor_hand]}")
 
     def begin_new_round(self):
+        """Right now, beginning a round just draws cards."""
         self._draw_cards()
 
     def move(
         self, action: DungeonCrawlerAction, actors: list[Actor], battle_grid: BattleGrid
     ):
+        """Move the actor.  This is called by the battle controller.  Because the 
+        movement logic might change over time, we allow a passthrough where there
+        otherwise would be a direct call to the move method."""
         self._move_to_closest(action, actors, battle_grid)
 
+    @abstractmethod
     def _resolve_move_when_adjacent(self, actor: Actor):
+        """Differs by monster and player"""
         pass
 
     def _move_to_closest(
         self, action: DungeonCrawlerAction, actors: list[Actor], battle_grid: BattleGrid
     ):
+        """Move the actor to the closest enemy.  If the actor is already adjacent
+        to an enemy, this method will call the _resolve_move_when_adjacent method.
+        Otherwise, it will find the closest enemy and move towards it.
+        
+        Args:
+            actors (list[Actor]): A list of all actors in the battle.
+            battle_grid (BattleGrid): The battle grid, used to determine which
+                squares are occupied and which are not.
+                
+                #TODO The location determination
+                is inconsistent between functions.  Sometimes we use a list
+                of actors, sometimes we use the grid.  We should standardize."""
         paths = [
             astar(battle_grid, self.location_on_grid, actor.location_on_grid)
             for actor in actors
@@ -186,6 +215,9 @@ class Actor(BaseModel, ABC):
     def _select_target(
         self, actors: list[Actor]
     ) -> Actor:
+        """Select a target from a list of actors.  The target is selected based
+        on the actor's targeting priority.  The options are "weakest" (lowest health),
+        "strongest" (highest health), and "first"."""
         if self.targeting_priority == "weakest":
             return min(actors, key=lambda actor: actor.actor_current_health)
         elif self.targeting_priority == "strongest":
@@ -197,8 +229,12 @@ class Actor(BaseModel, ABC):
 
     @abstractmethod
     def _execute_attack(self, target: Actor):
+        """Attacks differ between monsters and players."""
         pass
 
     def attack(self, actors: list[Actor]):
+        """Execute an attack.  This is called by the battle controller.  Note that
+        this may whiff; if no actors are adjacent, the attack will do nothing."""
         target = self._select_target(self._get_enemy_neighbors(actors))
-        self._execute_attack(target)
+        if target is not None:
+            self._execute_attack(target)
