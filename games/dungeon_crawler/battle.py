@@ -1,64 +1,77 @@
-from typing_extensions import Unpack
-from pydantic.config import ConfigDict
-from game_components.base_game_object import BaseGameObject
+from games.game_components.base_game_object import BaseGameObject
 from .battle_grid import BattleGrid
 from pydantic import field_validator, Field
-from action import DungeonCrawlerAction
-import numpy as np
-from typing import ClassVar
+from .action import DungeonCrawlerAction
+from .actor import Actor
+from .player import Player
+from .enemy import Enemy
+
 
 class Battle(BaseGameObject):
-    _HUMAN: ClassVar[str] = "human"
-    _UNDEAD: ClassVar[str] = "undead"
-    actors: dict
+    model_config = {"arbitrary_types_allowed": True}
+    actors: dict[str, Actor]
     current_actor_num: int = 0
     save_game: dict = None
     battle_grid: BattleGrid = Field(default_factory=BattleGrid, validate_default=True)
-    round_actions: list[DungeonCrawlerAction] = None
+    round_actions: list[tuple[int, DungeonCrawlerAction]] = None
     human_players: dict = None
     monsters: dict = None
     round_num: int = 0
 
-    @field_validator("battle_grid", mode="before")
-    def create_battle_grid(self):
-        if self.battle_grid is None:
-            self.battle_grid = BattleGrid()
+    @field_validator("battle_grid")
+    @classmethod
+    def create_battle_grid(cls, battle_grid):
+        if battle_grid is None:
+            battle_grid = BattleGrid()
 
-    @field_validator("human_players", mode="before")
-    def create_human_players(self):
+
+    def model_post_init(self):
         if self.human_players is None:
-            self.human_players = {name: actor for name, actor in self.actors.items() if actor.type == self._HUMAN}
+            self.human_players = {
+                name: actor
+                for name, actor in self.actors.items()
+                if isinstance(actor, Player)
+            }
 
-    @field_validator("monsters", mode="before")
-    def create_monsters(self):
         if self.monsters is None:
-            self.monsters = {name: actor for name, actor in self.actors.items() if actor.type == self._UNDEAD}
+            self.monsters = {
+                name: actor
+                for name, actor in self.actors.items()
+                if isinstance(actor, Enemy)
+            }
 
-    @field_validator(round_num, mode="before")
-    def create_round_num(self):
-        if self.round_num == 0:
-            self.round_num = 1
-            self.start_round()
+    @field_validator("round_num", mode="before")
+    @classmethod
+    def create_round_num(cls, round_num):
+        if round_num == 0:
+            round_num = 1
 
     @property
     def human_player_count(self):
-        return len([actor for actor in self.actors.values() if actor.type == self._HUMAN])
+        return len(
+            [actor for actor in self.actors.values() if isinstance(actor, Player)]
+        )
 
     def set_round_order(self):
-        self.actors = dict(sorted(self.actors.items(), key=lambda x: x[1].initiative))
+        self.actors = dict(
+            sorted(self.actors.items(), key=lambda x: x[1].actor_initiative)
+        )
 
     @property
     def actions_required_this_round(self) -> int:
         """The game needs to know the number of actions each actor will be able to program.
         Right now, this is dictated by the undead actors, and is the max among those undead
         actors."""
-        return max([actor.round_actions for actor in self.actors.values() if actor.type == self._UNDEAD])
+        return max([actor.required_action_count for actor in self.actors.values() if isinstance(actor, Enemy)])
 
     def play_round_actions(self):
-        """ I'm having a lot of trouble with this one. The problem is that after the
-        actions are chosen, a direction needs to be chosen.  However, this means
-        we can't just play out the whole round without getting more input from the player."""
-        pass
+        for actor in self.actors:
+            if actor.is_dead:
+                continue
+            if isinstance(actor, Player):
+                self.parse_action(actor.round_stack.pop())
+            elif isinstance(actor, Enemy):
+                self._play_monster_action()
 
     @property
     def current_actor(self):
@@ -67,9 +80,13 @@ class Battle(BaseGameObject):
     @property
     def all_round_actions_collected(self) -> bool:
         """A boolean to determine if all players have programmed their actions for the round."""
-        return len(self.round_actions) == self.actions_required_this_round * len(self.human_player_count)
+        return len(self.round_actions) == self.actions_required_this_round * len(
+            self.human_player_count
+        )
 
-    def get_available_actions(self, special_policy: bool = False) -> list[DungeonCrawlerAction]:
+    def get_available_actions(
+        self, special_policy: bool = False
+    ) -> list[DungeonCrawlerAction]:
         """This is the function that the game will call to get the available actions for the current player.
         There are two possibilities:
             - The player is programming their actions for the round.  In this case, the player will be able to
@@ -77,9 +94,11 @@ class Battle(BaseGameObject):
             - The player is choosing a direction to enact their chosen action.  They need the battle grid to
             determine adjacent empty and occupied squares."""
         # if not self.all_round_actions_collected:
-        return self.current_actor.get_available_actions(self.actions_required_this_round)
+        return self.current_actor.get_available_actions(
+            self.actions_required_this_round
+        )
         # else:
-            # return self.current_player.get_available_directions(self.battle_grid)
+        # return self.current_player.get_available_directions(self.battle_grid)
 
     def _play_monster_action(self):
         self.current_actor.play_action(self.battle_grid, self.actors)
@@ -88,19 +107,20 @@ class Battle(BaseGameObject):
     def update_game_with_action(self, action: DungeonCrawlerAction) -> None:
         # if not self.all_round_actions_collected:
         self.round_actions.append(action)
-        self.parse_action(action)
+        if self.all_round_actions_collected:
+            self.play_round_actions()
         self.current_actor_num = (self.current_actor_num + 1) % len(self.actors)
-            # return
+        # return
         # Something about this feels wrong.
         # I think the right move is to pass the action to the player, and let the player
         # decide what to do with it.
 
     def parse_action(self, action: DungeonCrawlerAction) -> None:
         if action.type == "move":
-            self.current_actor.move(action)
+            self.current_actor.move(action, self.actors, self.battle_grid)
         elif action.type == "attack":
             self.current_actor.attack(action, self.actors)
-        elif action.type =="defend":
+        elif action.type == "defend":
             self.current_actor.defend(action)
         elif action.type == "recover":
             self.current_actor.recover(action)
@@ -118,7 +138,7 @@ class Battle(BaseGameObject):
 
     def start_round(self):
         for actor in self.actors.values():
-            actor.draw
+            actor.begin_new_round()
 
     def draw_board(self) -> None:
         pass

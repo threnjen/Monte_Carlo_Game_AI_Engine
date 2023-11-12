@@ -1,8 +1,7 @@
-from actor import Actor
-from base_config import *
+from .actor import Actor
+from .base_config import *
 import random
 from itertools import permutations
-
 
 class Player(Actor):
     # actor_deck: list[DungeonCrawlerCard] = Field(default_factory=list, validate_default=True)
@@ -26,11 +25,21 @@ class Player(Actor):
         print(f"Cards in deck: {len(self.actor_deck)}")
         self.round_number += 1
 
-    def get_available_actions(self, actions_required_this_round):
+    def _replenish_deck(self):
+        random.shuffle(self.actor_discard)
+        self.actor_deck.extend(self.actor_discard)
+        self.actor_discard = []
+
+    def get_available_actions(self, actions_required_this_round: int):
         action_names = [x.name for x in self.actor_hand]
         all_perms = [x for x in permutations(action_names, actions_required_this_round)]
         unique_perms = list(set(all_perms))
+        if unique_perms == []:
+            self.is_dead = True
         return unique_perms
+
+    def _execute_attack(self, target: Actor):
+        target.actor_current_health -= self.actor_attack
 
     def play_card_to_stack(self, action_set):
         print(f"Chosen action set: {action_set}")
@@ -54,6 +63,6 @@ class Player(Actor):
 if __name__ == "__main__":
     player = Player()
     player.begin_new_round()
-    avail_actions = player.get_available_actions()
+    avail_actions = player.get_available_actions(3)
     action = avail_actions.pop()
     player.play_card_to_stack(action)

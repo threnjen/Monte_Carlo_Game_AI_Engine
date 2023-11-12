@@ -1,5 +1,6 @@
-from games.game_components.action import Action
+from games.game_components.action import GameAction
+from pydantic import BaseModel
 
 
-class DungeonCrawlerAction(Action):
+class DungeonCrawlerAction(GameAction):
     pass

@@ -1,4 +1,4 @@
-from card import *
+from .card import *
 
 BASE_ROUND_ACTIONS = 3
 BASE_PLAYER_HAND = 6
@@ -29,9 +29,9 @@ BASE_ENEMY_RECOVER = 1
 BASE_ENEMY_MOVEMENT = 1
 BASE_ENEMY_INITIATIVE = 49
 SAMPLE_ENEMY_SPECIALS = {
-    "Special_1": {"type": "move", "modifier": 2},
-    "Special_2": {"type": "attack", "modifier": 2},
-    "Special_3": {"type": "defense", "modifier": 2},
+    "special_1": {"type": "move", "modifier": 2},
+    "special_2": {"type": "attack", "modifier": 2},
+    "special_3": {"type": "defense", "modifier": 2},
 }
 BASE_ENEMY_DECK = [
     AttackCard(name="Base_Attack", modifier=0),

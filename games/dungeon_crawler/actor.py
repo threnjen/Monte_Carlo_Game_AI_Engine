@@ -1,11 +1,95 @@
-from typing import Any
-from pydantic import BaseModel, Field, field_validator
+from __future__ import annotations
+from typing import Any, Union
+from pydantic import BaseModel
 from abc import ABC, abstractmethod
-from card import DungeonCrawlerCard
+from .card import DungeonCrawlerCard
 import random
+from .action import DungeonCrawlerAction
+from  .battle_grid import BattleGrid
+import numpy as np
+import heapq
 
+class Node(BaseModel):
+    row: int
+    col: int
+    g: float = 0  # Cost from start node to current node
+    h: float = 0  # Heuristic (estimated cost from current node to goal node)
+    f: float = 0  # Total cost: f = g + h
+    parent: Node = None
+
+    def __eq__(self, other: object) -> bool:
+        return self.f == other.f
+    
+    def __lt__(self, other: object) -> bool:
+        return self.f < other.f
+    
+    def __gt__(self, other: object) -> bool:
+        return self.f > other.f
+
+def astar(map: np.ndarray, start: tuple[int, int], end: tuple[int, int]) -> list[tuple[int, int]]:
+    """A* pathfinding algorithm implementation.
+        map: 2D array of integers. 0 = unoccupied, 1 = occupied
+        start: tuple of (row, col) for start node
+        end: tuple of (row, col) for end node
+        See https://en.wikipedia.org/wiki/A*_search_algorithm for details.
+    """
+
+    rows, cols = len(map), len(map[0])
+
+    def is_valid(node: Node):
+        return 0 <= node.row < rows and 0 <= node.col < cols and map[node.row][node.col] == 0
+
+    def heuristic(node: Node, end: Node):
+        return abs(node.row - end.row) + abs(node.col - end.col)
+
+    open_set: list[Node] = []
+    closed_set: set[Node] = set()
+
+    start_node = Node(row=start[0], col=start[1])
+    end_node = Node(row=end[0], col=end[1])
+
+    if not is_valid(start_node) or not is_valid(end_node):
+        return None
+
+    # We store in a heap for efficiency
+    # The heap will store tuples of (f_score, node)
+    heapq.heappush(open_set, (start_node.f, start_node))
+    
+    while open_set:
+        current_node = heapq.heappop(open_set)[1]
+
+        if current_node.row == end_node.row and current_node.col == end_node.col:
+            path: list[tuple[int, int]] = []
+            while current_node:
+                path.append((current_node.row, current_node.col))
+                current_node = current_node.parent
+            return path[::-1]  # Return reversed path
+
+        closed_set.add((current_node.row, current_node.col))
+
+        neighbors = [
+            Node(row=current_node.row - 1, col=current_node.col),
+            Node(row=current_node.row + 1, col=current_node.col),
+            Node(row=current_node.row, col=current_node.col - 1),
+            Node(row=current_node.row, col=current_node.col + 1),
+        ]
+
+        # TODO: Add weight to moves that pass through allies
+        # This will allow for pathfinding through allies, but
+        # will also prefer to move around allies if both are unique.
+        for neighbor in neighbors:
+            if is_valid(neighbor) and (neighbor.row, neighbor.col) not in closed_set:
+                neighbor.g = current_node.g + 1
+                neighbor.h = heuristic(neighbor, end_node)
+                neighbor.f = neighbor.g + neighbor.h
+                neighbor.parent = current_node
+
+                heapq.heappush(open_set, (neighbor.f, neighbor))
+
+    return None  # No path found
 
 class Actor(BaseModel, ABC):
+    model_config = {"arbitrary_types_allowed": True}
     # actor_deck: list[DungeonCrawlerCard] = Field(default_factory=list, validate_default=True)
     actor_max_health: int = None
     actor_current_health: int = actor_max_health
@@ -19,26 +103,84 @@ class Actor(BaseModel, ABC):
     actor_hand: list[DungeonCrawlerCard] = []
     actor_discard: list[DungeonCrawlerCard] = []
     round_stack: list = []
-
-    # @field_validator("actor_deck")
-    # @classmethod
-    # def create_actor_deck(cls, actor_deck):
-    #     if not actor_deck:
-    #         random.shuffle(actor_deck)
-    #     return actor_deck
+    is_dead: bool = False
+    location_on_grid: tuple = None
+    targeting_priority: list[str] = ["first"]
 
     def model_post_init(self, __context: Any) -> None:
         random.shuffle(self.actor_deck)
 
-    def begin_new_round(self):
+    def _get_neighbors(self, actors: list[Actor]) -> list[tuple[int, int]]:
+        neighbors = [
+            (self.location_on_grid[0] - 1, self.location_on_grid[1]),
+            (self.location_on_grid[0] + 1, self.location_on_grid[1]),
+            (self.location_on_grid[0], self.location_on_grid[1] - 1),
+            (self.location_on_grid[0], self.location_on_grid[1] + 1),
+        ]
+        # TODO:  update this for when we have allies
+        return [actor for actor in actors if actor.location_on_grid in neighbors]
+
+    @abstractmethod
+    def _replenish_deck(self):
+        pass
+
+    def _draw_cards(self):
         cards_to_draw = self.actor_hand_limit - len(self.actor_hand)
         if len(self.actor_deck) < cards_to_draw:
             print("Shuffling discard")
-            random.shuffle(self.actor_discard)
-            self.actor_deck.extend(self.actor_discard)
-            self.actor_discard = []
+            self._replenish_deck()
 
         print("Drawing cards")
         for i in range(0, cards_to_draw):
             self.actor_hand.append(self.actor_deck.pop())
         print(f"Player hand: {[x.name for x in self.actor_hand]}")
+
+    def begin_new_round(self):
+        self._draw_cards()
+
+    def _get_distance(self, actor: Actor) -> int:
+        return abs(actor.location_on_grid[0] - self.location_on_grid[0]) + abs(
+            actor.location_on_grid[1] - self.location_on_grid[1]
+        )
+
+    def move(self, action: DungeonCrawlerAction, actors: list[Actor], battle_grid: BattleGrid):
+        self._move_to_closest(action, actors, battle_grid)
+
+    def _resolve_move_when_adjacent(self, actor: Actor):
+        pass
+
+    def _move_to_closest(self, action: DungeonCrawlerAction, actors: list[Actor], battle_grid: BattleGrid):
+        paths = [astar(battle_grid, self.location_on_grid, actor.location_on_grid) for actor in actors]
+        shortest_path = min(paths, key=len)
+        # If we're already adjacent to a target, no need to move more
+        if shortest_path is None or len(shortest_path) == 1:
+            self._resolve_move_when_adjacent(*[actor for actor in actors if actor.location_on_grid == shortest_path[-1]])
+        # If we can move all the way to the target, do so
+        if len(shortest_path) - 1 <= self.actor_movement:
+            self.location_on_grid = shortest_path[-1]
+        # Otherwise, move as far as possible
+        else:
+            # This prevents us from moving into a space occupied by another actor
+            offset = 0
+            while battle_grid[shortest_path[self.actor_movement -offset]] != 0:
+                offset += 1
+            self.location_on_grid = shortest_path[self.actor_movement - offset]
+
+    def _select_target(self, action: DungeonCrawlerAction, actors: list[Actor]) -> Actor:
+        for target_type in self.targeting_priority:
+            if target_type == "weakest":
+                actors =  min(actors, key=lambda actor: actor.actor_current_health)
+            elif target_type == "strongest":
+                actors = max(actors, key=lambda actor: actor.actor_current_health)
+            elif self.targeting_priority[0] == "first":
+                return actors[0]
+            else:
+                raise ValueError(f"Unknown targeting priority {target_type}")
+
+    @abstractmethod
+    def _execute_attack(self, target: Actor):
+        pass
+
+    def attack(self, action: DungeonCrawlerAction, actors: list[Actor]):
+        target = self._select_target(action, self._get_neighbors())
+        self._execute_attack(target)
