@@ -2,6 +2,7 @@ from .actor import Actor
 from .base_config import *
 import random
 from itertools import permutations
+from .battle_grid import BattleGrid
 
 class Player(Actor):
     # actor_deck: list[DungeonCrawlerCard] = Field(default_factory=list, validate_default=True)
@@ -14,6 +15,7 @@ class Player(Actor):
     actor_deck: list = BASE_PLAYER_DECK
     actor_initiative: int = BASE_PLAYER_INITIATIVE
     _round_number: int = 1
+    score: int = 0
 
     def play_pretend_round(self):
         print(f"\nRound number: {self._round_number}")
@@ -78,6 +80,20 @@ class Player(Actor):
 
         print(f"Remaining hand: {[x.name for x in self.actor_hand]}")
         print(f"Actions in stack: {[x.name for x in self.round_stack]}")
+
+    def play_action(self, actors: list[Actor], battle_grid: BattleGrid):
+        action = self.round_stack.pop()
+        if action.type == "move":
+            self.move(action, self.actors, self.battle_grid)
+        elif action.type == "attack":
+            self.attack(action, self.actors)
+        else:
+            raise ValueError(f"Unknown card type: {action.type}")
+        # elif action.type == "defend":
+        #     self.defend(action)
+        # elif action.type == "recover":
+        #     self.recover(action)
+
 
     def _resolve_move_when_adjacent(self, actors: list[Actor]):
         """This is called when the player is adjacent to an enemy.  The player

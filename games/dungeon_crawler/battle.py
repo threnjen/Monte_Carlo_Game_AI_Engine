@@ -6,6 +6,8 @@ from .actor import Actor
 from .player import Player
 from .enemy import Enemy
 
+# TODO  It really feels like there's too much going on in this file.  We may need to break it up.
+
 
 class Battle(BaseGameObject):
     model_config = {"arbitrary_types_allowed": True}
@@ -14,8 +16,8 @@ class Battle(BaseGameObject):
     save_game: dict = None
     battle_grid: BattleGrid = Field(default_factory=BattleGrid, validate_default=True)
     round_actions: list[tuple[int, DungeonCrawlerAction]] = None
-    human_players: dict = None
-    monsters: dict = None
+    human_players: dict[str, Actor] = None
+    monsters: dict[str, Actor] = None
     round_num: int = 0
 
     @field_validator("battle_grid")
@@ -23,7 +25,6 @@ class Battle(BaseGameObject):
     def create_battle_grid(cls, battle_grid):
         if battle_grid is None:
             battle_grid = BattleGrid()
-
 
     def model_post_init(self):
         if self.human_players is None:
@@ -39,12 +40,8 @@ class Battle(BaseGameObject):
                 for name, actor in self.actors.items()
                 if isinstance(actor, Enemy)
             }
-
-    @field_validator("round_num", mode="before")
-    @classmethod
-    def create_round_num(cls, round_num):
-        if round_num == 0:
-            round_num = 1
+        if self.round_num == 1:
+            self.start_round()
 
     @property
     def human_player_count(self):
@@ -62,19 +59,26 @@ class Battle(BaseGameObject):
         """The game needs to know the number of actions each actor will be able to program.
         Right now, this is dictated by the undead actors, and is the max among those undead
         actors."""
-        return max([actor.required_action_count for actor in self.actors.values() if isinstance(actor, Enemy)])
+        return max(
+            [
+                actor.required_action_count
+                for actor in self.actors.values()
+                if isinstance(actor, Enemy)
+            ]
+        )
 
     def play_round_actions(self):
-        for actor in self.actors:
-            if actor.is_dead:
-                continue
-            if isinstance(actor, Player):
-                self.parse_action(actor.round_stack.pop())
-            elif isinstance(actor, Enemy):
-                self._play_monster_action()
+        """Something about this feels REALLY clunky."""
+        for _ in enumerate(self.actions_required_this_round):
+            for actor in self.actors.values():
+                if actor.is_dead:
+                    continue
+                self.current_actor.play_action(self.actors, self.battle_grid)
+                self.set_next_actor()
+        self.start_round()
 
     @property
-    def current_actor(self):
+    def current_actor(self) -> Actor:
         return self.actors[self.current_actor_num]
 
     @property
@@ -93,37 +97,22 @@ class Battle(BaseGameObject):
             choose from a list of card permutations.
             - The player is choosing a direction to enact their chosen action.  They need the battle grid to
             determine adjacent empty and occupied squares."""
-        # if not self.all_round_actions_collected:
         return self.current_actor.get_available_actions(
             self.actions_required_this_round
         )
-        # else:
-        # return self.current_player.get_available_directions(self.battle_grid)
 
-    def _play_monster_action(self):
-        self.current_actor.play_action(self.battle_grid, self.actors)
+    def set_next_actor(self):
         self.current_actor_num = (self.current_actor_num + 1) % len(self.actors)
 
     def update_game_with_action(self, action: DungeonCrawlerAction) -> None:
-        # if not self.all_round_actions_collected:
         self.round_actions.append(action)
+        if not self.all_round_actions_collected:
+            while self.current_actor.is_dead or isinstance(self.current_actor, Enemy):
+                self.set_next_actor()
+            return
         if self.all_round_actions_collected:
             self.play_round_actions()
         self.current_actor_num = (self.current_actor_num + 1) % len(self.actors)
-        # return
-        # Something about this feels wrong.
-        # I think the right move is to pass the action to the player, and let the player
-        # decide what to do with it.
-
-    def parse_action(self, action: DungeonCrawlerAction) -> None:
-        if action.type == "move":
-            self.current_actor.move(action, self.actors, self.battle_grid)
-        elif action.type == "attack":
-            self.current_actor.attack(action, self.actors)
-        elif action.type == "defend":
-            self.current_actor.defend(action)
-        elif action.type == "recover":
-            self.current_actor.recover(action)
 
     def is_game_over(self) -> bool:
         if all([player.is_dead for player in self.human_players.values()]):
@@ -137,6 +126,7 @@ class Battle(BaseGameObject):
         return False
 
     def start_round(self):
+        self.round_num += 1
         for actor in self.actors.values():
             actor.begin_new_round()
 
@@ -148,3 +138,12 @@ class Battle(BaseGameObject):
 
     def load_save_game_state(self, dict) -> None:
         pass
+
+
+if __name__ == "__main__":
+    battle = Battle(
+        actors={
+            "player1": Player(location_on_grid=(1, 1)),
+            "monster1": Enemy(location_on_grid=(3, 4)),
+        },
+    )

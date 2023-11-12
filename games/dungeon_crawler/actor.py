@@ -119,6 +119,10 @@ class Actor(BaseModel, ABC):
     def model_post_init(self, __context: Any) -> None:
         random.shuffle(self.actor_deck)
 
+    @abstractmethod
+    def play_action(self, actors: list[Actor], battle_grid: BattleGrid):
+        pass
+
     def _get_enemy_neighbors(self, actors: list[Actor]) -> list[tuple[int, int]]:
         """Return a list of all adjacent enemy actors.  Here, enemy is defined by
         the actor's class.  This is used to determine which actors are valid targets.

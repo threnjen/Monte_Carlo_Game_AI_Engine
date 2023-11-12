@@ -46,7 +46,7 @@ class Enemy(Actor):
         """Monster attacks add junk to the player discard."""
         return target.actor_discard.append(JunkCard(name="Junk", modifier=0))
 
-    def play_turn(self, actors: list[Actor], battle_grid: BattleGrid):
+    def play_action(self, actors: list[Actor], battle_grid: BattleGrid):
         """Plays the monsters turn.  Some monsters will have special abilities that
         require additional logic.  For now, we ignore this.
         
