@@ -34,3 +34,8 @@ class SpecialCard(DungeonCrawlerCard):
     name: str
     type: str = "special"
     modifier: int
+
+class JunkCard(DungeonCrawlerCard):
+    name: str
+    type: str = "junk"
+    modifier: int

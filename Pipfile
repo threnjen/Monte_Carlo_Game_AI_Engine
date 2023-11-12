@@ -10,6 +10,7 @@ pysimplegui = "*"
 scipy = "*"
 pydantic = "*"
 pyinstrument = "*"
+black = "*"
 
 [dev-packages]
 pytest = "*"

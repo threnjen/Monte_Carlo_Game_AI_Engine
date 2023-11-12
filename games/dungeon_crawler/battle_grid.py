@@ -1,3 +1,4 @@
-class BattleGrid:
-    def __init__(self) -> None:
-        pass
+from pydantic import BaseModel
+
+class BattleGrid(BaseModel):
+    pass

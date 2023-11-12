@@ -5,7 +5,6 @@ import numpy as np
 class AzulAction(GameAction):
     PHASE_1_START: ClassVar[int] = 0
     PHASE_1_END: ClassVar[int] = 16
-
     PHASE_2_START: ClassVar[int] = 16
     PHASE_2_END: ClassVar[int] = 53
     FACTORY_START: ClassVar[int] = 0
