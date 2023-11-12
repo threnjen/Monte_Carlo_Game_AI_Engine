@@ -126,7 +126,7 @@ class Actor(BaseModel, ABC):
             (self.location_on_grid[0], self.location_on_grid[1] - 1),
             (self.location_on_grid[0], self.location_on_grid[1] + 1),
         ]
-        # TODO:  update this for when we have allies
+
         return [
             actor
             for actor in actors
